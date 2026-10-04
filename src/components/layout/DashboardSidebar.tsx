@@ -17,7 +17,8 @@ import {
   X,
   User,
   Globe,
-  LogOut
+  LogOut,
+  ArrowLeft
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
@@ -104,7 +105,22 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: Dashbo
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-3 py-3 space-y-1 overflow-y-auto">
+          {/* Botón Estratégico Superior: Volver a la Web Principal */}
+          <div className="mb-3 px-1">
+            <Link
+              href="/"
+              onClick={onCloseMobile}
+              className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs font-bold text-teal-900 bg-gradient-to-r from-teal-50 to-emerald-50 hover:from-teal-100 hover:to-emerald-100 border border-teal-200/90 shadow-2xs transition-all group"
+            >
+              <div className="flex items-center gap-2">
+                <ArrowLeft className="w-3.5 h-3.5 text-teal-700 group-hover:-translate-x-0.5 transition-transform" />
+                <span>Volver al Sitio Web</span>
+              </div>
+              <Globe className="w-3.5 h-3.5 text-teal-600/80" />
+            </Link>
+          </div>
+
           <div className="px-3 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
             <span>Módulos Autorizados</span>
             <span className={cn("text-[9px] font-bold px-1.5 py-0.2 rounded border", roleDetails.badge)}>

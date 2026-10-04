@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, Search, Clock, MapPin, Menu, Globe } from "lucide-react";
+import { Bell, Search, Clock, MapPin, Menu, Globe, ArrowLeft } from "lucide-react";
 import { RoleSwitcher } from "./RoleSwitcher";
 
 interface DashboardNavbarProps {
@@ -17,7 +17,7 @@ export function DashboardNavbar({ onToggleMobileMenu }: DashboardNavbarProps) {
 
   return (
     <header className="h-16 bg-white border-b border-slate-200/90 px-4 sm:px-6 flex items-center justify-between shrink-0 shadow-xs">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         {/* Mobile Hamburger Button */}
         {onToggleMobileMenu && (
           <button
@@ -29,10 +29,20 @@ export function DashboardNavbar({ onToggleMobileMenu }: DashboardNavbarProps) {
           </button>
         )}
 
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200/80">
+        {/* Botón Estratégico Prominente: Volver al Sitio Web */}
+        <Link
+          href="/"
+          title="Regresar a la página principal del sitio web"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50/70 hover:bg-teal-100 text-teal-800 font-bold text-xs border border-teal-200 hover:border-teal-300 transition shadow-2xs group"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 text-teal-700 group-hover:-translate-x-0.5 transition-transform" />
+          <span className="hidden sm:inline">Volver al Sitio Web</span>
+          <span className="sm:hidden font-extrabold">Web</span>
+        </Link>
+
+        <div className="hidden md:flex items-center gap-2 text-xs font-semibold text-slate-600 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200/80">
           <MapPin className="w-3.5 h-3.5 text-teal-600" />
-          <span className="hidden sm:inline">Sede San Borja (Av. Guardia Civil)</span>
-          <span className="sm:hidden">San Borja</span>
+          <span>Sede San Borja (Av. Guardia Civil)</span>
         </div>
 
         <div className="hidden lg:flex items-center gap-2 text-xs text-slate-500 capitalize">
@@ -42,14 +52,7 @@ export function DashboardNavbar({ onToggleMobileMenu }: DashboardNavbarProps) {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
-        <Link
-          href="/"
-          title="Ver página de inicio del sitio web"
-          className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-600 hover:text-teal-700 hover:bg-teal-50/70 rounded-xl border border-slate-200 transition"
-        >
-          <Globe className="w-3.5 h-3.5 text-teal-600" />
-          <span>Ver Web</span>
-        </Link>
+
 
         <div className="relative hidden md:block">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
