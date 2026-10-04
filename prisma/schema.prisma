@@ -216,3 +216,43 @@ model HistoriaEvolucion {
   @@index([terapeutaId])
   @@map("historia_evolucion")
 }
+
+// 9. Registro de Auditoría y Trazabilidad Médica y Financiera (Audit Trail)
+model AuditLog {
+  id            String   @id @default(uuid())
+  usuarioId     String?  @map("usuario_id")
+  usuarioNombre String   @default("Sistema") @map("usuario_nombre")
+  usuarioRol    Rol      @default(ADMIN) @map("usuario_rol")
+  accion        String   // "CITA_CREADA", "CITA_CANCELADA", "PAGO_REGISTRADO", "ASISTENCIA_REGISTRADA", "REEVALUACION_ACREDITADA", "CONFIGURACION_MODIFICADA"
+  modulo        String   // "AGENDA", "CAJA", "HISTORIA_CLINICA", "CONFIGURACION", "SISTEMA"
+  entidadId     String?  @map("entidad_id")
+  detalles      String   @db.Text
+  ipAddress     String?  @default("127.0.0.1") @map("ip_address")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@index([modulo, accion])
+  @@index([usuarioId])
+  @@map("audit_logs")
+}
+
+// 10. Configuración Maestra del Centro Clínico AJ Fisioterapia
+model ConfiguracionClinica {
+  id                     String   @id @default("config-principal")
+  razonSocial            String   @default("AJ Fisioterapia S.A.C.") @map("razon_social")
+  nombreComercial        String   @default("AJ Fisioterapia") @map("nombre_comercial")
+  ruc                    String   @default("20608912345")
+  direccion              String   @default("Av. Guardia Civil 520, San Borja, Lima")
+  telefono               String   @default("(01) 475-2010")
+  whatsapp               String   @default("+51 987 654 321")
+  horaApertura           String   @default("08:00") @map("hora_apertura")
+  horaCierre             String   @default("20:00") @map("hora_cierre")
+  intervaloMinutos       Int      @default(45) @map("intervalo_minutos")
+  frecuenciaReevaluacion Int      @default(5) @map("frecuencia_reevaluacion")
+  bloqueoAltaReevaluacion Boolean @default(true) @map("bloqueo_alta_reevaluacion")
+  totalSalasFisicas      Int      @default(6) @map("total_salas_fisicas")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  @@map("configuracion_clinica")
+}
+

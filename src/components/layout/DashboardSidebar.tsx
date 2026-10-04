@@ -10,7 +10,9 @@ import {
   Home, 
   ShieldCheck, 
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  History,
+  Settings
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +21,8 @@ const navigation = [
   { name: "Agenda (6 Salas)", href: "/dashboard/agenda", icon: Calendar, badge: "6 Salas" },
   { name: "Caja y Cobranzas", href: "/dashboard/caja", icon: CreditCard },
   { name: "Directorio Pacientes", href: "/dashboard/pacientes", icon: Users },
+  { name: "Auditoría y Trazabilidad", href: "/dashboard/auditoria", icon: History },
+  { name: "Configuración Centro", href: "/dashboard/configuracion", icon: Settings },
 ];
 
 export function DashboardSidebar() {

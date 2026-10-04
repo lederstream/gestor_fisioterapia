@@ -372,14 +372,64 @@ export function MatrixGrid({
                   </p>
                 </div>
               )}
+
+              {/* Botones de Cambio de Estado Rápido */}
+              <div className="pt-2 border-t border-slate-100">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-2">Acciones de Recepción y Control</span>
+                <div className="grid grid-cols-3 gap-2">
+                  {selectedCitaDetail.estado === "PROGRAMADA" && (
+                    <button
+                      onClick={async () => {
+                        const { actualizarEstadoCita } = await import("@/server/actions/citas");
+                        await actualizarEstadoCita(selectedCitaDetail.id, "CONFIRMADA");
+                        setCitas((prev) => prev.map((c) => c.id === selectedCitaDetail.id ? { ...c, estado: "CONFIRMADA" } : c));
+                        setSelectedCitaDetail((prev: any) => ({ ...prev, estado: "CONFIRMADA" }));
+                      }}
+                      className="py-1.5 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-lg border border-blue-200 text-center transition"
+                    >
+                      Confirmar Cita
+                    </button>
+                  )}
+
+                  {selectedCitaDetail.estado !== "CANCELADA" && selectedCitaDetail.estado !== "ATENDIDA" && (
+                    <button
+                      onClick={async () => {
+                        const { actualizarEstadoCita } = await import("@/server/actions/citas");
+                        await actualizarEstadoCita(selectedCitaDetail.id, "NO_ASISTIO");
+                        setCitas((prev) => prev.map((c) => c.id === selectedCitaDetail.id ? { ...c, estado: "NO_ASISTIO" } : c));
+                        setSelectedCitaDetail((prev: any) => ({ ...prev, estado: "NO_ASISTIO" }));
+                      }}
+                      className="py-1.5 px-2 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-lg border border-amber-200 text-center transition"
+                    >
+                      No Asistió
+                    </button>
+                  )}
+
+                  {selectedCitaDetail.estado !== "CANCELADA" && selectedCitaDetail.estado !== "ATENDIDA" && (
+                    <button
+                      onClick={async () => {
+                        if (confirm("¿Está seguro de cancelar esta cita? La sala quedará libre.")) {
+                          const { actualizarEstadoCita } = await import("@/server/actions/citas");
+                          await actualizarEstadoCita(selectedCitaDetail.id, "CANCELADA");
+                          setCitas((prev) => prev.map((c) => c.id === selectedCitaDetail.id ? { ...c, estado: "CANCELADA" } : c));
+                          setSelectedCitaDetail((prev: any) => ({ ...prev, estado: "CANCELADA" }));
+                        }
+                      }}
+                      className="py-1.5 px-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-lg border border-rose-200 text-center transition"
+                    >
+                      Cancelar Cita
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
 
-            <div className="pt-2 flex justify-end gap-2">
+            <div className="pt-2 flex justify-end gap-2 border-t border-slate-100">
               <a
                 href={`/dashboard/pacientes/${selectedCitaDetail.pacienteId}`}
                 className="px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-lg transition"
               >
-                Ver Ficha Clínica y EVA
+                Ficha EVA y Evolución
               </a>
               <button
                 onClick={() => setSelectedCitaDetail(null)}

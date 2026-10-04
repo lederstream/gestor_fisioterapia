@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { dbStore } from "@/lib/store";
-import { formatCurrency, formatTime } from "@/lib/utils";
+import { formatCurrency, formatTime, formatDateTime } from "@/lib/utils";
 import { 
   Calendar, 
   CreditCard, 
@@ -11,7 +11,10 @@ import {
   CheckCircle2, 
   Clock, 
   ShieldCheck,
-  Building2
+  Building2,
+  History,
+  Lock,
+  Settings
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -20,6 +23,7 @@ export default function DashboardPage() {
   const pacientes = dbStore.getPacientes();
   const paquetes = dbStore.getPaquetes();
   const pagos = dbStore.getPagos();
+  const auditLogs = dbStore.getAuditLogs().slice(0, 5);
 
   const totalAtendidas = citas.filter((c) => c.estado === "ATENDIDA").length;
   const totalProgramadas = citas.filter((c) => c.estado === "PROGRAMADA" || c.estado === "CONFIRMADA").length;
@@ -48,14 +52,21 @@ export default function DashboardPage() {
             className="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-lg shadow-teal-600/30 flex items-center gap-2 transition"
           >
             <Calendar className="w-4 h-4" />
-            <span>Ver Matriz de 6 Salas</span>
+            <span>Ver Matriz 6 Salas</span>
           </Link>
           <Link
-            href="/dashboard/caja"
+            href="/dashboard/auditoria"
             className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl border border-slate-700 flex items-center gap-2 transition"
           >
-            <CreditCard className="w-4 h-4" />
-            <span>Módulo de Caja</span>
+            <History className="w-4 h-4 text-teal-400" />
+            <span>Auditoría en Vivo</span>
+          </Link>
+          <Link
+            href="/dashboard/configuracion"
+            className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl border border-slate-700 flex items-center gap-2 transition"
+          >
+            <Settings className="w-4 h-4 text-slate-300" />
+            <span>Configuración</span>
           </Link>
         </div>
       </div>
@@ -157,19 +168,21 @@ export default function DashboardPage() {
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-bold text-slate-800 text-xs">{sala.nombre}</span>
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className={`w-2 h-2 rounded-full ${sala.estado === "DISPONIBLE" ? "bg-emerald-500" : "bg-amber-500"}`} />
                   </div>
                   <span className="text-[10px] text-slate-500 truncate">
-                    {citaEnCurso ? "Ocupada / Reservada" : "Libre"}
+                    {sala.estado === "MANTENIMIENTO" ? "⚠️ Mantenimiento" : citaEnCurso ? "Ocupada / Reservada" : "Libre"}
                   </span>
                 </div>
               );
             })}
           </div>
 
-          <div className="pt-2 border-t border-slate-100 flex items-center gap-2 text-[11px] text-slate-500">
-            <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>Sistema libre de solapamientos con índice compuesto.</span>
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+            <span className="text-slate-500">Control de Concurrencia Activo</span>
+            <Link href="/dashboard/configuracion" className="font-bold text-teal-600 hover:underline">
+              Gestionar Salas
+            </Link>
           </div>
         </div>
 
@@ -243,6 +256,54 @@ export default function DashboardPage() {
               );
             })}
           </div>
+        </div>
+      </div>
+
+      {/* FEED DE AUDITORÍA EN VIVO (SENIOR FEATURE) */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-slate-900 text-white rounded-xl">
+              <History className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="font-bold text-slate-800 text-sm">
+                Feed de Auditoría y Trazabilidad en Tiempo Real
+              </h2>
+              <p className="text-[11px] text-slate-500">
+                Historial cronológico de cambios de estado, pagos y evoluciones médicas.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/dashboard/auditoria"
+            className="text-xs font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1"
+          >
+            Ver registro completo <ArrowUpRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        <div className="divide-y divide-slate-100">
+          {auditLogs.map((log) => (
+            <div key={log.id} className="py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-start gap-3">
+                <span className="w-2 h-2 rounded-full bg-teal-500 mt-1.5 shrink-0" />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-slate-800">{log.accion}</span>
+                    <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-600 border">
+                      {log.modulo}
+                    </span>
+                  </div>
+                  <p className="text-slate-600 text-[11px] mt-0.5 leading-relaxed">{log.detalles}</p>
+                </div>
+              </div>
+              <div className="text-right shrink-0 text-slate-400 text-[11px] pl-5 sm:pl-0">
+                <span className="font-semibold text-slate-700 block">{log.usuarioNombre}</span>
+                <span>{formatDateTime(log.createdAt)}</span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
