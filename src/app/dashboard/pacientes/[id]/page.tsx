@@ -21,6 +21,7 @@ export default async function PacienteDetailPage({ params }: Props) {
   }
 
   const terapeutas = dbStore.getTerapeutas();
+  const servicios = dbStore.getServicios();
   const todosLosLogs = dbStore.getAuditLogs();
   
   // Filtrar logs de trazabilidad relacionados a este paciente
@@ -41,6 +42,7 @@ export default async function PacienteDetailPage({ params }: Props) {
         citas={ficha.citas}
         paquetes={ficha.paquetes}
         terapeutas={terapeutas}
+        servicios={servicios}
       />
 
       {/* Progreso del Paquete de Sesiones */}

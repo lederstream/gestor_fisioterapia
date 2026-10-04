@@ -1,6 +1,7 @@
 "use client";
 
 import { Bell, Search, Clock, MapPin } from "lucide-react";
+import { RoleSwitcher } from "./RoleSwitcher";
 
 export function DashboardNavbar() {
   const todayStr = new Intl.DateTimeFormat("es-PE", {
@@ -40,6 +41,8 @@ export function DashboardNavbar() {
           <Bell className="w-4 h-4" />
           <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-white animate-pulse" />
         </button>
+
+        <RoleSwitcher />
 
         <div className="flex items-center gap-2 pl-3 border-l border-slate-200">
           <span className="w-2 h-2 rounded-full bg-emerald-500" />

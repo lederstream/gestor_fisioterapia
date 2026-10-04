@@ -86,11 +86,22 @@ export function MatrixGrid({
     setIsModalOpen(true);
   };
 
-  // Filtrar citas por fecha seleccionada
+  const [filterTerapeuta, setFilterTerapeuta] = useState("TODOS");
+
+  // Filtrar citas por fecha seleccionada y terapeuta
   const citasDelDia = citas.filter((c) => {
     const dStr = new Date(c.fechaHoraInicio).toISOString().split("T")[0];
-    return dStr === selectedDate;
+    if (dStr !== selectedDate) return false;
+    if (filterTerapeuta !== "TODOS" && c.terapeutaId !== filterTerapeuta) return false;
+    return true;
   });
+
+  const getCitasCountPorSala = (salaId: string) => {
+    return citas.filter((c) => {
+      const dStr = new Date(c.fechaHoraInicio).toISOString().split("T")[0];
+      return dStr === selectedDate && c.salaId === salaId && c.estado !== "CANCELADA";
+    }).length;
+  };
 
   return (
     <div className="space-y-4">
@@ -110,8 +121,22 @@ export function MatrixGrid({
           </div>
         </div>
 
-        {/* Date Navigator */}
-        <div className="flex items-center gap-2">
+        {/* Filters and Date Navigator */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Filtro por Terapeuta */}
+          <select
+            value={filterTerapeuta}
+            onChange={(e) => setFilterTerapeuta(e.target.value)}
+            className="px-2.5 py-1.5 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg text-slate-700 focus:outline-none"
+          >
+            <option value="TODOS">Todos los Terapeutas</option>
+            {terapeutas.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.nombre}
+              </option>
+            ))}
+          </select>
+
           <button
             onClick={() => {
               const d = new Date(selectedDate);
@@ -194,8 +219,10 @@ export function MatrixGrid({
               {salas.map((sala) => (
                 <div key={sala.id} className="p-3 text-center border-r border-slate-800 last:border-r-0">
                   <span className="text-white block font-bold text-sm">{sala.nombre}</span>
-                  <span className="text-[10px] text-teal-400 font-normal">
-                    {sala.estado === "DISPONIBLE" ? "● Operativa" : "⚠️ Mantenimiento"}
+                  <span className="text-[10px] text-teal-400 font-semibold block mt-0.5">
+                    {sala.estado === "DISPONIBLE" 
+                      ? `${getCitasCountPorSala(sala.id)} citas (${Math.round((getCitasCountPorSala(sala.id) / TIME_SLOTS.length) * 100)}%)`
+                      : "⚠️ Mantenimiento"}
                   </span>
                 </div>
               ))}

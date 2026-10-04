@@ -49,3 +49,28 @@ export async function crearPaciente(input: CrearPacienteInput): Promise<ServerAc
     return { success: false, error: message };
   }
 }
+
+export async function asignarPaqueteTratamiento(params: {
+  pacienteId: string;
+  servicioId: string;
+  totalSesiones: number;
+  montoTotal: number;
+}): Promise<ServerActionResult> {
+  try {
+    const nuevoPaq = dbStore.crearPaquete({
+      pacienteId: params.pacienteId,
+      servicioId: params.servicioId,
+      totalSesiones: params.totalSesiones,
+      montoTotal: params.montoTotal,
+    });
+
+    revalidatePath(`/dashboard/pacientes/${params.pacienteId}`);
+    revalidatePath("/dashboard/caja");
+    revalidatePath("/dashboard");
+
+    return { success: true, data: nuevoPaq };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Error al asignar paquete.";
+    return { success: false, error: message };
+  }
+}
