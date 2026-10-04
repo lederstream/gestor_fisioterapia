@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
@@ -18,7 +19,7 @@ import {
   User,
   Globe,
   LogOut,
-  ArrowLeft
+  AlertTriangle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
@@ -50,6 +51,7 @@ const allNavigation: NavItem[] = [
 export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: DashboardSidebarProps) {
   const pathname = usePathname();
   const { currentRole, currentUser, hasPermission, roleDetails } = useAuth();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // Filtrado dinámico según permisos asignados al rol activo
   const filteredNavigation = allNavigation.filter((item) => {
@@ -105,22 +107,7 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: Dashbo
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-3 space-y-1 overflow-y-auto">
-          {/* Botón Estratégico Superior: Volver a la Web Principal */}
-          <div className="mb-3 px-1">
-            <Link
-              href="/"
-              onClick={onCloseMobile}
-              className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs font-bold text-white bg-white/10 hover:bg-white/15 border border-white/15 shadow-2xs transition-all group backdrop-blur-xs"
-            >
-              <div className="flex items-center gap-2">
-                <ArrowLeft className="w-3.5 h-3.5 text-teal-300 group-hover:-translate-x-0.5 transition-transform" />
-                <span>Volver al Sitio Web</span>
-              </div>
-              <Globe className="w-3.5 h-3.5 text-teal-300/80" />
-            </Link>
-          </div>
-
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           <div className="px-3 pb-2 text-[10px] font-bold text-teal-300/70 uppercase tracking-wider flex items-center justify-between">
             <span>Módulos Autorizados</span>
             <span className="text-[9px] font-bold px-1.5 py-0.5 rounded border bg-white/10 text-teal-200 border-white/15">
@@ -159,24 +146,18 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: Dashbo
             );
           })}
 
-          <div className="pt-6 px-3 pb-2 text-[10px] font-bold text-teal-300/70 uppercase tracking-wider">
-            Navegación Web
+          {/* Único enlace limpio al portal público */}
+          <div className="pt-5 px-3 pb-2 text-[10px] font-bold text-teal-300/70 uppercase tracking-wider">
+            Portal Público
           </div>
           <Link
             href="/"
-            className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-teal-100/75 hover:text-white hover:bg-white/10 transition-colors"
+            target="_blank"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-teal-100/80 hover:text-white hover:bg-white/10 transition-colors"
           >
             <Globe className="w-4 h-4 text-teal-300" />
-            <span className="flex-1">Sitio Web Principal</span>
+            <span className="flex-1">Ver Sitio Web</span>
             <ExternalLink className="w-3.5 h-3.5 text-teal-400/60" />
-          </Link>
-          <Link
-            href="/reservas"
-            className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-emerald-200 bg-white/10 hover:bg-white/15 border border-white/15 transition-colors"
-          >
-            <Sparkles className="w-4 h-4 text-emerald-300" />
-            <span className="flex-1">Portal Paciente / Reservas</span>
-            <ExternalLink className="w-3.5 h-3.5 text-emerald-300/80" />
           </Link>
         </nav>
 
@@ -187,11 +168,11 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: Dashbo
             <span className="text-xs font-bold text-white">Seguridad & RBAC Activo</span>
           </div>
           <p className="text-[11px] text-teal-200/70 leading-relaxed">
-            Medidas de seguridad activas: Acceso restringido por rol con trazabilidad inmutable de acciones.
+            Acceso restringido por rol con trazabilidad inmutable de acciones.
           </p>
         </div>
 
-        {/* User Footer with Active Role & Log Out / Return Home */}
+        {/* User Footer with Active Role & Confirmation Log Out */}
         <div className="p-3 border-t border-white/10 bg-black/25 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-400 to-teal-300 text-teal-950 flex items-center justify-center font-black text-xs shadow-xs shrink-0">
@@ -204,17 +185,62 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: Dashbo
               </p>
             </div>
           </div>
-          <Link
-            href="/"
-            title="Cerrar sesión e ir a la portada de inicio"
-            className="p-2 rounded-lg text-teal-300/70 hover:text-rose-400 hover:bg-white/10 transition shrink-0"
+          <button
+            type="button"
+            onClick={() => setShowLogoutModal(true)}
+            title="Cerrar sesión"
+            className="p-2 rounded-lg text-teal-300/70 hover:text-rose-400 hover:bg-white/10 transition shrink-0 cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
-          </Link>
+          </button>
         </div>
       </aside>
+
+      {/* Modal de Confirmación de Cierre de Sesión */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-200 text-slate-800 space-y-4 animate-in fade-in zoom-in-95">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl border border-amber-200 shrink-0">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900 leading-tight">
+                  ¿Cerrar sesión?
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {currentUser.nombre} ({roleDetails.label})
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+              Estás a punto de salir del panel de AJ Fisioterapia. Asegúrate de haber guardado todas las notas clínicas y operaciones antes de salir.
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowLogoutModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <Link
+                href="/"
+                onClick={() => setShowLogoutModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-600/20 transition flex items-center gap-1.5"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Sí, Cerrar Sesión</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
+
 
 
