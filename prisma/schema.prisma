@@ -1,0 +1,218 @@
+// KineFlow Core - Schema Relacional AJ Fisioterapia (San Borja)
+// Prisma ORM 7+
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Rol {
+  ADMIN
+  RECEPCION
+  TERAPEUTA
+  PACIENTE
+}
+
+enum EstadoUsuario {
+  ACTIVO
+  INACTIVO
+}
+
+enum EstadoSala {
+  DISPONIBLE
+  MANTENIMIENTO
+}
+
+enum EstadoPago {
+  PENDIENTE
+  PARCIAL
+  PAGADO
+}
+
+enum EstadoCita {
+  PROGRAMADA
+  CONFIRMADA
+  ATENDIDA
+  CANCELADA
+  NO_ASISTIO
+}
+
+enum MetodoPago {
+  EFECTIVO
+  YAPE
+  PLIN
+  POS
+}
+
+enum EstadoVerificacionPago {
+  VERIFICADO
+  PENDIENTE
+}
+
+// 1. Personal y Usuarios del Sistema (RBAC)
+model User {
+  id           String        @id @default(uuid())
+  nombre       String
+  email        String        @unique
+  rol          Rol           @default(TERAPEUTA)
+  especialidad String?       // Ej: "Lic. Fisioterapia Deportiva", "Lic. Neurorehabilitación", "Técnico"
+  estado       EstadoUsuario @default(ACTIVO)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  // Relaciones
+  citasAsignadas      Cita[]              @relation("TerapeutaCitas")
+  historiasEvolucion  HistoriaEvolucion[] @relation("TerapeutaEvolucion")
+
+  @@index([rol, estado])
+  @@map("users")
+}
+
+// 2. Pacientes
+model Paciente {
+  id                 String    @id @default(uuid())
+  dni                String    @unique // DNI peruano (8 dígitos)
+  nombres            String
+  apellidos          String
+  telefono           String
+  email              String?
+  fechaNacimiento    DateTime  @map("fecha_nacimiento")
+  contactoEmergencia String?   @map("contacto_emergencia")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  // Relaciones
+  tratamientos TratamientoPaquete[]
+  citas        Cita[]
+
+  @@index([dni])
+  @@index([apellidos, nombres])
+  @@map("pacientes")
+}
+
+// 3. Salas Físicas (Capacidad operativa: 6 salas en San Borja)
+model Sala {
+  id        String     @id @default(uuid())
+  nombre    String     @unique // "Sala 1" a "Sala 6"
+  estado    EstadoSala @default(DISPONIBLE)
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  // Relaciones
+  citas Cita[]
+
+  @@map("salas")
+}
+
+// 4. Servicios Clínicos
+model Servicio {
+  id              String   @id @default(uuid())
+  nombre          String   // Ej: "Fisioterapia Traumatológica y Deportiva", "Rehabilitación Neurológica"
+  duracionMinutos Int      @default(45) @map("duracion_minutos")
+  precioBase      Decimal  @map("precio_base") @db.Decimal(10, 2)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relaciones
+  tratamientosPaquetes TratamientoPaquete[]
+
+  @@map("servicios")
+}
+
+// 5. Tratamientos y Paquetes (1, 10, 20 sesiones con pagos fraccionados)
+model TratamientoPaquete {
+  id                 String     @id @default(uuid())
+  pacienteId         String     @map("paciente_id")
+  servicioId         String     @map("servicio_id")
+  totalSesiones      Int        @default(10) @map("total_sesiones") // 1, 10, 20
+  sesionesConsumidas Int        @default(0) @map("sesiones_consumidas")
+  montoTotal         Decimal    @map("monto_total") @db.Decimal(10, 2)
+  montoPagado        Decimal    @default(0) @map("monto_pagado") @db.Decimal(10, 2)
+  estadoPago         EstadoPago @default(PENDIENTE) @map("estado_pago")
+  createdAt          DateTime   @default(now()) @map("created_at")
+  updatedAt          DateTime   @updatedAt @map("updated_at")
+
+  // Relaciones
+  paciente Paciente @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
+  servicio Servicio @relation(fields: [servicioId], references: [id], onDelete: Restrict)
+  citas    Cita[]
+  pagos    Pago[]
+
+  @@index([pacienteId, estadoPago])
+  @@map("tratamientos_paquetes")
+}
+
+// 6. Citas
+model Cita {
+  id              String     @id @default(uuid())
+  paqueteId       String?    @map("paquete_id")
+  terapeutaId     String     @map("terapeuta_id")
+  salaId          String     @map("sala_id")
+  pacienteId      String     @map("paciente_id")
+  fechaHoraInicio DateTime   @map("fecha_hora_inicio")
+  fechaHoraFin    DateTime   @map("fecha_hora_fin")
+  estado          EstadoCita @default(PROGRAMADA)
+  esReevaluacion  Boolean    @default(false) @map("es_reevaluacion") // Regla clínica cada 5 sesiones
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  // Relaciones
+  paquete           TratamientoPaquete? @relation(fields: [paqueteId], references: [id], onDelete: SetNull)
+  terapeuta         User                @relation("TerapeutaCitas", fields: [terapeutaId], references: [id], onDelete: Restrict)
+  sala              Sala                @relation(fields: [salaId], references: [id], onDelete: Restrict)
+  paciente          Paciente            @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
+  historiaEvolucion HistoriaEvolucion?
+
+  // Restricciones de Integridad y Concurrencia (Índices para consultas eficientes de solapamiento)
+  @@index([salaId, fechaHoraInicio, fechaHoraFin])
+  @@index([terapeutaId, fechaHoraInicio, fechaHoraFin])
+  @@index([pacienteId, fechaHoraInicio])
+  @@index([fechaHoraInicio, estado])
+  @@map("citas")
+}
+
+// 7. Pagos y Cobranzas
+model Pago {
+  id              String                 @id @default(uuid())
+  paqueteId       String                 @map("paquete_id")
+  monto           Decimal                @db.Decimal(10, 2)
+  metodoPago      MetodoPago             @map("metodo_pago")
+  numeroOperacion String?                @unique @map("numero_operacion")
+  comprobanteUrl  String?                @map("comprobante_url")
+  estado          EstadoVerificacionPago @default(VERIFICADO)
+  fechaPago       DateTime               @default(now()) @map("fecha_pago")
+  createdAt       DateTime               @default(now()) @map("created_at")
+  updatedAt       DateTime               @updatedAt @map("updated_at")
+
+  // Relaciones
+  paquete TratamientoPaquete @relation(fields: [paqueteId], references: [id], onDelete: Cascade)
+
+  @@index([paqueteId, estado])
+  @@index([fechaPago])
+  @@map("pagos")
+}
+
+// 8. Ficha Clínica / Historia de Evolución (Estricta privacidad, sin multimedia)
+model HistoriaEvolucion {
+  id                 String   @id @default(uuid())
+  citaId             String   @unique @map("cita_id")
+  terapeutaId        String   @map("terapeuta_id")
+  evaDolorInicio     Int      @map("eva_dolor_inicio") // Escala EVA 0 a 10
+  evaDolorFin        Int      @map("eva_dolor_fin")    // Escala EVA 0 a 10
+  tratamientoAplicado String  @map("tratamiento_aplicado") @db.Text
+  notasReevaluacion  String?  @map("notas_reevaluacion") @db.Text
+  bloqueaAlta        Boolean  @default(false) @map("bloquea_alta") // Bloqueo si requiere reevaluación pendiente
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  // Relaciones
+  cita      Cita @relation(fields: [citaId], references: [id], onDelete: Cascade)
+  terapeuta User @relation("TerapeutaEvolucion", fields: [terapeutaId], references: [id], onDelete: Restrict)
+
+  @@index([terapeutaId])
+  @@map("historia_evolucion")
+}
