@@ -68,25 +68,25 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: Dashbo
         />
       )}
 
-      {/* Sidebar Aside */}
+      {/* Sidebar Aside con verde casi oscuro */}
       <aside 
         className={cn(
-          "w-64 bg-white text-slate-700 flex flex-col border-r border-slate-200 shrink-0 z-50",
+          "w-64 bg-gradient-to-b from-[#062c28] via-[#093833] to-[#041f1c] text-teal-100 flex flex-col border-r border-[#0d4740] shrink-0 z-50",
           "fixed inset-y-0 left-0 transition-transform duration-300 ease-in-out md:static md:translate-x-0",
           isOpenMobile ? "translate-x-0 shadow-2xl" : "-translate-x-full md:shadow-none"
         )}
       >
         {/* Brand Header con enlace al Dashboard */}
-        <div className="h-16 flex items-center justify-between px-6 border-b border-slate-100 bg-white">
+        <div className="h-16 flex items-center justify-between px-6 border-b border-white/10 bg-black/15">
           <Link href="/dashboard" className="flex items-center gap-3 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-teal-600 to-emerald-400 flex items-center justify-center text-white shadow-md shadow-teal-600/20 font-bold text-lg group-hover:scale-105 transition-transform">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-400 to-teal-300 flex items-center justify-center text-teal-950 shadow-md shadow-emerald-500/20 font-black text-lg group-hover:scale-105 transition-transform">
               KF
             </div>
             <div>
-              <span className="font-extrabold tracking-tight text-slate-900 text-base block leading-none group-hover:text-teal-700 transition-colors">
+              <span className="font-extrabold tracking-tight text-white text-base block leading-none group-hover:text-emerald-300 transition-colors">
                 KineFlow Core
               </span>
-              <span className="text-[11px] text-teal-700 font-semibold tracking-wide">
+              <span className="text-[11px] text-teal-300 font-semibold tracking-wide">
                 AJ Fisioterapia • San Borja
               </span>
             </div>
@@ -96,7 +96,7 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: Dashbo
           {onCloseMobile && (
             <button
               onClick={onCloseMobile}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 md:hidden transition"
+              className="p-1.5 rounded-lg text-teal-300/80 hover:text-white hover:bg-white/10 md:hidden transition"
               aria-label="Cerrar menú"
             >
               <X className="w-5 h-5" />
@@ -111,19 +111,19 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: Dashbo
             <Link
               href="/"
               onClick={onCloseMobile}
-              className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs font-bold text-teal-900 bg-gradient-to-r from-teal-50 to-emerald-50 hover:from-teal-100 hover:to-emerald-100 border border-teal-200/90 shadow-2xs transition-all group"
+              className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs font-bold text-white bg-white/10 hover:bg-white/15 border border-white/15 shadow-2xs transition-all group backdrop-blur-xs"
             >
               <div className="flex items-center gap-2">
-                <ArrowLeft className="w-3.5 h-3.5 text-teal-700 group-hover:-translate-x-0.5 transition-transform" />
+                <ArrowLeft className="w-3.5 h-3.5 text-teal-300 group-hover:-translate-x-0.5 transition-transform" />
                 <span>Volver al Sitio Web</span>
               </div>
-              <Globe className="w-3.5 h-3.5 text-teal-600/80" />
+              <Globe className="w-3.5 h-3.5 text-teal-300/80" />
             </Link>
           </div>
 
-          <div className="px-3 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+          <div className="px-3 pb-2 text-[10px] font-bold text-teal-300/70 uppercase tracking-wider flex items-center justify-between">
             <span>Módulos Autorizados</span>
-            <span className={cn("text-[9px] font-bold px-1.5 py-0.2 rounded border", roleDetails.badge)}>
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded border bg-white/10 text-teal-200 border-white/15">
               {currentRole}
             </span>
           </div>
@@ -139,18 +139,18 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: Dashbo
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150",
                   isActive
-                    ? "bg-teal-600 text-white shadow-md shadow-teal-600/25"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80"
+                    ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-white shadow-lg shadow-teal-950/40 border border-teal-300/30 font-bold"
+                    : "text-teal-100/75 hover:text-white hover:bg-white/10"
                 )}
               >
-                <Icon className={cn("w-5 h-5", isActive ? "text-white" : "text-slate-500")} />
+                <Icon className={cn("w-5 h-5", isActive ? "text-white" : "text-teal-300/80")} />
                 <span className="flex-1">{item.name}</span>
                 {item.badge && (
                   <span className={cn(
                     "text-[10px] font-bold px-2 py-0.5 rounded-full border",
                     isActive 
                       ? "bg-white/20 text-white border-white/30" 
-                      : "bg-teal-50 text-teal-700 border-teal-200"
+                      : "bg-white/10 text-teal-200 border-white/15"
                   )}>
                     {item.badge}
                   </span>
@@ -159,47 +159,47 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: Dashbo
             );
           })}
 
-          <div className="pt-6 px-3 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+          <div className="pt-6 px-3 pb-2 text-[10px] font-bold text-teal-300/70 uppercase tracking-wider">
             Navegación Web
           </div>
           <Link
             href="/"
-            className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+            className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-teal-100/75 hover:text-white hover:bg-white/10 transition-colors"
           >
-            <Globe className="w-4 h-4 text-teal-600" />
+            <Globe className="w-4 h-4 text-teal-300" />
             <span className="flex-1">Sitio Web Principal</span>
-            <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+            <ExternalLink className="w-3.5 h-3.5 text-teal-400/60" />
           </Link>
           <Link
             href="/reservas"
-            className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-teal-800 bg-teal-50/70 hover:bg-teal-100/70 border border-teal-200/80 transition-colors"
+            className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-emerald-200 bg-white/10 hover:bg-white/15 border border-white/15 transition-colors"
           >
-            <Sparkles className="w-4 h-4 text-teal-600" />
+            <Sparkles className="w-4 h-4 text-emerald-300" />
             <span className="flex-1">Portal Paciente / Reservas</span>
-            <ExternalLink className="w-3.5 h-3.5 text-teal-600/80" />
+            <ExternalLink className="w-3.5 h-3.5 text-emerald-300/80" />
           </Link>
         </nav>
 
         {/* Clinic Operational Badge */}
-        <div className="p-3.5 border border-teal-200/70 bg-gradient-to-br from-teal-50/70 to-emerald-50/40 m-3 rounded-2xl">
+        <div className="p-3.5 border border-white/10 bg-white/5 m-3 rounded-2xl">
           <div className="flex items-center gap-2 mb-1.5">
-            <ShieldCheck className="w-4 h-4 text-teal-700" />
-            <span className="text-xs font-bold text-slate-900">Seguridad & RBAC Activo</span>
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs font-bold text-white">Seguridad & RBAC Activo</span>
           </div>
-          <p className="text-[11px] text-slate-600 leading-relaxed">
+          <p className="text-[11px] text-teal-200/70 leading-relaxed">
             Medidas de seguridad activas: Acceso restringido por rol con trazabilidad inmutable de acciones.
           </p>
         </div>
 
         {/* User Footer with Active Role & Log Out / Return Home */}
-        <div className="p-3 border-t border-slate-100 bg-slate-50/60 flex items-center justify-between gap-2">
+        <div className="p-3 border-t border-white/10 bg-black/25 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-full bg-teal-700 flex items-center justify-center font-bold text-xs text-white shadow-xs shrink-0">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-400 to-teal-300 text-teal-950 flex items-center justify-center font-black text-xs shadow-xs shrink-0">
               {currentUser.nombre.slice(0, 2).toUpperCase()}
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-bold text-slate-900 truncate">{currentUser.nombre}</p>
-              <p className="text-[10px] text-teal-700 font-medium truncate">
+              <p className="text-xs font-bold text-white truncate">{currentUser.nombre}</p>
+              <p className="text-[10px] text-teal-300 font-medium truncate">
                 {roleDetails.label}
               </p>
             </div>
@@ -207,7 +207,7 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: Dashbo
           <Link
             href="/"
             title="Cerrar sesión e ir a la portada de inicio"
-            className="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition shrink-0"
+            className="p-2 rounded-lg text-teal-300/70 hover:text-rose-400 hover:bg-white/10 transition shrink-0"
           >
             <LogOut className="w-4 h-4" />
           </Link>

@@ -18,17 +18,17 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 selection:bg-teal-600 selection:text-white flex flex-col justify-between">
       {/* Header */}
-      <header className="border-b border-teal-500/40 bg-gradient-to-r from-teal-600 via-teal-600 to-emerald-600 text-white sticky top-0 z-30 shadow-sm">
+      <header className="border-b border-slate-200/80 bg-white/95 backdrop-blur-md sticky top-0 z-30 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white text-teal-700 flex items-center justify-center font-black text-xl shadow-md">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-teal-600 to-emerald-400 flex items-center justify-center text-white font-black text-xl shadow-md shadow-teal-600/20">
               KF
             </div>
             <div>
-              <span className="font-extrabold text-white text-lg tracking-tight block leading-none">
+              <span className="font-extrabold text-slate-900 text-lg tracking-tight block leading-none">
                 KineFlow Core
               </span>
-              <span className="text-xs text-teal-100 font-medium">
+              <span className="text-xs text-teal-700 font-medium">
                 AJ Fisioterapia • San Borja
               </span>
             </div>
@@ -37,16 +37,16 @@ export default function HomePage() {
           <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/reservas"
-              className="text-xs font-semibold px-3 sm:px-4 py-2 rounded-xl text-white hover:bg-white/15 transition"
+              className="text-xs font-semibold px-3 sm:px-4 py-2 rounded-xl text-teal-700 hover:text-teal-900 hover:bg-teal-50 transition"
             >
               Portal Paciente
             </Link>
             <Link
               href="/dashboard"
-              className="px-4 sm:px-5 py-2.5 bg-white hover:bg-teal-50 text-teal-900 font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5 transition"
+              className="px-4 sm:px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl shadow-md shadow-teal-600/25 flex items-center gap-1.5 transition"
             >
               <span>Ingresar al Sistema</span>
-              <ArrowRight className="w-4 h-4 text-teal-700" />
+              <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
