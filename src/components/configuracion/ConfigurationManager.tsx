@@ -468,7 +468,7 @@ export function ConfigurationManager({
             {personal.map((p) => (
               <div key={p.id} className="py-3.5 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-slate-800 text-white font-bold flex items-center justify-center text-xs">
+                  <div className="w-9 h-9 rounded-xl bg-teal-700 text-white font-bold flex items-center justify-center text-xs shadow-xs">
                     {p.nombre.slice(0, 2).toUpperCase()}
                   </div>
                   <div>

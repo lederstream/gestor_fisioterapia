@@ -128,6 +128,7 @@ const initialUsers: UserItem[] = [
   { id: "usr-ter-4", nombre: "Lic. Valeria Soto", email: "valeria.soto@ajfisioterapia.pe", rol: "TERAPEUTA", especialidad: "Lic. Neurorehabilitación y Adulto Mayor", estado: "ACTIVO" },
   { id: "usr-tec-1", nombre: "Tec. Miguel Torres", email: "miguel.torres@ajfisioterapia.pe", rol: "TERAPEUTA", especialidad: "Técnico en Agentes Físicos y Electroterapia", estado: "ACTIVO" },
   { id: "usr-tec-2", nombre: "Tec. Diana Paredes", email: "diana.paredes@ajfisioterapia.pe", rol: "TERAPEUTA", especialidad: "Técnico en Masoterapia y Crioterapia", estado: "ACTIVO" },
+  { id: "usr-pac-1", nombre: "Renato Salazar", email: "renato.salazar@gmail.com", rol: "PACIENTE", especialidad: "Paciente / Cliente Titular", estado: "ACTIVO" },
 ];
 
 const initialSalas: SalaItem[] = [
@@ -447,6 +448,91 @@ class KineFlowStore {
     });
 
     return this.users[index];
+  }
+
+  // Crear Usuario dinámicamente con Rol asignado
+  crearUsuario(
+    data: {
+      nombre: string;
+      email: string;
+      rol: "ADMIN" | "RECEPCION" | "TERAPEUTA" | "PACIENTE";
+      especialidad?: string;
+      estado?: "ACTIVO" | "INACTIVO";
+    },
+    auditUser?: { id: string; nombre: string; rol: any }
+  ) {
+    if (!data.nombre || !data.email) throw new Error("Nombre y correo electrónico son requeridos.");
+    if (this.users.some((u) => u.email.toLowerCase() === data.email.toLowerCase())) {
+      throw new Error("Ya existe un usuario registrado con este correo.");
+    }
+
+    const nuevo: UserItem = {
+      id: `usr-${Date.now()}`,
+      nombre: data.nombre,
+      email: data.email,
+      rol: data.rol,
+      especialidad: data.especialidad || undefined,
+      estado: data.estado || "ACTIVO",
+    };
+
+    this.users.push(nuevo);
+
+    this.registrarAuditLog({
+      usuarioId: auditUser?.id || "usr-admin-1",
+      usuarioNombre: auditUser?.nombre || "Marco Antonio (Administrador)",
+      usuarioRol: auditUser?.rol || "ADMIN",
+      accion: "USUARIO_CREADO",
+      modulo: "CONFIGURACION",
+      entidadId: nuevo.id,
+      detalles: `Usuario "${nuevo.nombre}" creado exitosamente con rol [${nuevo.rol}] y estado [${nuevo.estado}].`,
+    });
+
+    return nuevo;
+  }
+
+  // Actualizar Rol de Usuario Dinámicamente
+  actualizarRolUsuario(
+    usuarioId: string, 
+    nuevoRol: "ADMIN" | "RECEPCION" | "TERAPEUTA" | "PACIENTE",
+    auditUser?: { id: string; nombre: string; rol: any }
+  ) {
+    const index = this.users.findIndex((u) => u.id === usuarioId);
+    if (index === -1) throw new Error("Usuario no encontrado.");
+
+    const rolAnterior = this.users[index].rol;
+    this.users[index].rol = nuevoRol;
+
+    this.registrarAuditLog({
+      usuarioId: auditUser?.id || "usr-admin-1",
+      usuarioNombre: auditUser?.nombre || "Marco Antonio (Administrador)",
+      usuarioRol: auditUser?.rol || "ADMIN",
+      accion: "USUARIO_ROL_CAMBIADO",
+      modulo: "CONFIGURACION",
+      entidadId: usuarioId,
+      detalles: `Se modificó el rol de "${this.users[index].nombre}" de [${rolAnterior}] a [${nuevoRol}]. Permisos actualizados en tiempo real.`,
+    });
+
+    return this.users[index];
+  }
+
+  // Eliminar / Desvincular Usuario del Sistema
+  eliminarUsuario(usuarioId: string, auditUser?: { id: string; nombre: string; rol: any }) {
+    const index = this.users.findIndex((u) => u.id === usuarioId);
+    if (index === -1) throw new Error("Usuario no encontrado.");
+    const eliminado = this.users[index];
+    this.users.splice(index, 1);
+
+    this.registrarAuditLog({
+      usuarioId: auditUser?.id || "usr-admin-1",
+      usuarioNombre: auditUser?.nombre || "Marco Antonio (Administrador)",
+      usuarioRol: auditUser?.rol || "ADMIN",
+      accion: "USUARIO_ELIMINADO",
+      modulo: "CONFIGURACION",
+      entidadId: usuarioId,
+      detalles: `Se eliminó al usuario "${eliminado.nombre}" con rol [${eliminado.rol}] del sistema.`,
+    });
+
+    return eliminado;
   }
 
   // REGLA 1: agendarCita() atómica con auditoría

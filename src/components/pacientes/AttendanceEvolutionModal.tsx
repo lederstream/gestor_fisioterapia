@@ -177,7 +177,7 @@ export function AttendanceEvolutionModal({
             <div>
               <div className="flex justify-between items-center mb-1">
                 <span className="font-semibold text-slate-700">EVA Inicial:</span>
-                <span className="font-bold px-2 py-0.5 rounded-lg bg-slate-800 text-white text-xs">
+                <span className="font-bold px-2 py-0.5 rounded-lg bg-teal-700 text-white text-xs">
                   {evaDolorInicio}/10
                 </span>
               </div>

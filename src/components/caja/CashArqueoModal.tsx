@@ -40,7 +40,7 @@ export function CashArqueoModal({ isOpen, onClose, reporte }: CashArqueoModalPro
       <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150 space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
-            <div className="p-2.5 bg-slate-900 text-white rounded-xl">
+            <div className="p-2.5 bg-teal-50 text-teal-700 rounded-xl border border-teal-100">
               <Lock className="w-5 h-5" />
             </div>
             <div>
@@ -160,7 +160,7 @@ export function CashArqueoModal({ isOpen, onClose, reporte }: CashArqueoModalPro
                 type="button"
                 onClick={handleCerrarTurno}
                 disabled={cerrando}
-                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-md transition disabled:opacity-50"
+                className="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-md shadow-teal-600/25 transition disabled:opacity-50"
               >
                 {cerrando ? "Sellando Turno..." : "Cerrar y Sellar Turno de Caja"}
               </button>

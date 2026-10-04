@@ -39,7 +39,7 @@ export function PaymentVoucherModal({
       <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150 text-slate-800 font-mono text-xs">
         {/* Ticket Header Formato 80mm */}
         <div className="text-center pb-4 border-b border-dashed border-slate-300 space-y-1">
-          <div className="w-10 h-10 rounded-xl bg-slate-900 text-white font-black text-lg flex items-center justify-center mx-auto mb-2 font-sans">
+          <div className="w-10 h-10 rounded-xl bg-teal-600 text-white font-black text-lg flex items-center justify-center mx-auto mb-2 font-sans shadow-md shadow-teal-600/20">
             AJ
           </div>
           <h2 className="font-extrabold text-sm uppercase tracking-wider font-sans">
@@ -122,7 +122,7 @@ export function PaymentVoucherModal({
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={handlePrint}
-              className="py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition"
+              className="py-2.5 px-3 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition shadow-xs"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>Imprimir</span>

@@ -91,7 +91,7 @@ export function BookingForm({ servicios }: BookingFormProps) {
             setTelefono("");
             setMotivo("");
           }}
-          className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition"
+          className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-md shadow-teal-600/25 transition"
         >
           Solicitar otra cita
         </button>
@@ -102,14 +102,14 @@ export function BookingForm({ servicios }: BookingFormProps) {
   return (
     <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden max-w-2xl mx-auto">
       {/* Clinic Welcome Header */}
-      <div className="bg-gradient-to-r from-teal-700 to-slate-900 p-8 text-white">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/20 border border-teal-400/30 text-teal-300 text-xs font-semibold mb-3">
+      <div className="bg-gradient-to-r from-teal-700 via-teal-800 to-emerald-700 p-6 sm:p-8 text-white">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 border border-white/20 text-teal-100 text-xs font-semibold mb-3 backdrop-blur-xs">
           <MapPin className="w-3.5 h-3.5" /> Sede San Borja • AJ Fisioterapia
         </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
           Agenda tu Cita de Fisioterapia
         </h1>
-        <p className="text-slate-300 text-xs sm:text-sm mt-1.5 leading-relaxed">
+        <p className="text-teal-100 text-xs sm:text-sm mt-1.5 leading-relaxed">
           Atención personalizada en 6 salas clínicas especializadas con licenciados colegiados.
         </p>
       </div>

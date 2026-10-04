@@ -58,27 +58,29 @@ export function ClinicalReportModal({
       <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full overflow-hidden border border-slate-200 my-8 print:my-0 print:border-none print:shadow-none print:max-w-none">
         
         {/* Barra superior de acciones (Oculta al imprimir) */}
-        <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between print:hidden">
+        <div className="bg-slate-50 border-b border-slate-200 text-slate-800 px-6 py-4 flex items-center justify-between print:hidden">
           <div className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-teal-400" />
-            <span className="font-bold text-sm tracking-wide">
+            <FileText className="w-5 h-5 text-teal-600" />
+            <span className="font-extrabold text-sm tracking-wide text-slate-900">
               Expediente Clínico & Informe de Evolución
             </span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-500/20 text-teal-300 border border-teal-500/30">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-700 border border-teal-200">
               OFICIAL
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={handlePrint}
-              className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold transition shadow-sm"
+              className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition shadow-xs"
             >
               <Printer className="w-4 h-4" />
-              <span>Imprimir / Exportar PDF</span>
+              <span className="hidden sm:inline">Imprimir / Exportar PDF</span>
+              <span className="sm:hidden">Imprimir</span>
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 hover:bg-white/10 rounded-xl transition text-slate-400 hover:text-white"
+              className="p-1.5 hover:bg-slate-200/80 rounded-xl transition text-slate-500 hover:text-slate-800"
+              aria-label="Cerrar modal"
             >
               <X className="w-5 h-5" />
             </button>

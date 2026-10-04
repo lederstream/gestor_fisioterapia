@@ -50,9 +50,9 @@ export function CajaClient({ reporte }: CajaClientProps) {
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setIsArqueoOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-md transition"
+            className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-md shadow-teal-600/25 transition"
           >
-            <Lock className="w-4 h-4 text-teal-400" />
+            <Lock className="w-4 h-4 text-teal-100" />
             <span>Arqueo y Cierre de Turno</span>
           </button>
 
