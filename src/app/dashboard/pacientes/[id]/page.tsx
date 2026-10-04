@@ -43,6 +43,7 @@ export default async function PacienteDetailPage({ params }: Props) {
         paquetes={ficha.paquetes}
         terapeutas={terapeutas}
         servicios={servicios}
+        historialEva={ficha.historialEva}
       />
 
       {/* Progreso del Paquete de Sesiones */}

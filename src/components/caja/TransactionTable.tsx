@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
-import { Search, CheckCircle2, Clock, Smartphone, CreditCard, DollarSign } from "lucide-react";
+import { Search, CheckCircle2, Clock, Smartphone, CreditCard, DollarSign, FileSpreadsheet } from "lucide-react";
 
 interface TransactionTableProps {
   transacciones: any[];
@@ -22,6 +22,32 @@ export function TransactionTable({ transacciones }: TransactionTableProps) {
     }
     return true;
   });
+
+  const exportToCSV = () => {
+    if (filtered.length === 0) return;
+
+    const headers = ["Fecha y Hora", "Paciente", "DNI", "Servicio", "Metodo de Pago", "Nro Operacion", "Monto (S/.)", "Estado"];
+    const rows = filtered.map((item) => [
+      `"${formatDateTime(item.fechaPago).replace(/"/g, '""')}"`,
+      `"${((item.paciente?.nombres || "") + " " + (item.paciente?.apellidos || "")).replace(/"/g, '""')}"`,
+      `"${item.paciente?.dni || ""}"`,
+      `"${(item.servicio?.nombre || "Tratamiento Fisioterapéutico").replace(/"/g, '""')}"`,
+      `"${item.metodoPago}"`,
+      `"${item.numeroOperacion || "N/A"}"`,
+      `${item.monto}`,
+      `"${item.estado}"`
+    ]);
+
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map((r) => r.join(","))].join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `reporte_caja_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const getMethodBadge = (metodo: string) => {
     switch (metodo) {
@@ -70,6 +96,16 @@ export function TransactionTable({ transacciones }: TransactionTableProps) {
             <option value="POS">POS Tarjeta</option>
             <option value="EFECTIVO">Efectivo</option>
           </select>
+
+          <button
+            onClick={exportToCSV}
+            disabled={filtered.length === 0}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-lg transition disabled:opacity-50"
+            title="Exportar transacciones de caja a Excel / CSV"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-teal-600" />
+            <span>Exportar CSV</span>
+          </button>
         </div>
       </div>
 

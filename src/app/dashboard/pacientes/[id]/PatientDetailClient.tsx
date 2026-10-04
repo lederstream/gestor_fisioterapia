@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AttendanceEvolutionModal } from "@/components/pacientes/AttendanceEvolutionModal";
 import { NewPackageModal } from "@/components/pacientes/NewPackageModal";
-import { Activity, Plus, AlertTriangle, Layers } from "lucide-react";
+import { ClinicalReportModal } from "@/components/pacientes/ClinicalReportModal";
+import { Activity, Plus, AlertTriangle, Layers, Printer } from "lucide-react";
 
 interface PatientDetailClientProps {
   paciente: any;
@@ -12,6 +13,7 @@ interface PatientDetailClientProps {
   paquetes: any[];
   terapeutas: any[];
   servicios?: any[];
+  historialEva?: any[];
 }
 
 export function PatientDetailClient({
@@ -20,10 +22,13 @@ export function PatientDetailClient({
   paquetes,
   terapeutas,
   servicios = [],
+  historialEva = [],
 }: PatientDetailClientProps) {
   const router = useRouter();
   const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
   const [isPackageModalOpen, setIsPackageModalOpen] = useState(false);
+
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   const citasPendientes = citas.filter(
     (c) => c.estado === "PROGRAMADA" || c.estado === "CONFIRMADA"
@@ -46,6 +51,14 @@ export function PatientDetailClient({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setIsReportModalOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-xl transition border border-indigo-200"
+          >
+            <Printer className="w-4 h-4 text-indigo-600" />
+            <span>Imprimir Ficha / Informe</span>
+          </button>
+
           <button
             onClick={() => setIsPackageModalOpen(true)}
             className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition"
@@ -101,6 +114,17 @@ export function PatientDetailClient({
           onPackageAssigned={() => {
             router.refresh();
           }}
+        />
+      )}
+
+      {isReportModalOpen && (
+        <ClinicalReportModal
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          paciente={paciente}
+          paquetes={paquetes}
+          citas={citas}
+          historialEva={historialEva}
         />
       )}
     </>

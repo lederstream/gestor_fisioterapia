@@ -67,6 +67,31 @@ export function AuditLogTable({ initialLogs }: AuditLogTableProps) {
     return <span className="font-bold text-slate-700">{accion}</span>;
   };
 
+  const exportToCSV = () => {
+    if (filteredLogs.length === 0) return;
+
+    const headers = ["Fecha y Hora", "Usuario", "Rol", "Modulo", "Accion", "Detalles", "IP"];
+    const rows = filteredLogs.map((log) => [
+      `"${formatDateTime(log.createdAt).replace(/"/g, '""')}"`,
+      `"${log.usuarioNombre.replace(/"/g, '""')}"`,
+      `"${log.usuarioRol}"`,
+      `"${log.modulo}"`,
+      `"${log.accion.replace(/"/g, '""')}"`,
+      `"${log.detalles.replace(/"/g, '""')}"`,
+      `"${log.ipAddress || "127.0.0.1"}"`
+    ]);
+
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map((r) => r.join(","))].join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `auditoria_clinica_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-5">
       {/* Search and Filters */}
@@ -95,6 +120,16 @@ export function AuditLogTable({ initialLogs }: AuditLogTableProps) {
             <option value="CONFIGURACION">Configuración</option>
             <option value="SISTEMA">Sistema</option>
           </select>
+
+          <button
+            onClick={exportToCSV}
+            disabled={filteredLogs.length === 0}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-xl transition disabled:opacity-50"
+            title="Exportar registros filtrados a formato CSV compatible con Microsoft Excel"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-teal-600" />
+            <span>Exportar CSV</span>
+          </button>
 
           <span className="text-xs text-slate-400 font-semibold px-2">
             {filteredLogs.length} eventos registrados
