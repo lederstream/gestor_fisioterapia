@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setMounted(true);
-    const saved = localStorage.getItem("kineflow_active_role") as UserRole;
+    const saved = localStorage.getItem("gestorfisio_active_role") as UserRole;
     if (saved && (saved === "ADMIN" || saved === "RECEPCION" || saved === "TERAPEUTA" || saved === "PACIENTE")) {
       setCurrentRole(saved);
     }
@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const switchRole = (role: UserRole) => {
     setCurrentRole(role);
     if (typeof window !== "undefined") {
-      localStorage.setItem("kineflow_active_role", role);
+      localStorage.setItem("gestorfisio_active_role", role);
     }
   };
 

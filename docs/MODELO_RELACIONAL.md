@@ -1,7 +1,8 @@
-# Modelo Relacional de Base de Datos - KineFlow Core
+# Modelo Relacional de Base de Datos - Gestor Fisioterapia
 ## Centro Especializado: AJ Fisioterapia (San Borja)
+**Autor y Desarrollador:** Marco Antonio Yana (Lederstream)
 
-Este documento contiene la especificación formal del **Modelo Lógico Relacional** y el **Diccionario de Datos** del sistema de gestión clínica y operativa de AJ Fisioterapia.
+Este documento contiene la especificación formal del **Modelo Lógico Relacional** y el **Diccionario de Datos** del sistema Gestor Fisioterapia.
 
 ---
 

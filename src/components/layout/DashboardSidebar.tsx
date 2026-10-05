@@ -82,11 +82,11 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: Dashbo
         <div className="h-16 flex items-center justify-between px-6 border-b border-white/10 bg-black/15">
           <Link href="/dashboard" className="flex items-center gap-3 group">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-400 to-teal-300 flex items-center justify-center text-teal-950 shadow-md shadow-emerald-500/20 font-black text-lg group-hover:scale-105 transition-transform">
-              KF
+              GF
             </div>
             <div>
               <span className="font-extrabold tracking-tight text-white text-base block leading-none group-hover:text-emerald-300 transition-colors">
-                KineFlow Core
+                Gestor Fisioterapia
               </span>
               <span className="text-[11px] text-teal-300 font-semibold tracking-wide">
                 AJ Fisioterapia • San Borja

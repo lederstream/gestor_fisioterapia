@@ -1,5 +1,5 @@
-// KineFlow Core - Schema Relacional AJ Fisioterapia (San Borja)
-// Prisma ORM 7+
+// Gestor Fisioterapia - Schema Relacional AJ Fisioterapia (San Borja)
+// Desarrollado por Marco Antonio Yana
 
 generator client {
   provider = "prisma-client"

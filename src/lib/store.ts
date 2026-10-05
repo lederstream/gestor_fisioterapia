@@ -1,5 +1,5 @@
-// KineFlow Core - Repositorio de Estado en Memoria y Motor de Negocio
-// AJ Fisioterapia (San Borja) - Nivel Senior con Auditoría y Configuración
+// Gestor Fisioterapia - Repositorio de Estado en Memoria y Motor de Negocio
+// AJ Fisioterapia (San Borja) - Desarrollado por Marco Antonio
 
 export interface UserItem {
   id: string;
@@ -222,7 +222,7 @@ const initialAuditLogs: AuditLogItem[] = [
     accion: "SISTEMA_INICIALIZADO",
     modulo: "SISTEMA",
     entidadId: "core-setup",
-    detalles: "Inicialización del sistema KineFlow Core para AJ Fisioterapia Sede San Borja con 6 salas operativas.",
+    detalles: "Inicialización del sistema Gestor Fisioterapia para AJ Fisioterapia Sede San Borja con 6 salas operativas.",
     ipAddress: "192.168.1.100",
     createdAt: new Date(Date.now() - 2 * 3600000).toISOString(),
   },
@@ -276,7 +276,7 @@ const initialAuditLogs: AuditLogItem[] = [
   },
 ];
 
-class KineFlowStore {
+class GestorFisioStore {
   private users: UserItem[] = [...initialUsers];
   private salas: SalaItem[] = [...initialSalas];
   private servicios: ServicioItem[] = [...initialServicios];
@@ -892,6 +892,6 @@ class KineFlowStore {
   }
 }
 
-const globalForStore = globalThis as unknown as { kineFlowStore?: KineFlowStore };
-export const dbStore = globalForStore.kineFlowStore ?? new KineFlowStore();
-if (process.env.NODE_ENV !== "production") globalForStore.kineFlowStore = dbStore;
+const globalForStore = globalThis as unknown as { gestorFisioStore?: GestorFisioStore };
+export const dbStore = globalForStore.gestorFisioStore ?? new GestorFisioStore();
+if (process.env.NODE_ENV !== "production") globalForStore.gestorFisioStore = dbStore;

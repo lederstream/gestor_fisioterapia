@@ -12,14 +12,14 @@ export default function ReservasPage() {
       <header className="max-w-2xl mx-auto flex items-center justify-between pb-8">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-teal-600 to-emerald-400 flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-teal-600/20">
-            KF
+            GF
           </div>
           <div>
             <span className="font-extrabold text-slate-800 text-lg block leading-none">
               AJ Fisioterapia
             </span>
             <span className="text-xs text-teal-600 font-semibold tracking-wide">
-              Sede San Borja • KineFlow
+              Sede San Borja • Gestor Fisioterapia
             </span>
           </div>
         </div>

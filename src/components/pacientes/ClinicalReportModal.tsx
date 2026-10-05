@@ -323,7 +323,7 @@ export function ClinicalReportModal({
 
           {/* Pie de Página Institucional */}
           <div className="text-center text-[10px] text-slate-400 pt-4 border-t border-slate-100">
-            Documento emitido válidamente por el sistema transaccional KineFlow Core. Confidencialidad bajo ley general de salud.
+            Documento emitido válidamente por el sistema transaccional Gestor Fisioterapia (AJ Fisioterapia San Borja). Confidencialidad bajo ley general de salud.
           </div>
         </div>
       </div>

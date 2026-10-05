@@ -1,6 +1,6 @@
 -- ========================================================================================
--- KineFlow Core - Schema Relacional PostgreSQL para Supabase (Nivel Senior & Producción)
--- Centro: AJ Fisioterapia (Sede San Borja - Lima, Perú)
+-- Gestor Fisioterapia - Schema Relacional PostgreSQL para Supabase (Nivel Senior & Producción)
+-- Desarrollado por: Marco Antonio Yana (Lederstream) • AJ Fisioterapia (San Borja - Lima)
 -- Características: RLS (Row Level Security), Concurrencia GiST anti-solapamiento, Triggers,
 -- Auditoría Inmutable, Índices de Alto Rendimiento y Seeding Oficial.
 -- ========================================================================================

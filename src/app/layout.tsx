@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "KineFlow Core | AJ Fisioterapia (San Borja)",
-  description: "Sistema de gestión clínica, agenda de 6 salas, caja y control de evolución para AJ Fisioterapia.",
+  title: "Gestor Fisioterapia | AJ Fisioterapia (San Borja)",
+  description: "Sistema de gestión clínica, agenda de 6 salas, caja y control de evolución para AJ Fisioterapia. Desarrollado por Marco Antonio.",
 };
 
 export default function RootLayout({

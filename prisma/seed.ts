@@ -1,5 +1,5 @@
-// KineFlow Core - Seeding script para PostgreSQL (Supabase / Neon)
-// AJ Fisioterapia - San Borja
+// Gestor Fisioterapia - Seeding script para PostgreSQL (Supabase / Neon)
+// AJ Fisioterapia - San Borja (Desarrollado por Marco Antonio Yana)
 
 import { PrismaClient } from "../src/generated/prisma/client";
 

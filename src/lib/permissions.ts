@@ -1,5 +1,5 @@
-// KineFlow Core - Matriz de Permisos y Control de Acceso Basado en Roles (RBAC)
-// AJ Fisioterapia (San Borja)
+// Gestor Fisioterapia - Matriz de Permisos y Control de Acceso Basado en Roles (RBAC)
+// AJ Fisioterapia (San Borja) - Desarrollado por Marco Antonio
 
 export type UserRole = "ADMIN" | "RECEPCION" | "TERAPEUTA" | "PACIENTE";
 
