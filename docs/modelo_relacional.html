@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modelo Relacional de Base de Datos - Gestor Fisioterapia</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --primary: #0d9488;
+      --primary-dark: #0f766e;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --pk-color: #8b5cf6;
+      --fk-color: #0284c7;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 1100px; margin: 0 auto; }
+    
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #0f766e, #047857);
+      color: white;
+      padding: 2.5rem;
+      border-radius: 1.5rem;
+      box-shadow: 0 10px 25px -5px rgba(15, 118, 110, 0.2);
+      margin-bottom: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+    .header-content h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.02em; }
+    .header-content p { color: #ccfbf1; font-size: 0.95rem; margin-top: 0.25rem; }
+    .header-author {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      margin-top: 0.75rem;
+    }
+    .btn-print {
+      background: white;
+      color: #0f766e;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.75rem;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+      transition: all 0.2s;
+    }
+    .btn-print:hover { background: #f0fdfa; transform: translateY(-1px); }
+
+    /* Section Card */
+    .section-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 1.25rem;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+    }
+    .section-title {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-bottom: 2px solid #f1f5f9;
+      padding-bottom: 0.75rem;
+    }
+
+    /* Diagram */
+    .diagram-container {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      overflow-x: auto;
+      text-align: center;
+    }
+
+    /* Tables */
+    .table-wrapper {
+      overflow-x: auto;
+      margin-bottom: 1.5rem;
+    }
+    .entity-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #0f766e;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+    }
+    th {
+      background: #f1f5f9;
+      color: #475569;
+      font-weight: 700;
+      padding: 0.6rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+    }
+    td {
+      padding: 0.65rem 0.85rem;
+      border-bottom: 1px solid #f1f5f9;
+      color: #334155;
+    }
+    tr:hover td { background: #f8fafc; }
+    
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 0.375rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      font-family: monospace;
+    }
+    .badge-pk { background: #ede9fe; color: #6d28d9; border: 1px solid #ddd6fe; }
+    .badge-fk { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+    .badge-uk { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+    .type-code { font-family: monospace; color: #0d9488; font-weight: 600; }
+
+    /* Schema list */
+    .schema-list {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+      padding: 1.25rem 1.5rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.8rem;
+      color: #334155;
+      line-height: 1.8;
+    }
+    .schema-list b { color: #0f766e; }
+
+    /* Print styling */
+    @media print {
+      body { background: white; padding: 0; }
+      .header { background: #0f766e !important; color: white !important; box-shadow: none; }
+      .btn-print { display: none; }
+      .section-card { box-shadow: none; border: 1px solid #cbd5e1; page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-content">
+        <h1>Modelo Relacional de Base de Datos</h1>
+        <p>Centro Especializado: AJ Fisioterapia (San Borja)</p>
+        <span class="header-author">👨‍💻 Autor: Marco Antonio Yana (Lederstream)</span>
+      </div>
+      <button class="btn-print" onclick="window.print()">🖨️ Imprimir / Guardar como PDF</button>
+    </header>
+
+    <!-- 1. Diagrama Entidad-Relación -->
+    <section class="section-card">
+      <h2 class="section-title">📊 1. Diagrama Entidad-Relación (DER)</h2>
+      <div class="diagram-container">
+        <pre class="mermaid">
+erDiagram
+    USERS ||--o{ CITAS : "atiende como terapeuta (1:N)"
+    USERS ||--o{ HISTORIA_EVOLUCION : "redacta evolucion (1:N)"
+    USERS ||--o{ AUDIT_LOGS : "genera auditoria (1:N)"
+
+    PACIENTES ||--o{ TRATAMIENTOS_PAQUETES : "adquiere paquetes (1:N)"
+    PACIENTES ||--o{ CITAS : "asiste a citas (1:N)"
+
+    SERVICIOS ||--o{ TRATAMIENTOS_PAQUETES : "define tipo servicio (1:N)"
+
+    TRATAMIENTOS_PAQUETES ||--o{ CITAS : "consume sesiones (1:N)"
+    TRATAMIENTOS_PAQUETES ||--o{ PAGOS : "recibe pagos (1:N)"
+
+    SALAS ||--o{ CITAS : "alberga fisicamente (1:N)"
+
+    CITAS ||--o| HISTORIA_EVOLUCION : "genera ficha medica (1:1)"
+        </pre>
+      </div>
+    </section>
+
+    <!-- 2. Esquema Lógico Relacional (Codd) -->
+    <section class="section-card">
+      <h2 class="section-title">📐 2. Esquema Lógico Relacional (Notación Formal)</h2>
+      <div class="schema-list">
+        <p>1. <b>USERS</b> (<u>id</u>, nombre, email, rol, especialidad, telefono, estado, created_at, updated_at)</p>
+        <p>2. <b>PACIENTES</b> (<u>id</u>, dni, nombres, apellidos, telefono, email, fecha_nacimiento, contacto_emergencia, created_at, updated_at)</p>
+        <p>3. <b>SALAS</b> (<u>id</u>, nombre, estado, equipamiento, capacidad_simultanea, created_at, updated_at)</p>
+        <p>4. <b>SERVICIOS</b> (<u>id</u>, nombre, duracion_minutos, precio_base, created_at, updated_at)</p>
+        <p>5. <b>TRATAMIENTOS_PAQUETES</b> (<u>id</u>, <i>paciente_id</i> [FK], <i>servicio_id</i> [FK], total_sesiones, sesiones_consumidas, monto_total, monto_pagado, estado_pago, created_at, updated_at)</p>
+        <p>6. <b>CITAS</b> (<u>id</u>, <i>paquete_id</i> [FK], <i>terapeuta_id</i> [FK], <i>sala_id</i> [FK], <i>paciente_id</i> [FK], fecha_hora_inicio, fecha_hora_fin, estado, es_reevaluacion, notas_cita, created_at, updated_at)</p>
+        <p>7. <b>PAGOS</b> (<u>id</u>, <i>paquete_id</i> [FK], monto, metodo_pago, numero_operacion, comprobante_url, estado, fecha_pago, created_at, updated_at)</p>
+        <p>8. <b>HISTORIA_EVOLUCION</b> (<u>id</u>, <i>cita_id</i> [FK], <i>terapeuta_id</i> [FK], eva_dolor_inicio, eva_dolor_fin, tratamiento_aplicado, notas_reevaluacion, bloquea_alta, created_at, updated_at)</p>
+        <p>9. <b>AUDIT_LOGS</b> (<u>id</u>, <i>usuario_id</i> [FK], usuario_nombre, usuario_rol, accion, modulo, entidad_id, detalles, ip_address, created_at)</p>
+        <p>10. <b>CONFIGURACION_CLINICA</b> (<u>id</u>, razon_social, nombre_comercial, ruc, direccion, telefono, whatsapp, hora_apertura, hora_cierre, intervalo_minutos, frecuencia_reevaluacion, total_salas_fisicas, updated_at)</p>
+      </div>
+    </section>
+
+    <!-- 3. Diccionario de Datos -->
+    <section class="section-card">
+      <h2 class="section-title">📖 3. Diccionario de Datos Detallado</h2>
+
+      <!-- Tabla Citas -->
+      <div class="entity-title">📅 Tabla: citas (Agenda y Concurrencia de Salas)</div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Campo</th>
+              <th>Tipo</th>
+              <th>Nulo</th>
+              <th>Llave</th>
+              <th>Descripción / Restricción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>id</strong></td>
+              <td><span class="type-code">UUID</span></td>
+              <td>NO</td>
+              <td><span class="badge badge-pk">PK</span></td>
+              <td>Identificador único universal de la cita</td>
+            </tr>
+            <tr>
+              <td><strong>paquete_id</strong></td>
+              <td><span class="type-code">UUID</span></td>
+              <td>SÍ</td>
+              <td><span class="badge badge-fk">FK</span></td>
+              <td>Paquete de 10/20 sesiones al que descuenta</td>
+            </tr>
+            <tr>
+              <td><strong>terapeuta_id</strong></td>
+              <td><span class="type-code">UUID</span></td>
+              <td>NO</td>
+              <td><span class="badge badge-fk">FK</span></td>
+              <td>Fisioterapeuta que ejecutará la sesión</td>
+            </tr>
+            <tr>
+              <td><strong>sala_id</strong></td>
+              <td><span class="type-code">UUID</span></td>
+              <td>NO</td>
+              <td><span class="badge badge-fk">FK</span></td>
+              <td>Sala asignada (Sala 1 a 6 en San Borja)</td>
+            </tr>
+            <tr>
+              <td><strong>paciente_id</strong></td>
+              <td><span class="type-code">UUID</span></td>
+              <td>NO</td>
+              <td><span class="badge badge-fk">FK</span></td>
+              <td>Paciente convocado</td>
+            </tr>
+            <tr>
+              <td><strong>fecha_hora_inicio</strong></td>
+              <td><span class="type-code">TIMESTAMPTZ</span></td>
+              <td>NO</td>
+              <td>-</td>
+              <td>Hora de inicio de atención</td>
+            </tr>
+            <tr>
+              <td><strong>fecha_hora_fin</strong></td>
+              <td><span class="type-code">TIMESTAMPTZ</span></td>
+              <td>NO</td>
+              <td>-</td>
+              <td>Hora fin (CHECK fin > inicio)</td>
+            </tr>
+            <tr>
+              <td><strong>estado</strong></td>
+              <td><span class="type-code">ENUM</span></td>
+              <td>NO</td>
+              <td>-</td>
+              <td>PROGRAMADA, CONFIRMADA, ATENDIDA, CANCELADA, NO_ASISTIO</td>
+            </tr>
+            <tr>
+              <td><strong>es_reevaluacion</strong></td>
+              <td><span class="type-code">BOOLEAN</span></td>
+              <td>NO</td>
+              <td>-</td>
+              <td>Hito médico obligatorio cada 5 sesiones</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Tabla Pacientes -->
+      <div class="entity-title">🧑‍🦱 Tabla: pacientes (Expediente Clínico)</div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Campo</th>
+              <th>Tipo</th>
+              <th>Nulo</th>
+              <th>Llave</th>
+              <th>Descripción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>id</strong></td>
+              <td><span class="type-code">UUID</span></td>
+              <td>NO</td>
+              <td><span class="badge badge-pk">PK</span></td>
+              <td>Identificador del paciente</td>
+            </tr>
+            <tr>
+              <td><strong>dni</strong></td>
+              <td><span class="type-code">VARCHAR(12)</span></td>
+              <td>NO</td>
+              <td><span class="badge badge-uk">UK</span></td>
+              <td>DNI peruano (CHECK 8 dígitos numéricos)</td>
+            </tr>
+            <tr>
+              <td><strong>nombres</strong></td>
+              <td><span class="type-code">VARCHAR(100)</span></td>
+              <td>NO</td>
+              <td>-</td>
+              <td>Nombres de pila</td>
+            </tr>
+            <tr>
+              <td><strong>apellidos</strong></td>
+              <td><span class="type-code">VARCHAR(100)</span></td>
+              <td>NO</td>
+              <td>-</td>
+              <td>Apellidos paterno y materno</td>
+            </tr>
+            <tr>
+              <td><strong>telefono</strong></td>
+              <td><span class="type-code">VARCHAR(25)</span></td>
+              <td>NO</td>
+              <td>-</td>
+              <td>Número de contacto para WhatsApp</td>
+            </tr>
+            <tr>
+              <td><strong>fecha_nacimiento</strong></td>
+              <td><span class="type-code">DATE</span></td>
+              <td>NO</td>
+              <td>-</td>
+              <td>Para cálculo de rango etario</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Tabla Historia Evolución -->
+      <div class="entity-title">📋 Tabla: historia_evolucion (Evolución y Escala EVA)</div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Campo</th>
+              <th>Tipo</th>
+              <th>Nulo</th>
+              <th>Llave</th>
+              <th>Descripción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>id</strong></td>
+              <td><span class="type-code">UUID</span></td>
+              <td>NO</td>
+              <td><span class="badge badge-pk">PK</span></td>
+              <td>Identificador de la nota clínica</td>
+            </tr>
+            <tr>
+              <td><strong>cita_id</strong></td>
+              <td><span class="type-code">UUID</span></td>
+              <td>NO</td>
+              <td><span class="badge badge-fk">FK</span> <span class="badge badge-uk">UK</span></td>
+              <td>Relación 1 a 1 estricta con la cita asistida</td>
+            </tr>
+            <tr>
+              <td><strong>terapeuta_id</strong></td>
+              <td><span class="type-code">UUID</span></td>
+              <td>NO</td>
+              <td><span class="badge badge-fk">FK</span></td>
+              <td>Fisioterapeuta responsable</td>
+            </tr>
+            <tr>
+              <td><strong>eva_dolor_inicio</strong></td>
+              <td><span class="type-code">INT</span></td>
+              <td>NO</td>
+              <td>-</td>
+              <td>Escala EVA al entrar (0 al 10)</td>
+            </tr>
+            <tr>
+              <td><strong>eva_dolor_fin</strong></td>
+              <td><span class="type-code">INT</span></td>
+              <td>NO</td>
+              <td>-</td>
+              <td>Escala EVA al salir (0 al 10)</td>
+            </tr>
+            <tr>
+              <td><strong>tratamiento_aplicado</strong></td>
+              <td><span class="type-code">TEXT</span></td>
+              <td>NO</td>
+              <td>-</td>
+              <td>Técnicas, agentes físicos y ejercicios aplicados</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Tabla Pagos -->
+      <div class="entity-title">💳 Tabla: pagos (Caja y Conciliación)</div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Campo</th>
+              <th>Tipo</th>
+              <th>Nulo</th>
+              <th>Llave</th>
+              <th>Descripción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>id</strong></td>
+              <td><span class="type-code">UUID</span></td>
+              <td>NO</td>
+              <td><span class="badge badge-pk">PK</span></td>
+              <td>Identificador del comprobante</td>
+            </tr>
+            <tr>
+              <td><strong>paquete_id</strong></td>
+              <td><span class="type-code">UUID</span></td>
+              <td>NO</td>
+              <td><span class="badge badge-fk">FK</span></td>
+              <td>Paquete de tratamiento al que abona</td>
+            </tr>
+            <tr>
+              <td><strong>monto</strong></td>
+              <td><span class="type-code">NUMERIC(10,2)</span></td>
+              <td>NO</td>
+              <td>-</td>
+              <td>Importe en Soles (CHECK monto > 0)</td>
+            </tr>
+            <tr>
+              <td><strong>metodo_pago</strong></td>
+              <td><span class="type-code">ENUM</span></td>
+              <td>NO</td>
+              <td>-</td>
+              <td>EFECTIVO, YAPE, PLIN, POS</td>
+            </tr>
+            <tr>
+              <td><strong>numero_operacion</strong></td>
+              <td><span class="type-code">VARCHAR(60)</span></td>
+              <td>SÍ</td>
+              <td><span class="badge badge-uk">UK</span></td>
+              <td>Código de operación para auditoría bancaria</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </section>
+
+    <!-- 4. Matriz de Cardinalidades -->
+    <section class="section-card">
+      <h2 class="section-title">🔗 4. Matriz de Relaciones y Cardinalidades</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Entidad Origen</th>
+              <th>Cardinalidad</th>
+              <th>Entidad Destino</th>
+              <th>Regla de Integridad (Borrado)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>pacientes</strong></td>
+              <td><strong>1 : N</strong></td>
+              <td>tratamientos_paquetes</td>
+              <td><code>ON DELETE RESTRICT</code></td>
+            </tr>
+            <tr>
+              <td><strong>servicios</strong></td>
+              <td><strong>1 : N</strong></td>
+              <td>tratamientos_paquetes</td>
+              <td><code>ON DELETE RESTRICT</code></td>
+            </tr>
+            <tr>
+              <td><strong>tratamientos_paquetes</strong></td>
+              <td><strong>1 : N</strong></td>
+              <td>pagos</td>
+              <td><code>ON DELETE CASCADE</code></td>
+            </tr>
+            <tr>
+              <td><strong>salas (1 a 6)</strong></td>
+              <td><strong>1 : N</strong></td>
+              <td>citas</td>
+              <td><code>ON DELETE RESTRICT</code></td>
+            </tr>
+            <tr>
+              <td><strong>users (terapeutas)</strong></td>
+              <td><strong>1 : N</strong></td>
+              <td>citas</td>
+              <td><code>ON DELETE RESTRICT</code></td>
+            </tr>
+            <tr>
+              <td><strong>citas</strong></td>
+              <td><strong>1 : 1</strong></td>
+              <td>historia_evolucion</td>
+              <td><code>ON DELETE CASCADE</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
+  </script>
+</body>
+</html>
