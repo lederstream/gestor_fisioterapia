@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,9 +12,15 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const playfair = Playfair_Display({
+  variable: "--font-editorial",
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+});
+
 export const metadata: Metadata = {
-  title: "Gestor Fisioterapia | AJ Fisioterapia (San Borja)",
-  description: "Sistema de gestión clínica, agenda de 6 salas, caja y control de evolución para AJ Fisioterapia. Desarrollado por Marco Antonio.",
+  title: "AJ Fisioterapia | Rehabilitación & Bienestar en San Borja",
+  description: "Fisioterapia especializada y humana para recuperar tu bienestar en San Borja, Lima. 6 salas de atención, profesionales licenciados y citas personalizadas.",
 };
 
 export default function RootLayout({
@@ -25,9 +31,10 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased scroll-smooth`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
 }
+
