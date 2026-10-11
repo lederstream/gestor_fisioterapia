@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { formatDateTime, formatDate, formatCurrency } from "@/lib/utils";
 import { 
   Printer, 
@@ -35,6 +35,14 @@ export function ClinicalReportModal({
   historialEva,
 }: ClinicalReportModalProps) {
   const reportRef = useRef<HTMLDivElement>(null);
+  const [logoUrl, setLogoUrl] = useState<string>("/images/logo-clinica.svg");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("clinic_logo");
+      if (stored) setLogoUrl(stored);
+    }
+  }, []);
 
   if (!isOpen) return null;
 
@@ -93,18 +101,30 @@ export function ClinicalReportModal({
           {/* Cabecera Membretada Oficial */}
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between border-b-2 border-teal-600 pb-6 gap-4">
             <div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-teal-600 text-white flex items-center justify-center font-black text-sm">
-                  AJ
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 p-1 flex items-center justify-center overflow-hidden shrink-0 print:border-none">
+                  {logoUrl ? (
+                    <img
+                      src={logoUrl}
+                      alt="Logo Empresa"
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <div className="w-full h-full rounded-lg bg-teal-600 text-white font-black flex items-center justify-center text-sm">
+                      AJ
+                    </div>
+                  )}
                 </div>
-                <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight print:text-black">
-                  AJ FISIOTERAPIA & REHABILITACIÓN
-                </h1>
+                <div>
+                  <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight print:text-black">
+                    AJ FISIOTERAPIA & REHABILITACIÓN
+                  </h1>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Centro Especializado en Terapia Física y Biomecánica Clínica
+                  </p>
+                </div>
               </div>
-              <p className="text-xs text-slate-500 font-medium mt-1">
-                Centro Especializado en Terapia Física y Biomecánica Clínica
-              </p>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-400 mt-1">
                 Sede Central: Av. San Borja Sur 450, San Borja, Lima | Tel: (01) 475-2289
               </p>
             </div>

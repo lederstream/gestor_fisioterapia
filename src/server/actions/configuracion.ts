@@ -24,7 +24,7 @@ export async function guardarConfiguracionClinica(
   try {
     const actualizada = dbStore.actualizarConfiguracion(data, {
       id: "usr-admin-1",
-      nombre: "Marco Antonio (Administrador)",
+      nombre: "Marco Yana (Administrador)",
       rol: "ADMIN",
     });
 

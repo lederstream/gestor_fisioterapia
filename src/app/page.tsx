@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
   Calendar,
   Clock,
@@ -17,9 +18,31 @@ import {
   X,
   Star,
 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import { LoginPortalModal } from "@/components/auth/LoginPortalModal";
 
 export default function HomePage() {
+  const router = useRouter();
+  const { isAuthenticated, currentRole, currentUser } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
+  const handleMiPortalClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isAuthenticated) {
+      // Redirección inteligente automática según rol asignado
+      if (currentRole === "PACIENTE") {
+        router.push("/reservas");
+      } else if (currentRole === "TERAPEUTA" || currentRole === "RECEPCION") {
+        router.push("/dashboard/agenda");
+      } else {
+        router.push("/dashboard");
+      }
+    } else {
+      // Si no tiene sesión activa, abre el portal de acceso unificado
+      setIsLoginModalOpen(true);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#FAF9F5] text-stone-800 selection:bg-[#0C3E37] selection:text-white flex flex-col justify-between font-sans">
@@ -71,13 +94,17 @@ export default function HomePage() {
 
           {/* Right Action Buttons */}
           <div className="hidden md:flex items-center gap-6">
-            <Link
-              href="/reservas"
-              className="text-sm font-semibold text-[#0C3E37] hover:text-[#072B26] flex items-center gap-1.5 transition-colors"
+            <button
+              type="button"
+              onClick={handleMiPortalClick}
+              className="text-sm font-semibold text-[#0C3E37] hover:text-[#072B26] flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <User className="w-4 h-4 text-[#0C3E37]" />
-              <span>Mi portal</span>
-            </Link>
+              <span>{isAuthenticated ? `Mi portal (${currentUser.nombre.split(" ")[0]})` : "Mi portal"}</span>
+              {isAuthenticated && (
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Sesión activa" />
+              )}
+            </button>
 
             <Link
               href="/reservas"
@@ -130,14 +157,20 @@ export default function HomePage() {
               Contacto
             </a>
             <div className="pt-3 border-t border-stone-100 flex flex-col gap-3">
-              <Link
-                href="/reservas"
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-base font-semibold text-[#0C3E37] flex items-center gap-2"
+              <button
+                type="button"
+                onClick={(e) => {
+                  setMobileMenuOpen(false);
+                  handleMiPortalClick(e);
+                }}
+                className="text-base font-semibold text-[#0C3E37] flex items-center gap-2 text-left py-1 cursor-pointer"
               >
                 <User className="w-4 h-4" />
-                <span>Mi portal</span>
-              </Link>
+                <span>{isAuthenticated ? `Mi portal (${currentUser.nombre.split(" ")[0]})` : "Mi portal"}</span>
+                {isAuthenticated && (
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                )}
+              </button>
               <Link
                 href="/reservas"
                 onClick={() => setMobileMenuOpen(false)}
@@ -808,6 +841,11 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+      {/* ── MODAL DE ACCESO UNIFICADO ─────────────────────────────── */}
+      <LoginPortalModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+      />
     </div>
   );
 }

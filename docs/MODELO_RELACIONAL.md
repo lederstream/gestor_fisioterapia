@@ -12,7 +12,7 @@ Este documento contiene la especificación formal del **Modelo Lógico Relaciona
 erDiagram
     USERS ||--o{ CITAS : "atiende como terapeuta"
     USERS ||--o{ HISTORIA_EVOLUCION : "redacta evolucion"
-    USERS ||--o{ AUDIT_LOGS : "genera auditoria"
+    USERS ||--o{ AUDIT_LOGS : "genera audit oria"
 
     PACIENTES ||--o{ TRATAMIENTOS_PAQUETES : "adquiere"
     PACIENTES ||--o{ CITAS : "asiste a"

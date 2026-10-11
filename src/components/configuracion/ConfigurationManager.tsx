@@ -19,7 +19,10 @@ import {
   Clock, 
   Save, 
   Wrench,
-  Sparkles
+  Sparkles,
+  Upload,
+  ImageIcon,
+  RotateCcw
 } from "lucide-react";
 
 interface ConfigurationManagerProps {
@@ -55,6 +58,27 @@ export function ConfigurationManager({
   // State Personal
   const [personal, setPersonal] = useState(initialPersonal);
 
+  // Cargar logotipo de la empresa (convierte a Base64 para guardarlo en la configuración)
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert("El archivo excede el tamaño máximo recomendado (2MB).");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string;
+        setConfig((prev: any) => ({ ...prev, logoUrl: base64 }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleResetLogo = () => {
+    setConfig((prev: any) => ({ ...prev, logoUrl: "/images/logo-clinica.svg" }));
+  };
+
   // Guardar configuración general
   const handleSaveGeneral = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,12 +96,17 @@ export function ConfigurationManager({
       horaCierre: config.horaCierre,
       frecuenciaReevaluacion: Number(config.frecuenciaReevaluacion),
       bloqueoAltaReevaluacion: Boolean(config.bloqueoAltaReevaluacion),
+      logoUrl: config.logoUrl || "/images/logo-clinica.svg",
     });
 
     setSavingConfig(false);
     if (res.success && res.data) {
       setConfig(res.data);
-      setMsgConfig("Configuración clínica actualizada y registrada en la auditoría con éxito.");
+      if (typeof window !== "undefined") {
+        localStorage.setItem("clinic_logo", res.data.logoUrl || "/images/logo-clinica.svg");
+        window.dispatchEvent(new Event("clinic-logo-change"));
+      }
+      setMsgConfig("Configuración clínica y logotipo institucional actualizados con éxito.");
     }
   };
 
@@ -168,6 +197,62 @@ export function ConfigurationManager({
                 <CheckCircle2 className="w-3.5 h-3.5" /> {msgConfig}
               </span>
             )}
+          </div>
+
+          {/* Identidad Visual y Logotipo de la Empresa */}
+          <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/90 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center justify-center p-2 overflow-hidden shrink-0">
+                {config.logoUrl ? (
+                  <img
+                    src={config.logoUrl}
+                    alt="Logo Empresa"
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <div className="w-full h-full rounded-xl bg-teal-600 text-white font-black flex items-center justify-center text-lg">
+                    AJ
+                  </div>
+                )}
+              </div>
+              <div>
+                <span className="font-bold text-slate-800 text-xs block">
+                  Logotipo Oficial de la Empresa
+                </span>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Se reflejará en el Sidebar, Navbar, Informes Clínicos e Impresión.
+                </p>
+                <span className="text-[10px] text-slate-400 mt-0.5 block">
+                  Formatos recomendados: PNG transparente o SVG (Máx. 2MB).
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <label
+                htmlFor="clinic-logo-input"
+                className="flex-1 sm:flex-initial px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-xl border border-slate-200 shadow-2xs flex items-center justify-center gap-2 cursor-pointer transition text-xs"
+              >
+                <Upload className="w-3.5 h-3.5 text-teal-600" />
+                <span>Subir Logo</span>
+              </label>
+              <input
+                id="clinic-logo-input"
+                type="file"
+                accept="image/*"
+                onChange={handleLogoUpload}
+                className="hidden"
+              />
+
+              <button
+                type="button"
+                onClick={handleResetLogo}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 rounded-xl transition cursor-pointer"
+                title="Restablecer logotipo predeterminado"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

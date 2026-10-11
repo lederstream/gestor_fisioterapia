@@ -14,29 +14,29 @@ export interface AuthUser {
 const DEFAULT_USERS: Record<UserRole, AuthUser> = {
   ADMIN: {
     id: "usr-admin-1",
-    nombre: "Marco Antonio",
-    email: "gerencia@ajfisioterapia.pe",
+    nombre: "Marco Yana",
+    email: "marco.yana@ajfisioterapia.pe",
     rol: "ADMIN",
     especialidad: "Dirección Médica y Gerencia",
   },
   RECEPCION: {
     id: "usr-rec-1",
-    nombre: "Ana Ramos",
-    email: "recepcion1@ajfisioterapia.pe",
+    nombre: "Karin Palacios",
+    email: "karin.palacios@ajfisioterapia.pe",
     rol: "RECEPCION",
     especialidad: "Admisión & Coordinación San Borja",
   },
   TERAPEUTA: {
     id: "usr-ter-1",
-    nombre: "Lic. Carlos Mendoza",
-    email: "carlos.mendoza@ajfisioterapia.pe",
+    nombre: "Lic. Jeiser Vasquez",
+    email: "jeiser.vasquez@ajfisioterapia.pe",
     rol: "TERAPEUTA",
     especialidad: "Lic. Fisioterapia Deportiva (CTMP 12480)",
   },
   PACIENTE: {
     id: "usr-pac-1",
-    nombre: "Renato Salazar",
-    email: "renato.salazar@gmail.com",
+    nombre: "Alexander Saavedra",
+    email: "alexander.saavedra@gmail.com",
     rol: "PACIENTE",
     especialidad: "Paciente Titular (DNI: 45892011)",
   },
@@ -45,6 +45,9 @@ const DEFAULT_USERS: Record<UserRole, AuthUser> = {
 interface AuthContextType {
   currentRole: UserRole;
   currentUser: AuthUser;
+  isAuthenticated: boolean;
+  login: (role?: UserRole) => void;
+  logout: () => void;
   switchRole: (role: UserRole) => void;
   hasPermission: (permission: Permission) => boolean;
   roleDetails: typeof ROLE_DETAILS[UserRole];
@@ -54,15 +57,37 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentRole, setCurrentRole] = useState<UserRole>("ADMIN");
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    const saved = localStorage.getItem("gestorfisio_active_role") as UserRole;
-    if (saved && (saved === "ADMIN" || saved === "RECEPCION" || saved === "TERAPEUTA" || saved === "PACIENTE")) {
-      setCurrentRole(saved);
+    const savedRole = localStorage.getItem("gestorfisio_active_role") as UserRole;
+    if (savedRole && (savedRole === "ADMIN" || savedRole === "RECEPCION" || savedRole === "TERAPEUTA" || savedRole === "PACIENTE")) {
+      setCurrentRole(savedRole);
+    }
+    const sessionActive = localStorage.getItem("gestorfisio_session_active");
+    if (sessionActive === "true") {
+      setIsAuthenticated(true);
     }
   }, []);
+
+  const login = (role?: UserRole) => {
+    const targetRole = role || currentRole;
+    setCurrentRole(targetRole);
+    setIsAuthenticated(true);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("gestorfisio_session_active", "true");
+      localStorage.setItem("gestorfisio_active_role", targetRole);
+    }
+  };
+
+  const logout = () => {
+    setIsAuthenticated(false);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("gestorfisio_session_active");
+    }
+  };
 
   const switchRole = (role: UserRole) => {
     setCurrentRole(role);
@@ -83,6 +108,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         currentRole,
         currentUser,
+        isAuthenticated,
+        login,
+        logout,
         switchRole,
         hasPermission: hasPerm,
         roleDetails,

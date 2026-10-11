@@ -48,11 +48,6 @@ export function DashboardNavbar({ onToggleMobileMenu }: DashboardNavbarProps) {
         </button>
 
         <RoleSwitcher />
-
-        <div className="hidden sm:flex items-center gap-2 pl-3 border-l border-slate-200">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20" />
-          <span className="text-xs font-bold text-slate-700">6/6 Salas</span>
-        </div>
       </div>
     </header>
   );

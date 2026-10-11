@@ -74,3 +74,25 @@ export async function asignarPaqueteTratamiento(params: {
     return { success: false, error: message };
   }
 }
+
+export async function actualizarPaciente(
+  id: string,
+  data: {
+    telefono?: string;
+    email?: string;
+    contactoEmergencia?: string;
+    nombres?: string;
+    apellidos?: string;
+  }
+): Promise<ServerActionResult> {
+  try {
+    const actualizado = dbStore.actualizarPaciente(id, data);
+    revalidatePath(`/dashboard/pacientes/${id}`);
+    revalidatePath("/dashboard/pacientes");
+    return { success: true, data: actualizado };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Error al actualizar paciente.";
+    return { success: false, error: message };
+  }
+}
+

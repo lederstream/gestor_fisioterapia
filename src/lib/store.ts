@@ -114,21 +114,22 @@ export interface ConfiguracionClinicaItem {
   frecuenciaReevaluacion: number;
   bloqueoAltaReevaluacion: boolean;
   totalSalasFisicas: number;
+  logoUrl?: string;
   updatedAt: string;
 }
 
 // Semilla inicial estricta del negocio AJ Fisioterapia
 const initialUsers: UserItem[] = [
-  { id: "usr-admin-1", nombre: "Marco Antonio", email: "gerencia@ajfisioterapia.pe", rol: "ADMIN", especialidad: "Gerencia y Dirección Clínica", estado: "ACTIVO" },
-  { id: "usr-rec-1", nombre: "Ana Ramos", email: "recepcion1@ajfisioterapia.pe", rol: "RECEPCION", estado: "ACTIVO" },
+  { id: "usr-admin-1", nombre: "Marco Yana", email: "marco.yana@ajfisioterapia.pe", rol: "ADMIN", especialidad: "Gerencia y Dirección Clínica", estado: "ACTIVO" },
+  { id: "usr-rec-1", nombre: "Karin Palacios", email: "karin.palacios@ajfisioterapia.pe", rol: "RECEPCION", estado: "ACTIVO" },
   { id: "usr-rec-2", nombre: "Laura Peña", email: "recepcion2@ajfisioterapia.pe", rol: "RECEPCION", estado: "ACTIVO" },
-  { id: "usr-ter-1", nombre: "Lic. Carlos Mendoza", email: "carlos.mendoza@ajfisioterapia.pe", rol: "TERAPEUTA", especialidad: "Lic. Fisioterapia Deportiva y Readaptación", estado: "ACTIVO" },
+  { id: "usr-ter-1", nombre: "Lic. Jeiser Vasquez", email: "jeiser.vasquez@ajfisioterapia.pe", rol: "TERAPEUTA", especialidad: "Lic. Fisioterapia Deportiva y Readaptación", estado: "ACTIVO" },
   { id: "usr-ter-2", nombre: "Lic. Andrea Rivas", email: "andrea.rivas@ajfisioterapia.pe", rol: "TERAPEUTA", especialidad: "Lic. Terapia Manual Ortopédica y Columna", estado: "ACTIVO" },
   { id: "usr-ter-3", nombre: "Lic. Javier Ponce", email: "javier.ponce@ajfisioterapia.pe", rol: "TERAPEUTA", especialidad: "Lic. Biomecánica y Reeducación Postural", estado: "ACTIVO" },
   { id: "usr-ter-4", nombre: "Lic. Valeria Soto", email: "valeria.soto@ajfisioterapia.pe", rol: "TERAPEUTA", especialidad: "Lic. Neurorehabilitación y Adulto Mayor", estado: "ACTIVO" },
   { id: "usr-tec-1", nombre: "Tec. Miguel Torres", email: "miguel.torres@ajfisioterapia.pe", rol: "TERAPEUTA", especialidad: "Técnico en Agentes Físicos y Electroterapia", estado: "ACTIVO" },
   { id: "usr-tec-2", nombre: "Tec. Diana Paredes", email: "diana.paredes@ajfisioterapia.pe", rol: "TERAPEUTA", especialidad: "Técnico en Masoterapia y Crioterapia", estado: "ACTIVO" },
-  { id: "usr-pac-1", nombre: "Renato Salazar", email: "renato.salazar@gmail.com", rol: "PACIENTE", especialidad: "Paciente / Cliente Titular", estado: "ACTIVO" },
+  { id: "usr-pac-1", nombre: "Alexander Saavedra", email: "alexander.saavedra@gmail.com", rol: "PACIENTE", especialidad: "Paciente / Cliente Titular", estado: "ACTIVO" },
 ];
 
 const initialSalas: SalaItem[] = [
@@ -148,7 +149,7 @@ const initialServicios: ServicioItem[] = [
 ];
 
 const initialPacientes: PacienteItem[] = [
-  { id: "pac-1", dni: "45892011", nombres: "Renato", apellidos: "Salazar Castillo", telefono: "987123456", email: "renato.salazar@gmail.com", fechaNacimiento: "1991-04-12", contactoEmergencia: "Esposa - 987999111", createdAt: new Date(Date.now() - 30 * 86400000).toISOString() },
+  { id: "pac-1", dni: "45892011", nombres: "Alexander", apellidos: "Saavedra Castillo", telefono: "987123456", email: "alexander.saavedra@gmail.com", fechaNacimiento: "1991-04-12", contactoEmergencia: "Esposa - 987999111", createdAt: new Date(Date.now() - 30 * 86400000).toISOString() },
   { id: "pac-2", dni: "72109483", nombres: "Camila", apellidos: "Vargas Flores", telefono: "976543210", email: "camila.vargas@hotmail.com", fechaNacimiento: "1998-09-24", contactoEmergencia: "Madre - 976000222", createdAt: new Date(Date.now() - 20 * 86400000).toISOString() },
   { id: "pac-3", dni: "10492837", nombres: "Jorge", apellidos: "Alvarez Benavides", telefono: "951234876", email: "jorge.alvarez@outlook.com", fechaNacimiento: "1975-11-05", contactoEmergencia: "Hija - 951111333", createdAt: new Date(Date.now() - 15 * 86400000).toISOString() },
   { id: "pac-4", dni: "48201934", nombres: "Mariana", apellidos: "Quispe Romero", telefono: "998877665", email: "mariana.quispe@gmail.com", fechaNacimiento: "1994-02-18", contactoEmergencia: "Hermano - 998000444", createdAt: new Date(Date.now() - 5 * 86400000).toISOString() },
@@ -210,6 +211,7 @@ const initialConfiguracion: ConfiguracionClinicaItem = {
   frecuenciaReevaluacion: 5, // Cada 5 sesiones asistidas
   bloqueoAltaReevaluacion: true,
   totalSalasFisicas: 6,
+  logoUrl: "/images/logo-clinica.svg",
   updatedAt: new Date().toISOString(),
 };
 
@@ -854,6 +856,30 @@ class GestorFisioStore {
     });
 
     return nuevo;
+  }
+
+  // Actualización de datos de paciente con auditoría
+  actualizarPaciente(id: string, data: Partial<Omit<PacienteItem, "id" | "createdAt">>) {
+    const index = this.pacientes.findIndex((p) => p.id === id);
+    if (index === -1) throw new Error("Paciente no encontrado");
+
+    this.pacientes[index] = {
+      ...this.pacientes[index],
+      ...data,
+    };
+
+    const actualizado = this.pacientes[index];
+    this.registrarAuditLog({
+      usuarioId: "usr-rec-1",
+      usuarioNombre: "Recepción AJ Fisioterapia",
+      usuarioRol: "RECEPCION",
+      accion: "PACIENTE_ACTUALIZADO",
+      modulo: "HISTORIA_CLINICA",
+      entidadId: actualizado.id,
+      detalles: `Datos actualizados para ${actualizado.nombres} ${actualizado.apellidos} (DNI: ${actualizado.dni}, Tel: ${actualizado.telefono}).`,
+    });
+
+    return actualizado;
   }
 
   crearPaquete(params: {

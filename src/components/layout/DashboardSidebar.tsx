@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
@@ -39,19 +39,35 @@ interface NavItem {
 }
 
 const allNavigation: NavItem[] = [
-  { name: "Resumen General", href: "/dashboard", icon: Home },
-  { name: "Agenda (6 Salas)", href: "/dashboard/agenda", icon: Calendar, badge: "6 Salas", permission: "agenda:ver" },
-  { name: "Caja y Cobranzas", href: "/dashboard/caja", icon: CreditCard, permission: "caja:ver" },
-  { name: "Directorio Pacientes", href: "/dashboard/pacientes", icon: Users, permission: "pacientes:ver" },
-  { name: "Usuarios y Roles", href: "/dashboard/usuarios", icon: KeyRound, badge: "RBAC", permission: "usuarios:gestionar" },
-  { name: "Auditoría y Trazabilidad", href: "/dashboard/auditoria", icon: History, permission: "auditoria:ver" },
-  { name: "Configuración Centro", href: "/dashboard/configuracion", icon: Settings, permission: "config:ver" },
+  { name: "Dashboard", href: "/dashboard", icon: Home },
+  { name: "Agenda", href: "/dashboard/agenda", icon: Calendar, permission: "agenda:ver" },
+  { name: "Pacientes", href: "/dashboard/pacientes", icon: Users, permission: "pacientes:ver" },
+  { name: "Caja", href: "/dashboard/caja", icon: CreditCard, permission: "caja:ver" },
+  { name: "Usuarios", href: "/dashboard/usuarios", icon: KeyRound, permission: "usuarios:gestionar" },
+  { name: "Auditoría", href: "/dashboard/auditoria", icon: History, permission: "auditoria:ver" },
+  { name: "Configuración", href: "/dashboard/configuracion", icon: Settings, permission: "config:ver" },
 ];
 
 export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: DashboardSidebarProps) {
   const pathname = usePathname();
   const { currentRole, currentUser, hasPermission, roleDetails } = useAuth();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string>("/images/logo-clinica.svg");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("clinic_logo");
+      if (stored) setLogoUrl(stored);
+
+      const handleLogoChange = () => {
+        const updated = localStorage.getItem("clinic_logo");
+        if (updated) setLogoUrl(updated);
+      };
+
+      window.addEventListener("clinic-logo-change", handleLogoChange);
+      return () => window.removeEventListener("clinic-logo-change", handleLogoChange);
+    }
+  }, []);
 
   // Filtrado dinámico según permisos asignados al rol activo
   const filteredNavigation = allNavigation.filter((item) => {
@@ -78,18 +94,28 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: Dashbo
           isOpenMobile ? "translate-x-0 shadow-2xl" : "-translate-x-full md:shadow-none"
         )}
       >
-        {/* Brand Header con enlace al Dashboard */}
-        <div className="h-16 flex items-center justify-between px-6 border-b border-white/10 bg-black/15">
-          <Link href="/dashboard" className="flex items-center gap-3 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-400 to-teal-300 flex items-center justify-center text-teal-950 shadow-md shadow-emerald-500/20 font-black text-lg group-hover:scale-105 transition-transform">
-              GF
+        {/* Brand Header con logotipo de la empresa y enlace al Dashboard */}
+        <div className="h-16 flex items-center justify-between px-5 border-b border-white/10 bg-black/15">
+          <Link href="/dashboard" className="flex items-center gap-3 group min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-white/10 p-1 flex items-center justify-center shrink-0 border border-white/15 shadow-md shadow-emerald-950/20 group-hover:scale-105 transition-transform overflow-hidden">
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt="Logo AJ Fisioterapia"
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <div className="w-full h-full rounded-lg bg-gradient-to-tr from-emerald-400 to-teal-300 flex items-center justify-center text-teal-950 font-black text-sm">
+                  GF
+                </div>
+              )}
             </div>
-            <div>
-              <span className="font-extrabold tracking-tight text-white text-base block leading-none group-hover:text-emerald-300 transition-colors">
-                Gestor Fisioterapia
+            <div className="min-w-0">
+              <span className="font-extrabold tracking-tight text-white text-sm block leading-tight truncate group-hover:text-emerald-300 transition-colors">
+                AJ Fisioterapia
               </span>
-              <span className="text-[11px] text-teal-300 font-semibold tracking-wide">
-                AJ Fisioterapia • San Borja
+              <span className="text-[11px] text-teal-300 font-semibold tracking-wide block truncate">
+                Sede San Borja
               </span>
             </div>
           </Link>

@@ -23,6 +23,8 @@ export const metadata: Metadata = {
   description: "Fisioterapia especializada y humana para recuperar tu bienestar en San Borja, Lima. 6 salas de atención, profesionales licenciados y citas personalizadas.",
 };
 
+import { AuthProvider } from "@/lib/auth-context";
+
 export default function RootLayout({
   children,
 }: {
@@ -33,7 +35,9 @@ export default function RootLayout({
       lang="es"
       className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased scroll-smooth`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

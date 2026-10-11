@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs>
+    <linearGradient id="primaryGrad" x1="10" y1="10" x2="190" y2="190" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#14b8a6" />
+      <stop offset="50%" stop-color="#0d9488" />
+      <stop offset="100%" stop-color="#042f2e" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5eead4" />
+      <stop offset="100%" stop-color="#2dd4bf" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0d9488" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- Fondo redondeado con sutil borde -->
+  <rect x="8" y="8" width="184" height="184" rx="44" fill="url(#primaryGrad)" filter="url(#glow)" />
+  <rect x="8" y="8" width="184" height="184" rx="44" stroke="#2dd4bf" stroke-width="2.5" stroke-opacity="0.3" />
+
+  <!-- Símbolo dinámico de movimiento / columna / rehabilitación -->
+  <g transform="translate(100, 84)" stroke="url(#accentGrad)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Onda de movilidad y columna vertebral estilizada -->
+    <path d="M -36 -28 C -20 -44, 20 -44, 36 -28 C 48 -16, 42 6, 24 16 C 6 26, -24 32, -32 46 C -38 56, -26 68, -4 68 C 18 68, 38 54, 44 42" fill="none" opacity="0.4" stroke-width="4" />
+    <!-- Cruz médica / equilibrio central estilizado -->
+    <circle cx="0" cy="-30" r="10" fill="#5eead4" stroke="none" />
+    <path d="M 0 -16 C -24 0, -28 32, 0 46 C 28 32, 24 0, 0 -16 Z" fill="#2dd4bf" fill-opacity="0.25" stroke="#5eead4" stroke-width="4.5" />
+    <circle cx="0" cy="15" r="5" fill="#ffffff" stroke="none" />
+  </g>
+
+  <!-- Tipografía institucional estilizada -->
+  <text x="100" y="162" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="28" fill="#ffffff" letter-spacing="2">
+    AJ FISIO
+  </text>
+  <text x="100" y="177" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="9" fill="#5eead4" letter-spacing="3.5">
+    SAN BORJA
+  </text>
+</svg>

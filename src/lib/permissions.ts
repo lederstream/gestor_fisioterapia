@@ -77,7 +77,7 @@ export const ROLE_DETAILS: Record<UserRole, RoleDetail> = {
   ADMIN: {
     id: "ADMIN",
     label: "Administrador (Gerencia)",
-    nameExample: "Marco Antonio",
+    nameExample: "Marco Yana",
     title: "Dirección Clínica y Gerencia",
     description: "Acceso total e irrestricto al sistema: administración de usuarios, auditoría, finanzas, configuración y salas.",
     color: "bg-purple-50 text-purple-700 border-purple-200",
@@ -87,7 +87,7 @@ export const ROLE_DETAILS: Record<UserRole, RoleDetail> = {
   RECEPCION: {
     id: "RECEPCION",
     label: "Recepción (Admisión/Caja)",
-    nameExample: "Ana Ramos",
+    nameExample: "Karin Palacios",
     title: "Admisión, Agenda y Caja",
     description: "Gestión de agenda, asignación de citas, cobranzas en caja (Yape/Plin/POS/Efectivo) y alta de pacientes.",
     color: "bg-blue-50 text-blue-700 border-blue-200",
@@ -97,7 +97,7 @@ export const ROLE_DETAILS: Record<UserRole, RoleDetail> = {
   TERAPEUTA: {
     id: "TERAPEUTA",
     label: "Fisioterapeuta Clínico",
-    nameExample: "Lic. Carlos Mendoza",
+    nameExample: "Lic. Jeiser Vasquez",
     title: "Fisioterapia y Rehabilitación",
     description: "Atención médica, registro de evolución y escala EVA, protocolo de reevaluación e informes médicos.",
     color: "bg-teal-50 text-teal-700 border-teal-200",
@@ -107,7 +107,7 @@ export const ROLE_DETAILS: Record<UserRole, RoleDetail> = {
   PACIENTE: {
     id: "PACIENTE",
     label: "Paciente / Cliente",
-    nameExample: "Renato Salazar",
+    nameExample: "Alexander Saavedra",
     title: "Usuario / Paciente Clínico",
     description: "Portal privado para consultar citas, sesiones contratadas y avance terapéutico. Restringido de áreas administrativas.",
     color: "bg-emerald-50 text-emerald-700 border-emerald-200",

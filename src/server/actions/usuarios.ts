@@ -19,7 +19,7 @@ export async function crearNuevoUsuario(data: {
   try {
     const usuario = dbStore.crearUsuario(data, {
       id: "usr-admin-1",
-      nombre: "Marco Antonio (Administrador)",
+      nombre: "Marco Yana (Administrador)",
       rol: "ADMIN",
     });
 

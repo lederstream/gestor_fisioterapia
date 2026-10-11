@@ -39,9 +39,5 @@ function ShellInner({ children }: { children: React.ReactNode }) {
 }
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
-  return (
-    <AuthProvider>
-      <ShellInner>{children}</ShellInner>
-    </AuthProvider>
-  );
+  return <ShellInner>{children}</ShellInner>;
 }
