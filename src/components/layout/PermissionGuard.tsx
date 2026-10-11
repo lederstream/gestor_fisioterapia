@@ -60,7 +60,7 @@ export function PermissionGuard({
           </span>
         </div>
         <p className="text-[11px] text-slate-400 pt-1 border-t border-slate-200">
-          Para garantizar la confidencialidad médica y la separación de funciones operativas en Sede San Borja, los permisos de caja, evolución clínica y configuración son estrictamente segmentados.
+          Para garantizar la confidencialidad médica y la separación de funciones operativas en el centro de fisioterapia, los permisos de caja, evolución clínica y configuración son estrictamente segmentados.
         </p>
       </div>
 
@@ -70,7 +70,7 @@ export function PermissionGuard({
           className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Volver al Panel Autorizado</span>
+          <span>{currentRole === "PACIENTE" ? "Volver a Mi Portal de Paciente" : "Volver al Panel Autorizado"}</span>
         </Link>
         {currentRole !== "ADMIN" && (
           <button

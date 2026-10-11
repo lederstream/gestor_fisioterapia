@@ -262,11 +262,12 @@ export function ClinicalReportModal({
               Registro Detallado de Sesiones Realizadas
             </h2>
             <div className="border border-slate-200 rounded-2xl overflow-x-auto bg-white">
-              <table className="w-full min-w-[580px] text-left text-xs">
+              <table className="w-full min-w-[650px] text-left text-xs">
                 <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
                   <tr>
                     <th className="py-2.5 px-3">Sesión</th>
-                    <th className="py-2.5 px-3">Fecha</th>
+                    <th className="py-2.5 px-3">Fecha y Hora</th>
+                    <th className="py-2.5 px-3">Especialista Tratante</th>
                     <th className="py-2.5 px-3 text-center">EVA Pre / Post</th>
                     <th className="py-2.5 px-3">Terapia Biomecánica / Técnicas Aplicadas</th>
                     <th className="py-2.5 px-3">Reevaluación / Observaciones</th>
@@ -275,7 +276,7 @@ export function ClinicalReportModal({
                 <tbody className="divide-y divide-slate-100">
                   {historialEva.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-4 text-center text-slate-400">
+                      <td colSpan={6} className="py-4 text-center text-slate-400">
                         No hay sesiones registradas aún en el sistema.
                       </td>
                     </tr>
@@ -285,8 +286,15 @@ export function ClinicalReportModal({
                         <td className="py-2 px-3 font-bold text-teal-700">
                           #{index + 1}
                         </td>
-                        <td className="py-2 px-3 text-slate-600 whitespace-nowrap">
-                          {formatDate(eva.createdAt)}
+                        <td className="py-2 px-3 text-slate-700 whitespace-nowrap">
+                          <span className="font-semibold block">{formatDate(eva.fecha || eva.createdAt)}</span>
+                          <span className="text-[10px] text-slate-500 block">
+                            {new Date(eva.fecha || eva.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3 text-slate-800 whitespace-nowrap">
+                          <span className="font-bold block text-[11px]">{eva.terapeutaNombre || "Lic. Fisioterapia"}</span>
+                          <span className="text-[10px] text-slate-500 block">{eva.terapeutaEspecialidad || "AJ Fisioterapia"}</span>
                         </td>
                         <td className="py-2 px-3 text-center whitespace-nowrap">
                           <span className="px-2 py-0.5 rounded font-mono font-bold text-[11px] bg-slate-100 text-slate-800">

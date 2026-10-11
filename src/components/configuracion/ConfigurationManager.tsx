@@ -109,6 +109,7 @@ export function ConfigurationManager({
     const res = await guardarConfiguracionClinica({
       razonSocial: config.razonSocial,
       nombreComercial: config.nombreComercial,
+      sedeNombre: config.sedeNombre || "Sede San Borja",
       ruc: config.ruc,
       direccion: config.direccion,
       telefono: config.telefono,
@@ -125,10 +126,12 @@ export function ConfigurationManager({
     if (res.success) {
       if (typeof window !== "undefined") {
         localStorage.setItem("clinic_logo", res.data?.logoUrl || "/images/logo-clinica.svg");
+        localStorage.setItem("clinic_config", JSON.stringify(res.data));
         window.dispatchEvent(new Event("clinic-logo-change"));
+        window.dispatchEvent(new Event("clinic-config-change"));
       }
-      setMsgConfig("Configuración clínica y logotipo institucional actualizados con éxito.");
-      showToast("Datos de la clínica guardados correctamente.");
+      setMsgConfig("Configuración clínica y parámetros de sede actualizados con éxito.");
+      showToast("Datos de la clínica y sede guardados correctamente.");
     }
   };
 
@@ -422,8 +425,19 @@ export function ConfigurationManager({
               />
             </div>
 
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Nombre de la Sede</label>
+              <input
+                type="text"
+                value={config.sedeNombre || ""}
+                placeholder="Ej. Sede San Borja"
+                onChange={(e) => setConfig({ ...config, sedeNombre: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-medium text-xs"
+              />
+            </div>
+
             <div className="sm:col-span-2 md:col-span-1">
-              <label className="block font-semibold text-slate-700 mb-1">Dirección de Sede (San Borja)</label>
+              <label className="block font-semibold text-slate-700 mb-1">Dirección Física de la Sede</label>
               <input
                 type="text"
                 value={config.direccion}

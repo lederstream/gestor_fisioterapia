@@ -45,17 +45,19 @@ export function DashboardPageClient({
 
   // Si el usuario activo es PACIENTE, renderizar exclusivamente su portal clínico privado
   if (currentRole === "PACIENTE") {
-    const pacienteRenato = pacientes.find((p) => p.dni === "45892011") || pacientes[0];
-    const paquetesRenato = paquetes.filter((paq) => paq.pacienteId === pacienteRenato?.id);
-    const citasRenato = citas.filter((c) => c.pacienteId === pacienteRenato?.id);
-    const historiasRenato = historias.filter((h) => citasRenato.some((c) => c.id === h.citaId));
+    const pacienteActivo = pacientes.find((p) => p.dni === "45892011") || pacientes[0];
+    const paquetesActivos = paquetes.filter((paq) => paq.pacienteId === pacienteActivo?.id);
+    const citasActivas = citas.filter((c) => c.pacienteId === pacienteActivo?.id);
+    const historiasActivas = historias.filter((h) => citasActivas.some((c) => c.id === h.citaId));
+    const pagosActivos = pagos.filter((p) => paquetesActivos.some((paq) => paq.id === p.paqueteId));
 
     return (
       <PatientDashboardView
-        paciente={pacienteRenato}
-        citas={citasRenato}
-        paquetes={paquetesRenato}
-        historias={historiasRenato}
+        paciente={pacienteActivo}
+        citas={citasActivas}
+        paquetes={paquetesActivos}
+        historias={historiasActivas}
+        pagos={pagosActivos}
       />
     );
   }

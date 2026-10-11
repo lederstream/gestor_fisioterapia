@@ -59,6 +59,8 @@ export interface CitaItem {
   fechaHoraFin: string;    // ISO string
   estado: "PROGRAMADA" | "CONFIRMADA" | "ATENDIDA" | "CANCELADA" | "NO_ASISTIO";
   esReevaluacion: boolean;
+  creadoPorNombre?: string;
+  confirmadoPorNombre?: string;
   createdAt: string;
 }
 
@@ -104,6 +106,7 @@ export interface ConfiguracionClinicaItem {
   id: string;
   razonSocial: string;
   nombreComercial: string;
+  sedeNombre?: string;
   ruc: string;
   direccion: string;
   telefono: string;
@@ -176,12 +179,22 @@ function getTodaySlotEnd(hour: number, durationMinutes: number = 45): string {
 }
 
 const initialCitas: CitaItem[] = [
-  { id: "cita-1", paqueteId: "paq-1", terapeutaId: "usr-ter-1", salaId: "sala-1", pacienteId: "pac-1", fechaHoraInicio: getTodaySlot(8, 0), fechaHoraFin: getTodaySlotEnd(8, 45), estado: "CONFIRMADA", esReevaluacion: true, createdAt: new Date().toISOString() },
-  { id: "cita-2", paqueteId: "paq-2", terapeutaId: "usr-ter-2", salaId: "sala-2", pacienteId: "pac-2", fechaHoraInicio: getTodaySlot(9, 0), fechaHoraFin: getTodaySlotEnd(9, 45), estado: "PROGRAMADA", esReevaluacion: false, createdAt: new Date().toISOString() },
-  { id: "cita-3", paqueteId: "paq-3", terapeutaId: "usr-ter-4", salaId: "sala-3", pacienteId: "pac-3", fechaHoraInicio: getTodaySlot(10, 0), fechaHoraFin: getTodaySlotEnd(10, 60), estado: "ATENDIDA", esReevaluacion: false, createdAt: new Date().toISOString() },
-  { id: "cita-4", paqueteId: "paq-4", terapeutaId: "usr-tec-1", salaId: "sala-4", pacienteId: "pac-4", fechaHoraInicio: getTodaySlot(11, 0), fechaHoraFin: getTodaySlotEnd(11, 45), estado: "CONFIRMADA", esReevaluacion: false, createdAt: new Date().toISOString() },
-  { id: "cita-5", paqueteId: null, terapeutaId: "usr-ter-3", salaId: "sala-5", pacienteId: "pac-5", fechaHoraInicio: getTodaySlot(15, 0), fechaHoraFin: getTodaySlotEnd(15, 45), estado: "PROGRAMADA", esReevaluacion: false, createdAt: new Date().toISOString() },
-  { id: "cita-6", paqueteId: "paq-2", terapeutaId: "usr-ter-1", salaId: "sala-1", pacienteId: "pac-2", fechaHoraInicio: getTodaySlot(16, 0), fechaHoraFin: getTodaySlotEnd(16, 45), estado: "PROGRAMADA", esReevaluacion: false, createdAt: new Date().toISOString() },
+  // Citas del día actual
+  { id: "cita-1", paqueteId: "paq-1", terapeutaId: "usr-ter-1", salaId: "sala-1", pacienteId: "pac-1", fechaHoraInicio: getTodaySlot(8, 0), fechaHoraFin: getTodaySlotEnd(8, 45), estado: "CONFIRMADA", esReevaluacion: true, creadoPorNombre: "Laura Peña (Recepción)", confirmadoPorNombre: "Karin Palacios (Recepción)", createdAt: new Date().toISOString() },
+  { id: "cita-2", paqueteId: "paq-2", terapeutaId: "usr-ter-2", salaId: "sala-2", pacienteId: "pac-2", fechaHoraInicio: getTodaySlot(9, 0), fechaHoraFin: getTodaySlotEnd(9, 45), estado: "PROGRAMADA", esReevaluacion: false, creadoPorNombre: "Karin Palacios (Recepción)", createdAt: new Date().toISOString() },
+  { id: "cita-3", paqueteId: "paq-3", terapeutaId: "usr-ter-4", salaId: "sala-3", pacienteId: "pac-3", fechaHoraInicio: getTodaySlot(10, 0), fechaHoraFin: getTodaySlotEnd(10, 60), estado: "ATENDIDA", esReevaluacion: false, creadoPorNombre: "Laura Peña (Recepción)", confirmadoPorNombre: "Laura Peña (Recepción)", createdAt: new Date().toISOString() },
+  { id: "cita-4", paqueteId: "paq-4", terapeutaId: "usr-tec-1", salaId: "sala-4", pacienteId: "pac-4", fechaHoraInicio: getTodaySlot(11, 0), fechaHoraFin: getTodaySlotEnd(11, 45), estado: "CONFIRMADA", esReevaluacion: false, creadoPorNombre: "Karin Palacios (Recepción)", confirmadoPorNombre: "Karin Palacios (Recepción)", createdAt: new Date().toISOString() },
+  { id: "cita-5", paqueteId: null, terapeutaId: "usr-ter-3", salaId: "sala-5", pacienteId: "pac-5", fechaHoraInicio: getTodaySlot(15, 0), fechaHoraFin: getTodaySlotEnd(15, 45), estado: "PROGRAMADA", esReevaluacion: false, creadoPorNombre: "Laura Peña (Recepción)", createdAt: new Date().toISOString() },
+  { id: "cita-6", paqueteId: "paq-2", terapeutaId: "usr-ter-1", salaId: "sala-1", pacienteId: "pac-2", fechaHoraInicio: getTodaySlot(16, 0), fechaHoraFin: getTodaySlotEnd(16, 45), estado: "PROGRAMADA", esReevaluacion: false, creadoPorNombre: "Karin Palacios (Recepción)", createdAt: new Date().toISOString() },
+
+  // Historial Multianual de Sesiones - Paciente Alexander Saavedra (pac-1)
+  { id: "hist-cita-pac1-2024", paqueteId: "paq-1", terapeutaId: "usr-ter-3", salaId: "sala-3", pacienteId: "pac-1", fechaHoraInicio: "2024-10-18T14:00:00.000Z", fechaHoraFin: "2024-10-18T14:45:00.000Z", estado: "ATENDIDA", esReevaluacion: false, creadoPorNombre: "Karin Palacios (Recepción)", confirmadoPorNombre: "Karin Palacios (Recepción)", createdAt: "2024-10-15T09:30:00.000Z" },
+  { id: "hist-cita-pac1-2025", paqueteId: "paq-1", terapeutaId: "usr-ter-2", salaId: "sala-2", pacienteId: "pac-1", fechaHoraInicio: "2025-05-12T11:00:00.000Z", fechaHoraFin: "2025-05-12T11:45:00.000Z", estado: "ATENDIDA", esReevaluacion: false, creadoPorNombre: "Laura Peña (Recepción)", confirmadoPorNombre: "Laura Peña (Recepción)", createdAt: "2025-05-10T11:15:00.000Z" },
+  { id: "hist-cita-pac1-2026-1", paqueteId: "paq-1", terapeutaId: "usr-ter-4", salaId: "sala-4", pacienteId: "pac-1", fechaHoraInicio: "2026-03-04T16:00:00.000Z", fechaHoraFin: "2026-03-04T16:45:00.000Z", estado: "ATENDIDA", esReevaluacion: false, creadoPorNombre: "Karin Palacios (Recepción)", confirmadoPorNombre: "Karin Palacios (Recepción)", createdAt: "2026-03-01T15:20:00.000Z" },
+  { id: "hist-cita-prev-1", paqueteId: "paq-1", terapeutaId: "usr-ter-1", salaId: "sala-1", pacienteId: "pac-1", fechaHoraInicio: new Date(Date.now() - 3 * 86400000).toISOString(), fechaHoraFin: new Date(Date.now() - 3 * 86400000 + 45 * 60000).toISOString(), estado: "ATENDIDA", esReevaluacion: false, creadoPorNombre: "Laura Peña (Recepción)", confirmadoPorNombre: "Laura Peña (Recepción)", createdAt: new Date(Date.now() - 4 * 86400000).toISOString() },
+
+  // Historial Multianual de Sesiones - Paciente Camila Vargas (pac-2)
+  { id: "hist-cita-prev-2", paqueteId: "paq-2", terapeutaId: "usr-ter-2", salaId: "sala-2", pacienteId: "pac-2", fechaHoraInicio: new Date(Date.now() - 7 * 86400000).toISOString(), fechaHoraFin: new Date(Date.now() - 7 * 86400000 + 45 * 60000).toISOString(), estado: "ATENDIDA", esReevaluacion: true, creadoPorNombre: "Karin Palacios (Recepción)", confirmadoPorNombre: "Karin Palacios (Recepción)", createdAt: new Date(Date.now() - 8 * 86400000).toISOString() },
 ];
 
 const initialPagos: PagoItem[] = [
@@ -195,12 +208,16 @@ const initialHistorias: HistoriaEvolucionItem[] = [
   { id: "evo-1", citaId: "cita-3", terapeutaId: "usr-ter-4", evaDolorInicio: 7, evaDolorFin: 4, tratamientoAplicado: "Movilización pasiva de extremidad inferior derecha, facilitación neuromuscular propioceptiva y electroestimulación TENS 20 min.", notasReevaluacion: null, bloqueaAlta: false, createdAt: new Date().toISOString() },
   { id: "evo-2", citaId: "hist-cita-prev-1", terapeutaId: "usr-ter-1", evaDolorInicio: 6, evaDolorFin: 3, tratamientoAplicado: "Punción seca en gemelo medial y estiramientos miofasciales de cadena posterior.", notasReevaluacion: "Paciente refiere notable alivio tras descarga. Próxima sesión (5ta) requiere prueba de dinamometría obligatoria.", bloqueaAlta: false, createdAt: new Date(Date.now() - 3 * 86400000).toISOString() },
   { id: "evo-3", citaId: "hist-cita-prev-2", terapeutaId: "usr-ter-2", evaDolorInicio: 5, evaDolorFin: 2, tratamientoAplicado: "Reevaluación de rangos articulares en columna lumbar. Test de Schober mejorado en 2cm. Fortalecimiento de transverso abdominal.", notasReevaluacion: "REEVALUACIÓN COMPLETA SESIÓN 5: Rango de flexión aumentó 15°. Autorizado paso a fase 2 de tonificación.", bloqueaAlta: false, createdAt: new Date(Date.now() - 7 * 86400000).toISOString() },
+  { id: "evo-4", citaId: "hist-cita-pac1-2024", terapeutaId: "usr-ter-3", evaDolorInicio: 8, evaDolorFin: 6, tratamientoAplicado: "Evaluación postural biomecánica de columna y miembro inferior. Reeducación propioceptiva y termoterapia superficial.", notasReevaluacion: "Inicio del protocolo correctivo traumatológico.", bloqueaAlta: false, createdAt: "2024-10-18T14:45:00.000Z" },
+  { id: "evo-5", citaId: "hist-cita-pac1-2025", terapeutaId: "usr-ter-2", evaDolorInicio: 7, evaDolorFin: 4, tratamientoAplicado: "Terapia manual ortopédica para descompresión lumbar. Liberación miofascial profunda y ultrasonido pulsátil.", notasReevaluacion: "Notable reducción de rigidez matutina en flexión.", bloqueaAlta: false, createdAt: "2025-05-12T11:45:00.000Z" },
+  { id: "evo-6", citaId: "hist-cita-pac1-2026-1", terapeutaId: "usr-ter-4", evaDolorInicio: 5, evaDolorFin: 3, tratamientoAplicado: "Fortalecimiento del core, magnetoterapia focal y crioterapia compresiva Game Ready.", notasReevaluacion: "Evolución positiva progresiva sin recaídas.", bloqueaAlta: false, createdAt: "2026-03-04T16:45:00.000Z" },
 ];
 
 const initialConfiguracion: ConfiguracionClinicaItem = {
   id: "config-principal",
   razonSocial: "AJ Fisioterapia S.A.C.",
   nombreComercial: "AJ Fisioterapia",
+  sedeNombre: "Sede San Borja",
   ruc: "20608912345",
   direccion: "Av. Guardia Civil 520, San Borja, Lima",
   telefono: "(01) 475-2010",
@@ -226,34 +243,58 @@ const initialAuditLogs: AuditLogItem[] = [
     entidadId: "core-setup",
     detalles: "Inicialización del sistema Gestor Fisioterapia para AJ Fisioterapia Sede San Borja con 6 salas operativas.",
     ipAddress: "192.168.1.100",
-    createdAt: new Date(Date.now() - 2 * 3600000).toISOString(),
+    createdAt: new Date(Date.now() - 4 * 3600000).toISOString(),
   },
   {
     id: "log-2",
     usuarioId: "usr-rec-1",
-    usuarioNombre: "Ana Ramos (Recepción)",
+    usuarioNombre: "Karin Palacios (Recepción)",
     usuarioRol: "RECEPCION",
     accion: "PAGO_REGISTRADO",
     modulo: "CAJA",
     entidadId: "pago-1",
-    detalles: "Cobro verificado de S/. 400.00 mediante Yape (Op: YAP-892104) para paciente Renato Salazar (Paquete 10 sesiones).",
+    detalles: "Cobro verificado de S/. 400.00 mediante Yape (Op: YAP-892104) para paciente Alexander Saavedra (Paquete 10 sesiones traumatología).",
     ipAddress: "192.168.1.105",
-    createdAt: new Date(Date.now() - 90 * 60000).toISOString(),
+    createdAt: new Date(Date.now() - 150 * 60000).toISOString(),
   },
   {
     id: "log-3",
     usuarioId: "usr-rec-2",
     usuarioNombre: "Laura Peña (Recepción)",
     usuarioRol: "RECEPCION",
-    accion: "CITA_CREADA",
-    modulo: "AGENDA",
-    entidadId: "cita-1",
-    detalles: "Agendamiento en Sala 1 (08:00 - 08:45) para paciente Renato Salazar con Lic. Carlos Mendoza. Bandera de Reevaluación activa.",
+    accion: "PAGO_REGISTRADO",
+    modulo: "CAJA",
+    entidadId: "pago-2",
+    detalles: "Cobro verificado de S/. 700.00 mediante POS (Op: POS-339182) para paciente Camila Vargas (Paquete 20 sesiones columna).",
     ipAddress: "192.168.1.106",
-    createdAt: new Date(Date.now() - 60 * 60000).toISOString(),
+    createdAt: new Date(Date.now() - 120 * 60000).toISOString(),
   },
   {
     id: "log-4",
+    usuarioId: "usr-rec-1",
+    usuarioNombre: "Karin Palacios (Recepción)",
+    usuarioRol: "RECEPCION",
+    accion: "CITA_ACEPTADA_CONFIRMADA",
+    modulo: "AGENDA",
+    entidadId: "cita-1",
+    detalles: "Cita confirmada y aprobada para Alexander Saavedra en Sala 1 (08:00 - 08:45) con Lic. Jeiser Vasquez. Hito de reevaluación activado.",
+    ipAddress: "192.168.1.105",
+    createdAt: new Date(Date.now() - 95 * 60000).toISOString(),
+  },
+  {
+    id: "log-5",
+    usuarioId: "usr-rec-2",
+    usuarioNombre: "Laura Peña (Recepción)",
+    usuarioRol: "RECEPCION",
+    accion: "CITA_CREADA",
+    modulo: "AGENDA",
+    entidadId: "cita-2",
+    detalles: "Agendamiento en Sala 2 (09:00 - 09:45) para paciente Camila Vargas con Lic. Andrea Rivas.",
+    ipAddress: "192.168.1.106",
+    createdAt: new Date(Date.now() - 75 * 60000).toISOString(),
+  },
+  {
+    id: "log-6",
     usuarioId: "usr-ter-4",
     usuarioNombre: "Lic. Valeria Soto (Terapeuta)",
     usuarioRol: "TERAPEUTA",
@@ -262,10 +303,10 @@ const initialAuditLogs: AuditLogItem[] = [
     entidadId: "cita-3",
     detalles: "Atención completada para Jorge Alvarez en Sala 3. Escala EVA inicial: 7/10, final: 4/10. Tratamiento TENS y FNP aplicado.",
     ipAddress: "192.168.1.112",
-    createdAt: new Date(Date.now() - 30 * 60000).toISOString(),
+    createdAt: new Date(Date.now() - 45 * 60000).toISOString(),
   },
   {
-    id: "log-5",
+    id: "log-7",
     usuarioId: "usr-ter-2",
     usuarioNombre: "Lic. Andrea Rivas (Terapeuta)",
     usuarioRol: "TERAPEUTA",
@@ -274,7 +315,31 @@ const initialAuditLogs: AuditLogItem[] = [
     entidadId: "paq-2",
     detalles: "Reevaluación física sesión 5 completada para Camila Vargas. Rangos articulares lumbares incrementados en 15 grados.",
     ipAddress: "192.168.1.110",
+    createdAt: new Date(Date.now() - 25 * 60000).toISOString(),
+  },
+  {
+    id: "log-8",
+    usuarioId: "usr-rec-1",
+    usuarioNombre: "Karin Palacios (Recepción)",
+    usuarioRol: "RECEPCION",
+    accion: "PAGO_REGISTRADO",
+    modulo: "CAJA",
+    entidadId: "pago-3",
+    detalles: "Cobro verificado de S/. 700.00 mediante Plin (Op: PLN-554109) para paciente Camila Vargas (Abono cuota paquete).",
+    ipAddress: "192.168.1.105",
     createdAt: new Date(Date.now() - 15 * 60000).toISOString(),
+  },
+  {
+    id: "log-9",
+    usuarioId: "usr-admin-1",
+    usuarioNombre: "Marco Antonio (Administrador)",
+    usuarioRol: "ADMIN",
+    accion: "CONFIGURACION_ACTUALIZADA",
+    modulo: "CONFIGURACION",
+    entidadId: "config-principal",
+    detalles: "Configuración clínica actualizada: Horario de atención 08:00 a 20:00, bloqueo de alta médica por reevaluación activo.",
+    ipAddress: "192.168.1.100",
+    createdAt: new Date(Date.now() - 5 * 60000).toISOString(),
   },
 ];
 
@@ -369,9 +434,14 @@ class GestorFisioStore {
       .filter((h) => citas.some((c) => c.id === h.citaId))
       .map((h) => {
         const cita = citas.find((c) => c.id === h.citaId);
+        const terapeuta = this.users.find((u) => u.id === h.terapeutaId);
         return {
           id: h.id,
           fecha: cita ? cita.fechaHoraInicio : h.createdAt,
+          fechaFin: cita ? cita.fechaHoraFin : undefined,
+          terapeutaNombre: terapeuta ? terapeuta.nombre : "Lic. Fisioterapeuta",
+          terapeutaEspecialidad: terapeuta?.especialidad || "Fisioterapia y Rehabilitación",
+          salaNombre: cita?.sala?.nombre || "Sala 1",
           evaInicio: h.evaDolorInicio,
           evaFin: h.evaDolorFin,
           tratamiento: h.tratamientoAplicado,
@@ -652,6 +722,7 @@ class GestorFisioStore {
     duracionMinutos?: number;
     esReevaluacion?: boolean;
     usuarioAuditoria?: { id?: string; nombre: string; rol: any };
+    ipAddress?: string;
   }) {
     const duracion = params.duracionMinutos || 45;
     const inicio = new Date(params.fechaHoraInicio);
@@ -727,6 +798,7 @@ class GestorFisioStore {
       fechaHoraFin: finIso,
       estado: "PROGRAMADA",
       esReevaluacion: esReevaluacionFlag,
+      creadoPorNombre: params.usuarioAuditoria?.nombre || "Recepción AJ Fisioterapia",
       createdAt: new Date().toISOString(),
     };
 
@@ -743,7 +815,8 @@ class GestorFisioStore {
       accion: "CITA_CREADA",
       modulo: "AGENDA",
       entidadId: nuevaCita.id,
-      detalles: `Cita agendada para ${paciente?.nombres} ${paciente?.apellidos} en ${sala.nombre} con ${terapeuta?.nombre} para el ${new Date(nuevaCita.fechaHoraInicio).toLocaleDateString("es-PE")} (${new Date(nuevaCita.fechaHoraInicio).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}). ${esReevaluacionFlag ? "[HITO REEVALUACIÓN OBLIGATORIA]" : ""}`,
+      detalles: `Cita agendada por ${params.usuarioAuditoria?.nombre || "Recepción"} para ${paciente?.nombres} ${paciente?.apellidos} en ${sala.nombre} con ${terapeuta?.nombre} para el ${new Date(nuevaCita.fechaHoraInicio).toLocaleDateString("es-PE")} (${new Date(nuevaCita.fechaHoraInicio).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}). ${esReevaluacionFlag ? "[HITO REEVALUACIÓN OBLIGATORIA]" : ""}`,
+      ipAddress: params.ipAddress || "192.168.1.105",
     });
 
     return nuevaCita;
@@ -753,25 +826,36 @@ class GestorFisioStore {
   actualizarEstadoCita(
     citaId: string, 
     nuevoEstado: "PROGRAMADA" | "CONFIRMADA" | "ATENDIDA" | "CANCELADA" | "NO_ASISTIO",
-    usuarioInfo?: { id?: string; nombre: string; rol: any }
+    usuarioInfo?: { id?: string; nombre: string; rol: any; ipAddress?: string }
   ) {
     const index = this.citas.findIndex((c) => c.id === citaId);
     if (index === -1) throw new Error("Cita no encontrada.");
 
     const cita = this.citas[index];
     const estadoAnterior = cita.estado;
-    this.citas[index] = { ...cita, estado: nuevoEstado };
+    const confirmadoPorNombre = (nuevoEstado === "CONFIRMADA") 
+      ? (usuarioInfo?.nombre || "Karin Palacios (Recepción)") 
+      : cita.confirmadoPorNombre;
+
+    this.citas[index] = { 
+      ...cita, 
+      estado: nuevoEstado,
+      confirmadoPorNombre,
+    };
 
     const paciente = this.pacientes.find((p) => p.id === cita.pacienteId);
+    const responsableNombre = usuarioInfo?.nombre || "Karin Palacios (Recepción)";
+    const responsableRol = usuarioInfo?.rol || "RECEPCION";
 
     this.registrarAuditLog({
       usuarioId: usuarioInfo?.id || "usr-rec-1",
-      usuarioNombre: usuarioInfo?.nombre || "Recepción AJ Fisioterapia",
-      usuarioRol: usuarioInfo?.rol || "RECEPCION",
-      accion: "CITA_ESTADO_CAMBIADO",
+      usuarioNombre: responsableNombre,
+      usuarioRol: responsableRol,
+      accion: nuevoEstado === "CONFIRMADA" ? "CITA_ACEPTADA_CONFIRMADA" : "CITA_ESTADO_CAMBIADO",
       modulo: "AGENDA",
       entidadId: cita.id,
-      detalles: `Cita de ${paciente?.nombres} ${paciente?.apellidos} cambió de ${estadoAnterior} a ${nuevoEstado}.`,
+      detalles: `Cita de ${paciente?.nombres} ${paciente?.apellidos} cambió de ${estadoAnterior} a ${nuevoEstado} [Aceptada/Procesada por: ${responsableNombre}].`,
+      ipAddress: usuarioInfo?.ipAddress || "192.168.1.106",
     });
 
     return this.citas[index];
@@ -787,6 +871,7 @@ class GestorFisioStore {
     notasReevaluacion?: string | null;
     completarReevaluacion?: boolean;
     usuarioAuditoria?: { id?: string; nombre: string; rol: any };
+    ipAddress?: string;
   }) {
     const citaIndex = this.citas.findIndex((c) => c.id === params.citaId);
     if (citaIndex === -1) throw new Error("Cita no encontrada.");
@@ -851,6 +936,7 @@ class GestorFisioStore {
       modulo: "HISTORIA_CLINICA",
       entidadId: cita.id,
       detalles: `Asistencia y evolución clínica para ${paciente?.nombres} ${paciente?.apellidos}. EVA Inicial: ${params.evaDolorInicio}/10, Final: ${params.evaDolorFin}/10. Sesión consumida: ${nuevoConsumo}. ${requiereReevaluacion ? "[HITO DE REEVALUACIÓN PERIÓDICA]" : ""} ${bloqueaAlta ? "[BLOQUEO DE ALTA ACTIVADO]" : ""}`,
+      ipAddress: params.ipAddress || "192.168.1.112",
     });
 
     if (requiereReevaluacion && params.completarReevaluacion) {
@@ -883,6 +969,7 @@ class GestorFisioStore {
     comprobanteUrl?: string | null;
     estado?: "VERIFICADO" | "PENDIENTE";
     usuarioAuditoria?: { id?: string; nombre: string; rol: any };
+    ipAddress?: string;
   }) {
     const paqIndex = this.paquetes.findIndex((p) => p.id === params.paqueteId);
     if (paqIndex === -1) throw new Error("Paquete o tratamiento no encontrado.");
@@ -930,6 +1017,7 @@ class GestorFisioStore {
       modulo: "CAJA",
       entidadId: nuevoPago.id,
       detalles: `Cobranza de S/. ${params.monto.toFixed(2)} (${params.metodoPago}, Op: ${nuevoPago.numeroOperacion}) para ${paciente?.nombres} ${paciente?.apellidos}. Estado paquete: ${this.paquetes[paqIndex].estadoPago}.`,
+      ipAddress: params.ipAddress || "192.168.1.105",
     });
 
     return {

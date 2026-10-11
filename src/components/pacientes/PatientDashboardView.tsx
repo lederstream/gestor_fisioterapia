@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   Calendar, 
@@ -14,15 +15,20 @@ import {
   AlertTriangle,
   User,
   Globe,
-  Home
+  Home,
+  CreditCard,
+  MessageCircle,
+  CalendarCheck
 } from "lucide-react";
 import { formatCurrency, formatTime } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 
 interface PatientDashboardViewProps {
   paciente: any;
   citas: any[];
   paquetes: any[];
   historias: any[];
+  pagos?: any[];
 }
 
 export function PatientDashboardView({
@@ -30,11 +36,48 @@ export function PatientDashboardView({
   citas,
   paquetes,
   historias,
+  pagos = [],
 }: PatientDashboardViewProps) {
+  const { currentUser } = useAuth();
+  const [clinicConfig, setClinicConfig] = useState({
+    nombreComercial: "AJ Fisioterapia",
+    sedeNombre: "Sede San Borja",
+    whatsapp: "+51 987 654 321",
+  });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("clinic_config");
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          setClinicConfig((prev) => ({ ...prev, ...parsed }));
+        } catch {}
+      }
+
+      const handleConfigChange = () => {
+        const updated = localStorage.getItem("clinic_config");
+        if (updated) {
+          try {
+            const parsed = JSON.parse(updated);
+            setClinicConfig((prev) => ({ ...prev, ...parsed }));
+          } catch {}
+        }
+      };
+
+      window.addEventListener("clinic-config-change", handleConfigChange);
+      return () => window.removeEventListener("clinic-config-change", handleConfigChange);
+    }
+  }, []);
+
   const paqueteActivo = paquetes[0];
   const proximaCita = citas.find((c) => c.estado === "PROGRAMADA" || c.estado === "CONFIRMADA");
   const sesionesRestantes = paqueteActivo ? paqueteActivo.totalSesiones - paqueteActivo.sesionesConsumidas : 0;
   const porcentaje = paqueteActivo ? Math.round((paqueteActivo.sesionesConsumidas / paqueteActivo.totalSesiones) * 100) : 0;
+
+  const pacienteNombre = paciente?.nombres 
+    ? `${paciente.nombres} ${paciente.apellidos}` 
+    : currentUser.nombre;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -42,10 +85,10 @@ export function PatientDashboardView({
       <div className="bg-gradient-to-r from-teal-700 via-teal-800 to-emerald-700 p-6 sm:p-8 rounded-3xl text-white shadow-lg shadow-teal-900/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-teal-600/50">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-teal-100 text-xs font-semibold mb-3 border border-white/20 backdrop-blur-xs">
-            <Sparkles className="w-3.5 h-3.5 text-teal-200" /> Portal Oficial del Paciente • Sede San Borja
+            <Sparkles className="w-3.5 h-3.5 text-teal-200" /> Portal Oficial del Paciente • {clinicConfig.sedeNombre}
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
-            Hola, {paciente?.nombres || "Renato"} {paciente?.apellidos || "Salazar"}
+            Hola, {pacienteNombre}
           </h1>
           <p className="text-teal-100 text-xs sm:text-sm mt-1 max-w-xl leading-relaxed">
             Aquí puedes consultar el avance de tu tratamiento fisioterapéutico, saldo de sesiones y horarios programados con tu terapeuta.
@@ -71,13 +114,68 @@ export function PatientDashboardView({
         </div>
       </div>
 
+      {/* Accesos Rápidos del Paciente */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Link
+          href="/dashboard/mis-citas"
+          className="bg-white p-4 rounded-2xl border border-slate-200 hover:border-teal-400 hover:shadow-md transition-all group flex flex-col justify-between"
+        >
+          <div className="w-9 h-9 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+            <Calendar className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="font-bold text-xs text-slate-800 block group-hover:text-teal-700">Mis Citas</span>
+            <span className="text-[10px] text-slate-400">Ver y gestionar agenda</span>
+          </div>
+        </Link>
+
+        <Link
+          href="/dashboard/tratamiento"
+          className="bg-white p-4 rounded-2xl border border-slate-200 hover:border-emerald-400 hover:shadow-md transition-all group flex flex-col justify-between"
+        >
+          <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+            <Activity className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="font-bold text-xs text-slate-800 block group-hover:text-emerald-700">Mi Tratamiento</span>
+            <span className="text-[10px] text-slate-400">Progreso y escala EVA</span>
+          </div>
+        </Link>
+
+        <Link
+          href="/dashboard/mis-pagos"
+          className="bg-white p-4 rounded-2xl border border-slate-200 hover:border-blue-400 hover:shadow-md transition-all group flex flex-col justify-between"
+        >
+          <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+            <CreditCard className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="font-bold text-xs text-slate-800 block group-hover:text-blue-700">Mis Pagos</span>
+            <span className="text-[10px] text-slate-400">Comprobantes y recibos</span>
+          </div>
+        </Link>
+
+        <Link
+          href="/reservas"
+          className="bg-gradient-to-br from-teal-600 to-emerald-600 p-4 rounded-2xl text-white hover:opacity-95 hover:shadow-md transition-all group flex flex-col justify-between"
+        >
+          <div className="w-9 h-9 rounded-xl bg-white/20 text-white flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+            <Sparkles className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="font-bold text-xs text-white block">Reservar Cita</span>
+            <span className="text-[10px] text-teal-100">Agendar online 24/7</span>
+          </div>
+        </Link>
+      </div>
+
       {/* Security Notice for Patient Role */}
       <div className="bg-teal-50/70 border border-teal-200/80 p-4 rounded-2xl flex items-start gap-3 text-xs text-teal-900">
         <ShieldCheck className="w-5 h-5 text-teal-700 shrink-0 mt-0.5" />
         <div className="space-y-0.5">
           <span className="font-bold text-sm block">Entorno Clínico Protegido (Privacidad Ley N° 29733)</span>
           <p className="text-teal-800 text-[11px] leading-relaxed">
-            Tu perfil de <strong>PACIENTE</strong> está estrictamente aislado. Solo tú y tus terapeutas autorizados en San Borja tienen acceso a tu historial de dolor y tratamientos. No tienes acceso a operaciones internas ni finanzas del centro.
+            Tu perfil de <strong>PACIENTE</strong> está estrictamente aislado. Solo tú y tus terapeutas autorizados tienen acceso a tu historial de dolor y tratamientos. No tienes acceso a operaciones internas ni finanzas del centro.
           </p>
         </div>
       </div>
@@ -119,7 +217,7 @@ export function PatientDashboardView({
             <span>{proximaCita ? formatTime(proximaCita.fechaHoraInicio) : "08:00 AM"}</span>
           </div>
           <p className="text-[11px] text-slate-600">
-            Sede San Borja • Sala 1 (Camilla 1)
+            {clinicConfig.sedeNombre} • Sala 1 (Camilla 1)
           </p>
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
             Confirmada

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { agendarCitaSchema, type AgendarCitaInput } from "@/lib/validations";
 import { dbStore } from "@/lib/store";
+import { obtenerIpCliente } from "./auditoria";
 
 export interface ServerActionResult<T = unknown> {
   success: boolean;
@@ -18,11 +19,15 @@ export interface ServerActionResult<T = unknown> {
  * 3. Valida saldo de sesiones disponibles del paquete del paciente.
  * 4. Aplica regla clínica: Si la sesión es múltiplo de 5, activa la bandera 'esReevaluacion'.
  */
-export async function agendarCita(input: AgendarCitaInput): Promise<ServerActionResult> {
+export async function agendarCita(
+  input: AgendarCitaInput,
+  usuarioAuditoria?: { id?: string; nombre: string; rol: any }
+): Promise<ServerActionResult> {
   try {
     const validated = agendarCitaSchema.parse(input);
+    const clientIp = await obtenerIpCliente();
 
-    // Ejecución de la transacción en el motor de negocio
+    // Ejecución de la transacción en el motor de negocio con trazabilidad real
     const nuevaCita = dbStore.agendarCita({
       pacienteId: validated.pacienteId,
       paqueteId: validated.paqueteId,
@@ -31,10 +36,13 @@ export async function agendarCita(input: AgendarCitaInput): Promise<ServerAction
       fechaHoraInicio: validated.fechaHoraInicio,
       duracionMinutos: validated.duracionMinutos,
       esReevaluacion: validated.esReevaluacion,
+      usuarioAuditoria,
+      ipAddress: clientIp,
     });
 
     revalidatePath("/dashboard/agenda");
     revalidatePath(`/dashboard/pacientes/${validated.pacienteId}`);
+    revalidatePath("/dashboard/auditoria");
     revalidatePath("/dashboard");
 
     return {
@@ -98,20 +106,24 @@ export async function obtenerCitasAgenda(fechaIso?: string) {
 }
 
 /**
- * Cambiar estado de una cita (CONFIRMAR, CANCELAR, NO_ASISTIO)
+ * Cambiar estado de una cita (CONFIRMAR, CANCELAR, NO_ASISTIO) con trazabilidad de recepcionista
  */
 export async function actualizarEstadoCita(
   citaId: string,
-  nuevoEstado: "PROGRAMADA" | "CONFIRMADA" | "ATENDIDA" | "CANCELADA" | "NO_ASISTIO"
+  nuevoEstado: "PROGRAMADA" | "CONFIRMADA" | "ATENDIDA" | "CANCELADA" | "NO_ASISTIO",
+  usuarioInfo?: { id?: string; nombre: string; rol: any }
 ): Promise<ServerActionResult> {
   try {
-    const citas = dbStore.getCitas();
-    const index = citas.findIndex((c) => c.id === citaId);
-    if (index === -1) throw new Error("Cita no encontrada.");
-
-    citas[index].estado = nuevoEstado;
+    const clientIp = await obtenerIpCliente();
+    const infoConIp = {
+      ...(usuarioInfo || { id: "usr-rec-1", nombre: "Recepción AJ Fisioterapia", rol: "RECEPCION" }),
+      ipAddress: clientIp,
+    };
+    const actualizada = dbStore.actualizarEstadoCita(citaId, nuevoEstado, infoConIp);
     revalidatePath("/dashboard/agenda");
-    return { success: true, data: citas[index] };
+    revalidatePath("/dashboard/auditoria");
+    revalidatePath("/dashboard");
+    return { success: true, data: actualizada };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Error al actualizar estado.";
     return { success: false, error: message };

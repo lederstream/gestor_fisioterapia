@@ -29,6 +29,32 @@ body {
   font-style: italic;
 }
 
+/* ==============================================================
+   Interacciones de Usuario y Cursores en Botones (Cursor Pointer)
+   ============================================================== */
+button,
+[role="button"],
+input[type="submit"],
+input[type="button"],
+input[type="reset"],
+select,
+summary,
+a {
+  cursor: pointer !important;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"],
+input[type="submit"]:disabled {
+  cursor: not-allowed !important;
+}
+
+/* Micro-interacción táctil y distinción visual activa */
+button:not(:disabled):active,
+[role="button"]:not([aria-disabled="true"]):active {
+  transform: scale(0.985);
+  transition: transform 0.05s ease-in-out;
+}
 
 /* Custom scrollbars for high-density matrix agenda */
 ::-webkit-scrollbar {

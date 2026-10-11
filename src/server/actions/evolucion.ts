@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { registrarAsistenciaYEvolucionSchema, type RegistrarAsistenciaYEvolucionInput } from "@/lib/validations";
 import { dbStore } from "@/lib/store";
 import { ServerActionResult } from "./citas";
+import { obtenerIpCliente } from "./auditoria";
 
 /**
  * Server Action: registrarAsistenciaYEvolucion()
@@ -19,6 +20,7 @@ export async function registrarAsistenciaYEvolucion(
 ): Promise<ServerActionResult> {
   try {
     const validated = registrarAsistenciaYEvolucionSchema.parse(input);
+    const clientIp = await obtenerIpCliente();
 
     const resultado = dbStore.registrarAsistenciaYEvolucion({
       citaId: validated.citaId,
@@ -28,6 +30,7 @@ export async function registrarAsistenciaYEvolucion(
       tratamientoAplicado: validated.tratamientoAplicado,
       notasReevaluacion: validated.notasReevaluacion,
       completarReevaluacion: validated.completarReevaluacion,
+      ipAddress: clientIp,
     });
 
     revalidatePath("/dashboard/agenda");

@@ -22,6 +22,26 @@ export function PaymentVoucherModal({
 }: PaymentVoucherModalProps) {
   if (!isOpen || !pago) return null;
 
+  let clinicConfig = {
+    razonSocial: "AJ FISIOTERAPIA S.A.C.",
+    nombreComercial: "AJ FISIOTERAPIA",
+    sedeNombre: "Sede San Borja",
+    ruc: "20608912345",
+    direccion: "Av. Guardia Civil 520, San Borja, Lima",
+    telefono: "(01) 475-2010",
+    whatsapp: "+51 987 654 321",
+  };
+
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem("clinic_config");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        clinicConfig = { ...clinicConfig, ...parsed };
+      } catch {}
+    }
+  }
+
   const handlePrint = () => {
     window.print();
   };
@@ -29,7 +49,7 @@ export function PaymentVoucherModal({
   const handleWhatsApp = () => {
     const telefono = paciente?.telefono || "";
     const texto = encodeURIComponent(
-      `*AJ FISIOTERAPIA (San Borja)* - Comprobante de Cobranza\n\nEstimado(a) ${paciente?.nombres} ${paciente?.apellidos}:\nHemos registrado su pago de *${formatCurrency(pago.monto)}* (${pago.metodoPago}, Ref: ${pago.numeroOperacion}).\nServicio: ${servicio?.nombre || "Fisioterapia"}\n¡Gracias por su preferencia!`
+      `*${clinicConfig.nombreComercial} (${clinicConfig.sedeNombre})* - Comprobante de Cobranza\n\nEstimado(a) ${paciente?.nombres} ${paciente?.apellidos}:\nHemos registrado su pago de *${formatCurrency(pago.monto)}* (${pago.metodoPago}, Ref: ${pago.numeroOperacion}).\nServicio: ${servicio?.nombre || "Fisioterapia"}\n¡Gracias por su preferencia!`
     );
     window.open(`https://wa.me/51${telefono}?text=${texto}`, "_blank");
   };
@@ -40,14 +60,14 @@ export function PaymentVoucherModal({
         {/* Ticket Header Formato 80mm */}
         <div className="text-center pb-4 border-b border-dashed border-slate-300 space-y-1">
           <div className="w-10 h-10 rounded-xl bg-teal-600 text-white font-black text-lg flex items-center justify-center mx-auto mb-2 font-sans shadow-md shadow-teal-600/20">
-            AJ
+            GF
           </div>
           <h2 className="font-extrabold text-sm uppercase tracking-wider font-sans">
-            AJ FISIOTERAPIA S.A.C.
+            {clinicConfig.razonSocial}
           </h2>
-          <p className="text-[10px] text-slate-500">RUC: 20608912345</p>
-          <p className="text-[10px] text-slate-500">Av. Guardia Civil 520, San Borja, Lima</p>
-          <p className="text-[10px] text-slate-500">Telf: (01) 475-2010 • WhatsApp: 987 654 321</p>
+          <p className="text-[10px] text-slate-500">RUC: {clinicConfig.ruc}</p>
+          <p className="text-[10px] text-slate-500">{clinicConfig.direccion}</p>
+          <p className="text-[10px] text-slate-500">Telf: {clinicConfig.telefono} • WhatsApp: {clinicConfig.whatsapp}</p>
         </div>
 
         {/* Voucher Info */}

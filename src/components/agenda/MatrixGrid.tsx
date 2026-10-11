@@ -14,6 +14,7 @@ import {
   Filter
 } from "lucide-react";
 import { NewAppointmentModal } from "./NewAppointmentModal";
+import { useAuth } from "@/lib/auth-context";
 
 interface MatrixGridProps {
   initialCitas: any[];
@@ -38,6 +39,7 @@ export function MatrixGrid({
   paquetes,
   servicios,
 }: MatrixGridProps) {
+  const { currentUser } = useAuth();
   const [citas, setCitas] = useState(initialCitas);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -457,6 +459,26 @@ export function MatrixGrid({
                 </div>
               )}
 
+              {/* Trazabilidad de Recepción */}
+              <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs space-y-1">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Trazabilidad de Recepción</span>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-slate-500">Agendada por:</span>
+                  <span className="font-semibold text-slate-700">{selectedCitaDetail.creadoPorNombre || "Recepción AJ Fisioterapia"}</span>
+                </div>
+                {selectedCitaDetail.confirmadoPorNombre ? (
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-500">Aceptada / Confirmada por:</span>
+                    <span className="font-bold text-teal-700">{selectedCitaDetail.confirmadoPorNombre}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-500">Estado de Aceptación:</span>
+                    <span className="text-slate-400 italic">Pendiente de confirmación</span>
+                  </div>
+                )}
+              </div>
+
               {/* Botones de Cambio de Estado Rápido */}
               <div className="pt-2 border-t border-slate-100">
                 <span className="text-[10px] uppercase font-bold text-slate-400 block mb-2">Acciones de Recepción y Control</span>
@@ -465,9 +487,15 @@ export function MatrixGrid({
                     <button
                       onClick={async () => {
                         const { actualizarEstadoCita } = await import("@/server/actions/citas");
-                        await actualizarEstadoCita(selectedCitaDetail.id, "CONFIRMADA");
-                        setCitas((prev) => prev.map((c) => c.id === selectedCitaDetail.id ? { ...c, estado: "CONFIRMADA" } : c));
-                        setSelectedCitaDetail((prev: any) => ({ ...prev, estado: "CONFIRMADA" }));
+                        const usuarioInfo = currentUser ? {
+                          id: currentUser.id,
+                          nombre: `${currentUser.nombre} (${currentUser.rol === "RECEPCION" ? "Recepción" : currentUser.rol})`,
+                          rol: currentUser.rol
+                        } : undefined;
+                        await actualizarEstadoCita(selectedCitaDetail.id, "CONFIRMADA", usuarioInfo);
+                        const respNombre = usuarioInfo?.nombre || "Karin Palacios (Recepción)";
+                        setCitas((prev) => prev.map((c) => c.id === selectedCitaDetail.id ? { ...c, estado: "CONFIRMADA", confirmadoPorNombre: respNombre } : c));
+                        setSelectedCitaDetail((prev: any) => ({ ...prev, estado: "CONFIRMADA", confirmadoPorNombre: respNombre }));
                       }}
                       className="py-1.5 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-lg border border-blue-200 text-center transition"
                     >

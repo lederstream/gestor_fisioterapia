@@ -20,10 +20,10 @@ export default async function AuditoriaPage() {
               <span>Historial Oficial de la Clínica</span>
             </div>
             <h1 className="text-xl md:text-2xl font-extrabold text-slate-800">
-              Historial de Actividades
+              Historial de Operaciones y Auditoría de Negocio
             </h1>
             <p className="text-xs text-slate-500">
-              Consulta cada acción realizada en la clínica: citas agendadas, cobros recibidos, evoluciones de pacientes y cambios en ajustes.
+              Supervisión en tiempo real de transacciones financieras, agendamientos de recepción, evoluciones clínicas y desempeño del personal.
             </p>
           </div>
 

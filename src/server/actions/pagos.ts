@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { registrarPagoSchema, type RegistrarPagoInput } from "@/lib/validations";
 import { dbStore, PagoItem, TratamientoPaqueteItem } from "@/lib/store";
 import { ServerActionResult } from "./citas";
+import { obtenerIpCliente } from "./auditoria";
 
 /**
  * Server Action: registrarPago()
@@ -13,10 +14,12 @@ import { ServerActionResult } from "./citas";
  * 3. Calcula automáticamente si el estado pasa a 'PARCIAL' o 'PAGADO'.
  */
 export async function registrarPago(
-  input: RegistrarPagoInput
+  input: RegistrarPagoInput,
+  usuarioAuditoria?: { id?: string; nombre: string; rol: any }
 ): Promise<ServerActionResult<{ pago: PagoItem; paquete: TratamientoPaqueteItem }>> {
   try {
     const validated = registrarPagoSchema.parse(input);
+    const clientIp = await obtenerIpCliente();
 
     const resultado = dbStore.registrarPago({
       paqueteId: validated.paqueteId,
@@ -25,6 +28,8 @@ export async function registrarPago(
       numeroOperacion: validated.numeroOperacion,
       comprobanteUrl: validated.comprobanteUrl,
       estado: validated.estado,
+      usuarioAuditoria,
+      ipAddress: clientIp,
     });
 
     revalidatePath("/dashboard/caja");

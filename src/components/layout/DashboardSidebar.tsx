@@ -19,7 +19,9 @@ import {
   User,
   Globe,
   LogOut,
-  AlertTriangle
+  AlertTriangle,
+  MessageCircle,
+  Phone
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
@@ -38,7 +40,7 @@ interface NavItem {
   permission?: Permission;
 }
 
-const allNavigation: NavItem[] = [
+const staffNavigation: NavItem[] = [
   { name: "Inicio", href: "/dashboard", icon: Home },
   { name: "Agenda", href: "/dashboard/agenda", icon: Calendar, permission: "agenda:ver" },
   { name: "Pacientes", href: "/dashboard/pacientes", icon: Users, permission: "pacientes:ver" },
@@ -48,32 +50,74 @@ const allNavigation: NavItem[] = [
   { name: "Ajustes", href: "/dashboard/configuracion", icon: Settings, permission: "config:ver" },
 ];
 
+const patientNavigation: NavItem[] = [
+  { name: "Mi Resumen", href: "/dashboard", icon: Home },
+  { name: "Mis Citas", href: "/dashboard/mis-citas", icon: Calendar },
+  { name: "Mi Tratamiento & EVA", href: "/dashboard/tratamiento", icon: Activity },
+  { name: "Mis Pagos", href: "/dashboard/mis-pagos", icon: CreditCard },
+  { name: "Reservar Cita", href: "/reservas", icon: Sparkles },
+];
+
 export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: DashboardSidebarProps) {
   const pathname = usePathname();
   const { currentRole, currentUser, hasPermission, roleDetails } = useAuth();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string>("/images/logo-clinica.svg");
+  const [clinicConfig, setClinicConfig] = useState({
+    nombreComercial: "AJ Fisioterapia",
+    sedeNombre: "Sede San Borja",
+    whatsapp: "+51 987 654 321",
+    totalSalasFisicas: 6,
+  });
+
+  const isPatient = currentRole === "PACIENTE";
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("clinic_logo");
-      if (stored) setLogoUrl(stored);
+      const storedLogo = localStorage.getItem("clinic_logo");
+      if (storedLogo) setLogoUrl(storedLogo);
+
+      const storedConfig = localStorage.getItem("clinic_config");
+      if (storedConfig) {
+        try {
+          const parsed = JSON.parse(storedConfig);
+          setClinicConfig((prev) => ({ ...prev, ...parsed }));
+        } catch {}
+      }
 
       const handleLogoChange = () => {
         const updated = localStorage.getItem("clinic_logo");
         if (updated) setLogoUrl(updated);
       };
 
+      const handleConfigChange = () => {
+        const updated = localStorage.getItem("clinic_config");
+        if (updated) {
+          try {
+            const parsed = JSON.parse(updated);
+            setClinicConfig((prev) => ({ ...prev, ...parsed }));
+          } catch {}
+        }
+      };
+
       window.addEventListener("clinic-logo-change", handleLogoChange);
-      return () => window.removeEventListener("clinic-logo-change", handleLogoChange);
+      window.addEventListener("clinic-config-change", handleConfigChange);
+      return () => {
+        window.removeEventListener("clinic-logo-change", handleLogoChange);
+        window.removeEventListener("clinic-config-change", handleConfigChange);
+      };
     }
   }, []);
 
-  // Filtrado dinámico según permisos asignados al rol activo
-  const filteredNavigation = allNavigation.filter((item) => {
-    if (!item.permission) return true;
-    return hasPermission(item.permission);
-  });
+  // Filtrado según si es paciente o personal clínico
+  const filteredNavigation = isPatient
+    ? patientNavigation
+    : staffNavigation.filter((item) => {
+        if (!item.permission) return true;
+        return hasPermission(item.permission);
+      });
+
+  const cleanWhatsappNumber = clinicConfig.whatsapp ? clinicConfig.whatsapp.replace(/\D/g, "") : "51987654321";
 
   return (
     <>
@@ -101,7 +145,7 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: Dashbo
               {logoUrl ? (
                 <img
                   src={logoUrl}
-                  alt="Logo AJ Fisioterapia"
+                  alt={`Logo ${clinicConfig.nombreComercial}`}
                   className="w-full h-full object-contain"
                 />
               ) : (
@@ -112,10 +156,10 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: Dashbo
             </div>
             <div className="min-w-0">
               <span className="font-extrabold tracking-tight text-white text-sm block leading-tight truncate group-hover:text-emerald-300 transition-colors">
-                AJ Fisioterapia
+                {clinicConfig.nombreComercial}
               </span>
               <span className="text-[11px] text-teal-300 font-semibold tracking-wide block truncate">
-                Sede San Borja
+                {isPatient ? "Portal del Paciente" : clinicConfig.sedeNombre}
               </span>
             </div>
           </Link>
@@ -135,8 +179,13 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: Dashbo
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           <div className="px-3 pb-2 text-[10px] font-bold text-teal-300/70 uppercase tracking-wider flex items-center justify-between">
-            <span>Menú Principal</span>
-            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded border bg-white/10 text-teal-200 border-white/15">
+            <span>{isPatient ? "Mi Portal Clínico" : "Menú Principal"}</span>
+            <span className={cn(
+              "text-[9px] font-bold px-1.5 py-0.5 rounded border",
+              isPatient 
+                ? "bg-emerald-500/25 text-emerald-200 border-emerald-400/40" 
+                : "bg-white/10 text-teal-200 border-white/15"
+            )}>
               {currentRole}
             </span>
           </div>
@@ -187,16 +236,37 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: Dashbo
           </Link>
         </nav>
 
-        {/* Clinic Operational Badge */}
-        <div className="p-3.5 border border-white/10 bg-white/5 m-3 rounded-2xl">
-          <div className="flex items-center gap-2 mb-1">
-            <Sparkles className="w-4 h-4 text-emerald-400" />
-            <span className="text-xs font-bold text-white">AJ Fisioterapia</span>
+        {/* Footer Card: Personalizado según si es Paciente o Personal */}
+        {isPatient ? (
+          <div className="p-3.5 border border-emerald-500/25 bg-emerald-950/50 m-3 rounded-2xl shadow-inner">
+            <div className="flex items-center gap-2 mb-1">
+              <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span className="text-xs font-bold text-white">Atención al Paciente</span>
+            </div>
+            <p className="text-[11px] text-emerald-200/85 leading-relaxed mb-2.5">
+              Horario: Lun - Sáb 08:00 AM - 08:00 PM.
+            </p>
+            <a
+              href={`https://wa.me/${cleanWhatsappNumber}?text=Hola,%20soy%20paciente%20Alexander%20Saavedra%20y%20tengo%20una%20consulta%20sobre%20mi%20tratamiento.`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 w-full py-1.5 px-2 bg-emerald-700/60 hover:bg-emerald-600/80 text-emerald-100 font-bold text-[11px] rounded-xl border border-emerald-400/30 transition shadow-xs"
+            >
+              <MessageCircle className="w-3.5 h-3.5 text-emerald-300" />
+              <span>WhatsApp de Soporte</span>
+            </a>
           </div>
-          <p className="text-[11px] text-teal-200/80 leading-relaxed">
-            Sede San Borja • 6 salas de atención activas.
-          </p>
-        </div>
+        ) : (
+          <div className="p-3.5 border border-white/10 bg-white/5 m-3 rounded-2xl">
+            <div className="flex items-center gap-2 mb-1">
+              <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span className="text-xs font-bold text-white">{clinicConfig.nombreComercial}</span>
+            </div>
+            <p className="text-[11px] text-teal-200/80 leading-relaxed">
+              {clinicConfig.sedeNombre} • {clinicConfig.totalSalasFisicas} salas de atención activas.
+            </p>
+          </div>
+        )}
 
         {/* User Footer with Active Role & Confirmation Log Out */}
         <div className="p-3 border-t border-white/10 bg-black/25 flex items-center justify-between gap-2">

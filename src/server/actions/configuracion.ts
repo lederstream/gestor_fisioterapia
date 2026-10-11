@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 import { dbStore, ConfiguracionClinicaItem } from "@/lib/store";
 import { ServerActionResult } from "./citas";
 
+export async function obtenerConfiguracionClinica(): Promise<ConfiguracionClinicaItem> {
+  return dbStore.getConfiguracion();
+}
+
 export async function obtenerConfiguracionCompleta() {
   const configuracion = dbStore.getConfiguracion();
   const salas = dbStore.getSalas();

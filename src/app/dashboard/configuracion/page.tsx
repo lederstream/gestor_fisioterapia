@@ -10,7 +10,7 @@ export default async function ConfiguracionPage() {
     <PermissionGuard
       permission="config:ver"
       fallbackTitle="Acceso Restringido a Parámetros de Sede"
-      fallbackMessage="La modificación de salas físicas, aranceles de servicios y reglas institucionales de San Borja es exclusiva para la Dirección Médica y Gerencia."
+      fallbackMessage="La modificación de salas físicas, aranceles de servicios y reglas institucionales de la sede es exclusiva para la Dirección Médica y Gerencia."
     >
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -19,7 +19,7 @@ export default async function ConfiguracionPage() {
               Ajustes de la Clínica
             </h1>
             <p className="text-xs text-slate-500">
-              Gestiona los datos de la sede, sube el logotipo institucional, administra las 6 salas y personaliza los precios de servicios.
+              Gestiona los datos de la sede, sube el logotipo institucional, administra las salas y personaliza los precios de servicios.
             </p>
           </div>
 

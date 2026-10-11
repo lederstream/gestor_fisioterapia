@@ -3,6 +3,7 @@ import { obtenerFichaPaciente } from "@/server/actions/pacientes";
 import { dbStore } from "@/lib/store";
 import { PatientHeader } from "@/components/pacientes/PatientHeader";
 import { PackageProgressBar } from "@/components/pacientes/PackageProgressBar";
+import { PatientSessionHistory } from "@/components/pacientes/PatientSessionHistory";
 import { EvaScaleChart } from "@/components/pacientes/EvaScaleChart";
 import { PatientDetailClient } from "./PatientDetailClient";
 import { formatDateTime } from "@/lib/utils";
@@ -54,10 +55,17 @@ export default async function PacienteDetailPage({ params }: Props) {
         <PackageProgressBar paquetes={ficha.paquetes} />
       </div>
 
+      {/* Historial Clínico Completo y Registro Multianual de Sesiones */}
+      <PatientSessionHistory
+        citas={ficha.citas}
+        historialEva={ficha.historialEva}
+        pacienteNombre={`${ficha.paciente.nombres} ${ficha.paciente.apellidos}`}
+      />
+
       {/* Historial de Escala EVA y Evolución Clínica */}
       <div className="space-y-2">
         <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
-          Historia Clínica y Escala Visual Analógica (EVA)
+          Curva Gráfica de Dolor y Escala Visual Analógica (EVA)
         </h2>
         <EvaScaleChart historialEva={ficha.historialEva} />
       </div>
