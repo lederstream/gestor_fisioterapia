@@ -79,10 +79,10 @@ export function DashboardPageClient({
             <Building2 className="w-3.5 h-3.5" /> AJ Fisioterapia • San Borja
           </div>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-            Panel de Control Clínico y Operativo
+            Panel Principal de la Clínica
           </h1>
           <p className="text-teal-100 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
-            Gestión en tiempo real de las 6 salas de terapia física, control de paquetes de 10 y 20 sesiones, y cumplimiento estricto de reevaluación cada 5 sesiones.
+            Bienvenido al sistema de AJ Fisioterapia en San Borja. Consulta la agenda del día, el flujo de pacientes y el estado de atención.
           </p>
         </div>
 
@@ -92,7 +92,7 @@ export function DashboardPageClient({
             className="px-4 py-2.5 bg-white hover:bg-teal-50 text-teal-900 text-xs font-bold rounded-xl shadow-md flex items-center gap-2 transition"
           >
             <Calendar className="w-4 h-4 text-teal-700" />
-            <span>Ver Matriz 6 Salas</span>
+            <span>Ir a la Agenda</span>
           </Link>
           {canManageUsers && (
             <Link
@@ -100,7 +100,7 @@ export function DashboardPageClient({
               className="px-4 py-2.5 bg-white/15 hover:bg-white/25 text-white text-xs font-bold rounded-xl border border-white/20 flex items-center gap-2 transition backdrop-blur-xs"
             >
               <KeyRound className="w-4 h-4 text-teal-200" />
-              <span>Usuarios & RBAC</span>
+              <span>Equipo</span>
             </Link>
           )}
           {canSeeAudit && (
@@ -109,7 +109,7 @@ export function DashboardPageClient({
               className="px-4 py-2.5 bg-white/15 hover:bg-white/25 text-white text-xs font-bold rounded-xl border border-white/20 flex items-center gap-2 transition backdrop-blur-xs"
             >
               <History className="w-4 h-4 text-teal-200" />
-              <span>Auditoría en Vivo</span>
+              <span>Historial</span>
             </Link>
           )}
           {canSeeConfig && (
@@ -118,7 +118,7 @@ export function DashboardPageClient({
               className="px-4 py-2.5 bg-white/15 hover:bg-white/25 text-white text-xs font-bold rounded-xl border border-white/20 flex items-center gap-2 transition backdrop-blur-xs"
             >
               <Settings className="w-4 h-4 text-teal-200" />
-              <span>Configuración</span>
+              <span>Ajustes</span>
             </Link>
           )}
         </div>

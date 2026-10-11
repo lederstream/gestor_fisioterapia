@@ -116,10 +116,10 @@ export function MatrixGrid({
           </div>
           <div>
             <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
-              Matriz Operativa de Salas Físicas
+              Agenda del Día por Salas
             </h2>
             <p className="text-xs text-slate-500">
-              6 salas simultáneas • Capacidad 30-50 pacientes diarios
+              Organiza y visualiza las citas programadas en las 6 salas de atención.
             </p>
           </div>
         </div>

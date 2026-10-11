@@ -168,14 +168,14 @@ export function UserManager({ initialUsers }: UserManagerProps) {
       {/* Header del Módulo */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-200 text-purple-700 text-xs font-bold mb-1.5">
-            <Shield className="w-3.5 h-3.5" /> Seguridad y Control de Acceso (RBAC)
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-xs font-bold mb-1.5">
+            <Shield className="w-3.5 h-3.5" /> Equipo y Permisos de Acceso
           </div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            Gestión Dinámica de Usuarios y Roles
+            Gestión del Equipo
           </h1>
           <p className="text-xs text-slate-500">
-            Administre personal, asigne permisos segmentados y garantice la separación entre clínica, finanzas y clientes.
+            Administra al personal de la clínica, asigna sus puestos de trabajo y define a qué áreas pueden acceder.
           </p>
         </div>
 

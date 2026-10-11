@@ -40,25 +40,25 @@ export function CajaClient({ reporte }: CajaClientProps) {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl md:text-2xl font-extrabold text-slate-800">
-            Control de Caja y Cobranzas
+            Caja y Pagos
           </h1>
           <p className="text-xs text-slate-500">
-            Gestión de pagos fraccionados para paquetes de 10 y 20 sesiones (Efectivo, Yape, Plin, POS).
+            Control de cobros y saldos de pacientes en San Borja (Efectivo, Yape, Plin, POS).
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setIsArqueoOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-md shadow-teal-600/25 transition"
+            className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-md shadow-teal-600/25 transition cursor-pointer"
           >
             <Lock className="w-4 h-4 text-teal-100" />
-            <span>Arqueo y Cierre de Turno</span>
+            <span>Cierre de Caja</span>
           </button>
 
           <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-xl text-emerald-800 text-xs font-bold">
             <TrendingUp className="w-4 h-4 text-emerald-600" />
-            <span>Total Turno: {formatCurrency(reporte.totalRecaudado)}</span>
+            <span>Total Recaudado: {formatCurrency(reporte.totalRecaudado)}</span>
           </div>
         </div>
       </div>

@@ -39,13 +39,13 @@ interface NavItem {
 }
 
 const allNavigation: NavItem[] = [
-  { name: "Dashboard", href: "/dashboard", icon: Home },
+  { name: "Inicio", href: "/dashboard", icon: Home },
   { name: "Agenda", href: "/dashboard/agenda", icon: Calendar, permission: "agenda:ver" },
   { name: "Pacientes", href: "/dashboard/pacientes", icon: Users, permission: "pacientes:ver" },
   { name: "Caja", href: "/dashboard/caja", icon: CreditCard, permission: "caja:ver" },
-  { name: "Usuarios", href: "/dashboard/usuarios", icon: KeyRound, permission: "usuarios:gestionar" },
-  { name: "Auditoría", href: "/dashboard/auditoria", icon: History, permission: "auditoria:ver" },
-  { name: "Configuración", href: "/dashboard/configuracion", icon: Settings, permission: "config:ver" },
+  { name: "Equipo", href: "/dashboard/usuarios", icon: KeyRound, permission: "usuarios:gestionar" },
+  { name: "Historial", href: "/dashboard/auditoria", icon: History, permission: "auditoria:ver" },
+  { name: "Ajustes", href: "/dashboard/configuracion", icon: Settings, permission: "config:ver" },
 ];
 
 export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: DashboardSidebarProps) {
@@ -135,7 +135,7 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: Dashbo
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           <div className="px-3 pb-2 text-[10px] font-bold text-teal-300/70 uppercase tracking-wider flex items-center justify-between">
-            <span>Módulos Autorizados</span>
+            <span>Menú Principal</span>
             <span className="text-[9px] font-bold px-1.5 py-0.5 rounded border bg-white/10 text-teal-200 border-white/15">
               {currentRole}
             </span>
@@ -174,7 +174,7 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: Dashbo
 
           {/* Único enlace limpio al portal público */}
           <div className="pt-5 px-3 pb-2 text-[10px] font-bold text-teal-300/70 uppercase tracking-wider">
-            Portal Público
+            Página Web
           </div>
           <Link
             href="/"
@@ -182,19 +182,19 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: Dashbo
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-teal-100/80 hover:text-white hover:bg-white/10 transition-colors"
           >
             <Globe className="w-4 h-4 text-teal-300" />
-            <span className="flex-1">Ver Sitio Web</span>
+            <span className="flex-1">Ir al Sitio Web</span>
             <ExternalLink className="w-3.5 h-3.5 text-teal-400/60" />
           </Link>
         </nav>
 
         {/* Clinic Operational Badge */}
         <div className="p-3.5 border border-white/10 bg-white/5 m-3 rounded-2xl">
-          <div className="flex items-center gap-2 mb-1.5">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span className="text-xs font-bold text-white">Seguridad & RBAC Activo</span>
+          <div className="flex items-center gap-2 mb-1">
+            <Sparkles className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs font-bold text-white">AJ Fisioterapia</span>
           </div>
-          <p className="text-[11px] text-teal-200/70 leading-relaxed">
-            Acceso restringido por rol con trazabilidad inmutable de acciones.
+          <p className="text-[11px] text-teal-200/80 leading-relaxed">
+            Sede San Borja • 6 salas de atención activas.
           </p>
         </div>
 

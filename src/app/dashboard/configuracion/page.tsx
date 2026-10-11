@@ -16,16 +16,16 @@ export default async function ConfiguracionPage() {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
             <h1 className="text-xl md:text-2xl font-extrabold text-slate-800">
-              Módulo de Configuración Integral
+              Ajustes de la Clínica
             </h1>
             <p className="text-xs text-slate-500">
-              Administración de sede San Borja, capacidad de las 6 salas, regla obligatoria de reevaluación cada 5 sesiones y catálogo arancelario.
+              Gestiona los datos de la sede, sube el logotipo institucional, administra las 6 salas y personaliza los precios de servicios.
             </p>
           </div>
 
           <div className="bg-slate-100 text-slate-700 px-3.5 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold flex items-center gap-2">
             <Settings className="w-4 h-4 text-teal-600" />
-            <span>Panel de Administración Senior</span>
+            <span>Administración</span>
           </div>
         </div>
 
