@@ -389,7 +389,7 @@ class GestorFisioStore {
     };
   }
 
-  // Control de Salas
+  // Control de Salas Dinámicas
   actualizarEstadoSala(salaId: string, nuevoEstado: "DISPONIBLE" | "MANTENIMIENTO", motivo?: string) {
     const index = this.salas.findIndex((s) => s.id === salaId);
     if (index === -1) throw new Error("Sala no encontrada.");
@@ -409,7 +409,71 @@ class GestorFisioStore {
     return this.salas[index];
   }
 
-  // Control de Servicios
+  crearSala(nombre: string, equipamiento?: string) {
+    const nuevaSala: SalaItem = {
+      id: `sala-${Date.now()}`,
+      nombre,
+      estado: "DISPONIBLE",
+      equipamiento: equipamiento || "Camilla clínica estándar",
+      capacidadSimultanea: 1,
+    };
+    this.salas.push(nuevaSala);
+    this.configuracion.totalSalasFisicas = this.salas.length;
+
+    this.registrarAuditLog({
+      usuarioId: "usr-admin-1",
+      usuarioNombre: "Marco Antonio (Administrador)",
+      usuarioRol: "ADMIN",
+      accion: "SALA_CREADA",
+      modulo: "CONFIGURACION",
+      entidadId: nuevaSala.id,
+      detalles: `Nueva sala "${nombre}" registrada con equipamiento: ${equipamiento || "Camilla estándar"}.`,
+    });
+
+    return nuevaSala;
+  }
+
+  editarSala(salaId: string, nombre: string, equipamiento?: string) {
+    const index = this.salas.findIndex((s) => s.id === salaId);
+    if (index === -1) throw new Error("Sala no encontrada.");
+
+    this.salas[index].nombre = nombre;
+    if (equipamiento !== undefined) this.salas[index].equipamiento = equipamiento;
+
+    this.registrarAuditLog({
+      usuarioId: "usr-admin-1",
+      usuarioNombre: "Marco Antonio (Administrador)",
+      usuarioRol: "ADMIN",
+      accion: "SALA_EDITADA",
+      modulo: "CONFIGURACION",
+      entidadId: salaId,
+      detalles: `Sala "${nombre}" actualizada con éxito.`,
+    });
+
+    return this.salas[index];
+  }
+
+  eliminarSala(salaId: string) {
+    const index = this.salas.findIndex((s) => s.id === salaId);
+    if (index === -1) throw new Error("Sala no encontrada.");
+
+    const eliminada = this.salas.splice(index, 1)[0];
+    this.configuracion.totalSalasFisicas = this.salas.length;
+
+    this.registrarAuditLog({
+      usuarioId: "usr-admin-1",
+      usuarioNombre: "Marco Antonio (Administrador)",
+      usuarioRol: "ADMIN",
+      accion: "SALA_ELIMINADA",
+      modulo: "CONFIGURACION",
+      entidadId: salaId,
+      detalles: `Sala "${eliminada.nombre}" eliminada de la clínica.`,
+    });
+
+    return eliminada;
+  }
+
+  // Control de Servicios Dinámicos
   actualizarServicio(servicioId: string, precioBase: number, duracionMinutos: number) {
     const index = this.servicios.findIndex((s) => s.id === servicioId);
     if (index === -1) throw new Error("Servicio no encontrado.");
@@ -429,6 +493,47 @@ class GestorFisioStore {
     });
 
     return this.servicios[index];
+  }
+
+  crearServicio(nombre: string, precioBase: number, duracionMinutos: number) {
+    const nuevoServicio: ServicioItem = {
+      id: `serv-${Date.now()}`,
+      nombre,
+      precioBase,
+      duracionMinutos,
+    };
+    this.servicios.push(nuevoServicio);
+
+    this.registrarAuditLog({
+      usuarioId: "usr-admin-1",
+      usuarioNombre: "Marco Antonio (Administrador)",
+      usuarioRol: "ADMIN",
+      accion: "SERVICIO_CREADO",
+      modulo: "CONFIGURACION",
+      entidadId: nuevoServicio.id,
+      detalles: `Nuevo servicio terapéutico "${nombre}" creado (Tarifa: S/. ${precioBase}, Duración: ${duracionMinutos}m).`,
+    });
+
+    return nuevoServicio;
+  }
+
+  eliminarServicio(servicioId: string) {
+    const index = this.servicios.findIndex((s) => s.id === servicioId);
+    if (index === -1) throw new Error("Servicio no encontrado.");
+
+    const eliminado = this.servicios.splice(index, 1)[0];
+
+    this.registrarAuditLog({
+      usuarioId: "usr-admin-1",
+      usuarioNombre: "Marco Antonio (Administrador)",
+      usuarioRol: "ADMIN",
+      accion: "SERVICIO_ELIMINADO",
+      modulo: "CONFIGURACION",
+      entidadId: servicioId,
+      detalles: `Servicio "${eliminado.nombre}" eliminado del catálogo.`,
+    });
+
+    return eliminado;
   }
 
   // Control de Personal

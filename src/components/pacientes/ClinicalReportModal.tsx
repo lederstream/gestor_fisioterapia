@@ -62,32 +62,34 @@ export function ClinicalReportModal({
   const citasAtendidas = citas.filter((c) => c.estado === "ATENDIDA");
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto print:p-0 print:bg-white print:static">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full overflow-hidden border border-slate-200 my-8 print:my-0 print:border-none print:shadow-none print:max-w-none">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-2 sm:p-4 md:p-6 overflow-hidden print:p-0 print:bg-white print:static print:overflow-visible">
+      <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-4xl w-full max-h-[92vh] sm:max-h-[90vh] flex flex-col border border-slate-200 overflow-hidden print:max-h-none print:overflow-visible print:border-none print:shadow-none print:max-w-none animate-in fade-in zoom-in-95 duration-150">
         
-        {/* Barra superior de acciones (Oculta al imprimir) */}
-        <div className="bg-slate-50 border-b border-slate-200 text-slate-800 px-6 py-4 flex items-center justify-between print:hidden">
+        {/* Barra superior de acciones (Sticky y siempre visible en pantalla) */}
+        <div className="bg-slate-50 border-b border-slate-200 text-slate-800 px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between shrink-0 print:hidden">
           <div className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-teal-600" />
-            <span className="font-extrabold text-sm tracking-wide text-slate-900">
-              Expediente Clínico & Informe de Evolución
-            </span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-700 border border-teal-200">
-              OFICIAL
-            </span>
+            <FileText className="w-5 h-5 text-teal-600 shrink-0" />
+            <div className="flex items-center gap-2">
+              <span className="font-extrabold text-xs sm:text-sm tracking-wide text-slate-900">
+                Expediente Clínico & Evolución
+              </span>
+              <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-700 border border-teal-200">
+                OFICIAL
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={handlePrint}
-              className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition shadow-xs"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
             >
               <Printer className="w-4 h-4" />
-              <span className="hidden sm:inline">Imprimir / Exportar PDF</span>
-              <span className="sm:hidden">Imprimir</span>
+              <span className="hidden sm:inline">Imprimir / PDF</span>
+              <span className="sm:hidden">PDF</span>
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 hover:bg-slate-200/80 rounded-xl transition text-slate-500 hover:text-slate-800"
+              className="p-1.5 hover:bg-slate-200 rounded-xl transition text-slate-500 hover:text-slate-800 cursor-pointer"
               aria-label="Cerrar modal"
             >
               <X className="w-5 h-5" />
@@ -95,11 +97,11 @@ export function ClinicalReportModal({
           </div>
         </div>
 
-        {/* Contenido del Documento Clínico Membretado */}
-        <div ref={reportRef} className="p-8 md:p-12 space-y-8 text-slate-800 print:p-6 print:text-black">
+        {/* Contenido del Documento Clínico Membretado Scroleable */}
+        <div ref={reportRef} className="p-4 sm:p-8 md:p-10 space-y-6 sm:space-y-8 text-slate-800 overflow-y-auto flex-1 print:p-6 print:text-black print:overflow-visible">
           
           {/* Cabecera Membretada Oficial */}
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between border-b-2 border-teal-600 pb-6 gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b-2 border-teal-600 pb-5 gap-4">
             <div>
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 p-1 flex items-center justify-center overflow-hidden shrink-0 print:border-none">
@@ -116,10 +118,10 @@ export function ClinicalReportModal({
                   )}
                 </div>
                 <div>
-                  <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight print:text-black">
+                  <h1 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight print:text-black">
                     AJ FISIOTERAPIA & REHABILITACIÓN
                   </h1>
-                  <p className="text-xs text-slate-500 font-medium">
+                  <p className="text-[11px] sm:text-xs text-slate-500 font-medium">
                     Centro Especializado en Terapia Física y Biomecánica Clínica
                   </p>
                 </div>
@@ -129,21 +131,21 @@ export function ClinicalReportModal({
               </p>
             </div>
 
-            <div className="text-left md:text-right bg-slate-50 p-3 rounded-2xl border border-slate-200 print:bg-transparent print:border-none print:p-0">
+            <div className="text-left sm:text-right bg-slate-50 p-3 rounded-2xl border border-slate-200 w-full sm:w-auto print:bg-transparent print:border-none print:p-0">
               <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
                 N° Expediente Único
               </span>
-              <span className="text-base font-mono font-black text-teal-700 block">
+              <span className="text-sm sm:text-base font-mono font-black text-teal-700 block">
                 HC-{paciente.dni}
               </span>
-              <span className="text-[11px] text-slate-500 block">
+              <span className="text-[10px] sm:text-[11px] text-slate-500 block">
                 Emisión: {new Date().toLocaleDateString("es-PE", { year: "numeric", month: "long", day: "numeric" })}
               </span>
             </div>
           </div>
 
           {/* Información Personal y Filiación */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50/70 p-5 rounded-2xl border border-slate-200 print:bg-transparent print:border print:border-slate-300">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200 print:bg-transparent print:border print:border-slate-300">
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400 block">Paciente</span>
               <span className="text-xs font-bold text-slate-900 block">
@@ -259,8 +261,8 @@ export function ClinicalReportModal({
               <FileSpreadsheet className="w-4 h-4 text-teal-600" />
               Registro Detallado de Sesiones Realizadas
             </h2>
-            <div className="border border-slate-200 rounded-2xl overflow-hidden">
-              <table className="w-full text-left text-xs">
+            <div className="border border-slate-200 rounded-2xl overflow-x-auto bg-white">
+              <table className="w-full min-w-[580px] text-left text-xs">
                 <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
                   <tr>
                     <th className="py-2.5 px-3">Sesión</th>
@@ -345,6 +347,23 @@ export function ClinicalReportModal({
           <div className="text-center text-[10px] text-slate-400 pt-4 border-t border-slate-100">
             Documento emitido válidamente por el sistema transaccional Gestor Fisioterapia (AJ Fisioterapia San Borja). Confidencialidad bajo ley general de salud.
           </div>
+        </div>
+
+        {/* Barra inferior móvil rápida (Oculta al imprimir) */}
+        <div className="bg-slate-50 border-t border-slate-200 px-4 py-3 flex sm:hidden items-center justify-between shrink-0 print:hidden">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition"
+          >
+            Cerrar
+          </button>
+          <button
+            onClick={handlePrint}
+            className="flex items-center gap-1.5 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition shadow-xs"
+          >
+            <Printer className="w-4 h-4" />
+            <span>Imprimir PDF</span>
+          </button>
         </div>
       </div>
     </div>

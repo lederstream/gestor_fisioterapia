@@ -86,3 +86,76 @@ export async function cambiarEstadoPersonal(
     return { success: false, error: message };
   }
 }
+
+export async function crearNuevaSala(
+  nombre: string,
+  equipamiento?: string
+): Promise<ServerActionResult> {
+  try {
+    const sala = dbStore.crearSala(nombre, equipamiento);
+    revalidatePath("/dashboard/agenda");
+    revalidatePath("/dashboard/configuracion");
+    revalidatePath("/dashboard");
+    return { success: true, data: sala };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Error al registrar nueva sala.";
+    return { success: false, error: message };
+  }
+}
+
+export async function editarDatosSala(
+  salaId: string,
+  nombre: string,
+  equipamiento?: string
+): Promise<ServerActionResult> {
+  try {
+    const sala = dbStore.editarSala(salaId, nombre, equipamiento);
+    revalidatePath("/dashboard/agenda");
+    revalidatePath("/dashboard/configuracion");
+    return { success: true, data: sala };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Error al actualizar sala.";
+    return { success: false, error: message };
+  }
+}
+
+export async function eliminarSala(salaId: string): Promise<ServerActionResult> {
+  try {
+    const eliminada = dbStore.eliminarSala(salaId);
+    revalidatePath("/dashboard/agenda");
+    revalidatePath("/dashboard/configuracion");
+    revalidatePath("/dashboard");
+    return { success: true, data: eliminada };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Error al eliminar sala.";
+    return { success: false, error: message };
+  }
+}
+
+export async function crearNuevoServicio(
+  nombre: string,
+  precioBase: number,
+  duracionMinutos: number
+): Promise<ServerActionResult> {
+  try {
+    const servicio = dbStore.crearServicio(nombre, precioBase, duracionMinutos);
+    revalidatePath("/dashboard/configuracion");
+    revalidatePath("/reservas");
+    return { success: true, data: servicio };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Error al crear nuevo servicio.";
+    return { success: false, error: message };
+  }
+}
+
+export async function eliminarServicio(servicioId: string): Promise<ServerActionResult> {
+  try {
+    const eliminado = dbStore.eliminarServicio(servicioId);
+    revalidatePath("/dashboard/configuracion");
+    revalidatePath("/reservas");
+    return { success: true, data: eliminado };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Error al eliminar servicio.";
+    return { success: false, error: message };
+  }
+}
