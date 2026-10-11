@@ -41,11 +41,18 @@ export type RegistrarPagoInput = z.infer<typeof registrarPagoSchema>;
 // Validación para crear nuevo paciente
 export const crearPacienteSchema = z.object({
   dni: z.string().regex(/^\d{8}$/, "El DNI debe tener exactamente 8 dígitos"),
-  nombres: z.string().min(2, "Los nombres deben tener al menos 2 caracteres"),
-  apellidos: z.string().min(2, "Los apellidos deben tener al menos 2 caracteres"),
+  primerNombre: z.string().optional(),
+  segundoNombre: z.string().optional().nullable(),
+  apellidoPaterno: z.string().optional(),
+  apellidoMaterno: z.string().optional().nullable(),
+  nombres: z.string().optional(),
+  apellidos: z.string().optional(),
   telefono: z.string().min(9, "El teléfono debe tener al menos 9 dígitos"),
   email: z.string().email("Correo electrónico inválido").optional().or(z.literal("")),
   fechaNacimiento: z.string().or(z.date()).transform((val) => new Date(val)),
+  contactoEmergenciaNombre: z.string().optional().nullable(),
+  contactoEmergenciaParentesco: z.string().optional().nullable(),
+  contactoEmergenciaTelefono: z.string().optional().nullable(),
   contactoEmergencia: z.string().optional().nullable(),
 });
 
@@ -54,8 +61,12 @@ export type CrearPacienteInput = z.infer<typeof crearPacienteSchema>;
 // Validación para el portal de reservas públicas
 export const reservaPublicaSchema = z.object({
   dni: z.string().regex(/^\d{8}$/, "El DNI debe tener 8 dígitos"),
-  nombres: z.string().min(2, "Nombres requeridos"),
-  apellidos: z.string().min(2, "Apellidos requeridos"),
+  primerNombre: z.string().optional(),
+  segundoNombre: z.string().optional().nullable(),
+  apellidoPaterno: z.string().optional(),
+  apellidoMaterno: z.string().optional().nullable(),
+  nombres: z.string().optional(),
+  apellidos: z.string().optional(),
   telefono: z.string().regex(/^9\d{8}$/, "Número de celular peruano válido (ej. 987654321)"),
   email: z.string().email("Correo electrónico válido").optional().or(z.literal("")),
   servicioId: z.string().min(1, "Seleccione el servicio requerido"),

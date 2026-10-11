@@ -44,9 +44,13 @@ export function UserManager({ initialUsers }: UserManagerProps) {
   const [search, setSearch] = useState("");
   const [filterRol, setFilterRol] = useState<string>("TODOS");
 
-  // Modal Nuevo Usuario
+  // Modal Nuevo Usuario (Campos Atómicos)
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [nuevoNombre, setNuevoNombre] = useState("");
+  const [nuevoPrefijo, setNuevoPrefijo] = useState("Lic.");
+  const [nuevoPrimerNombre, setNuevoPrimerNombre] = useState("");
+  const [nuevoSegundoNombre, setNuevoSegundoNombre] = useState("");
+  const [nuevoApellidoPaterno, setNuevoApellidoPaterno] = useState("");
+  const [nuevoApellidoMaterno, setNuevoApellidoMaterno] = useState("");
   const [nuevoEmail, setNuevoEmail] = useState("");
   const [nuevoRol, setNuevoRol] = useState<UserRole>("TERAPEUTA");
   const [nuevaEspecialidad, setNuevaEspecialidad] = useState("");
@@ -113,14 +117,22 @@ export function UserManager({ initialUsers }: UserManagerProps) {
     }
   };
 
-  // Crear usuario
+  // Crear usuario con datos atómicos
   const handleCrearUsuario = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setMensaje(null);
 
+    const nombresParts = [nuevoPrimerNombre.trim(), nuevoSegundoNombre.trim()].filter(Boolean).join(" ");
+    const apellidosParts = [nuevoApellidoPaterno.trim(), nuevoApellidoMaterno.trim()].filter(Boolean).join(" ");
+    const nombreCompletoGenerado = [
+      nuevoPrefijo && nuevoPrefijo !== "Sin prefijo" ? nuevoPrefijo : "",
+      nombresParts,
+      apellidosParts,
+    ].filter(Boolean).join(" ");
+
     const res = await crearNuevoUsuario({
-      nombre: nuevoNombre,
+      nombre: nombreCompletoGenerado,
       email: nuevoEmail,
       rol: nuevoRol,
       especialidad: nuevaEspecialidad || undefined,
@@ -132,7 +144,10 @@ export function UserManager({ initialUsers }: UserManagerProps) {
     if (res.success && res.data) {
       setUsers((prev) => [...prev, res.data!]);
       setIsModalOpen(false);
-      setNuevoNombre("");
+      setNuevoPrimerNombre("");
+      setNuevoSegundoNombre("");
+      setNuevoApellidoPaterno("");
+      setNuevoApellidoMaterno("");
       setNuevoEmail("");
       setNuevaEspecialidad("");
       setMensaje({
@@ -504,18 +519,103 @@ export function UserManager({ initialUsers }: UserManagerProps) {
             </div>
 
             <form onSubmit={handleCrearUsuario} className="mt-4 space-y-4 text-xs">
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Nombre Completo *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ej. Lic. Fernando Quispe"
-                  value={nuevoNombre}
-                  onChange={(e) => setNuevoNombre(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                />
+              {/* Nombres y Apellidos Desglosados */}
+              <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/80 space-y-3">
+                <span className="font-bold text-slate-700 text-[11px] block uppercase tracking-wider">
+                  Filiación e Identificación Oficial (Campos Separados)
+                </span>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">
+                      Título / Grado
+                    </label>
+                    <select
+                      value={nuevoPrefijo}
+                      onChange={(e) => setNuevoPrefijo(e.target.value)}
+                      className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                    >
+                      <option value="Lic.">Lic. (Licenciado)</option>
+                      <option value="Tec.">Tec. (Técnico)</option>
+                      <option value="Dr.">Dr. (Doctor)</option>
+                      <option value="Dra.">Dra. (Doctora)</option>
+                      <option value="Sr.">Sr. (Señor)</option>
+                      <option value="Sra.">Sra. (Señora)</option>
+                      <option value="Sin prefijo">Sin prefijo</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">
+                      Primer Nombre *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ej. Fernando"
+                      value={nuevoPrimerNombre}
+                      onChange={(e) => setNuevoPrimerNombre(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">
+                      Segundo Nombre
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Gabriel"
+                      value={nuevoSegundoNombre}
+                      onChange={(e) => setNuevoSegundoNombre(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">
+                      Apellido Paterno *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ej. Quispe"
+                      value={nuevoApellidoPaterno}
+                      onChange={(e) => setNuevoApellidoPaterno(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">
+                      Apellido Materno *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ej. Huamán"
+                      value={nuevoApellidoMaterno}
+                      onChange={(e) => setNuevoApellidoMaterno(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Previsualización del Nombre Registrado */}
+                <div className="pt-1 text-[11px] text-slate-500 flex items-center gap-1.5">
+                  <span>Nombre en el sistema:</span>
+                  <span className="font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded-lg border border-teal-100">
+                    {[
+                      nuevoPrefijo && nuevoPrefijo !== "Sin prefijo" ? nuevoPrefijo : "",
+                      nuevoPrimerNombre,
+                      nuevoSegundoNombre,
+                      nuevoApellidoPaterno,
+                      nuevoApellidoMaterno,
+                    ].filter(Boolean).join(" ") || "Complete los campos de filiación"}
+                  </span>
+                </div>
               </div>
 
               <div>

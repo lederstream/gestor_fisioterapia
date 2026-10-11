@@ -28,11 +28,18 @@ export interface ServicioItem {
 export interface PacienteItem {
   id: string;
   dni: string;
+  primerNombre?: string;
+  segundoNombre?: string;
+  apellidoPaterno?: string;
+  apellidoMaterno?: string;
   nombres: string;
   apellidos: string;
   telefono: string;
   email?: string;
   fechaNacimiento: string;
+  contactoEmergenciaNombre?: string;
+  contactoEmergenciaParentesco?: string;
+  contactoEmergenciaTelefono?: string;
   contactoEmergencia?: string;
   createdAt: string;
 }
@@ -108,6 +115,11 @@ export interface ConfiguracionClinicaItem {
   nombreComercial: string;
   sedeNombre?: string;
   ruc: string;
+  direccionAvenidaCalle?: string;
+  direccionNumero?: string;
+  direccionDistrito?: string;
+  direccionCiudad?: string;
+  direccionReferencia?: string;
   direccion: string;
   telefono: string;
   whatsapp: string;
@@ -219,7 +231,12 @@ const initialConfiguracion: ConfiguracionClinicaItem = {
   nombreComercial: "AJ Fisioterapia",
   sedeNombre: "Sede San Borja",
   ruc: "20608912345",
-  direccion: "Av. Guardia Civil 520, San Borja, Lima",
+  direccionAvenidaCalle: "Av. Guardia Civil",
+  direccionNumero: "520",
+  direccionDistrito: "San Borja",
+  direccionCiudad: "Lima",
+  direccionReferencia: "Cerca al Óvalo Quiñones",
+  direccion: "Av. Guardia Civil 520, San Borja, Lima (Ref: Cerca al Óvalo Quiñones)",
   telefono: "(01) 475-2010",
   whatsapp: "+51 987 654 321",
   horaApertura: "08:00",
@@ -383,6 +400,22 @@ class GestorFisioStore {
       ...data,
       updatedAt: new Date().toISOString(),
     };
+
+    if (data.direccionAvenidaCalle || data.direccionNumero || data.direccionDistrito || data.direccionCiudad || data.direccionReferencia) {
+      const avCalle = data.direccionAvenidaCalle ?? this.configuracion.direccionAvenidaCalle ?? "";
+      const num = data.direccionNumero ?? this.configuracion.direccionNumero ?? "";
+      const dist = data.direccionDistrito ?? this.configuracion.direccionDistrito ?? "";
+      const ciudad = data.direccionCiudad ?? this.configuracion.direccionCiudad ?? "";
+      const ref = data.direccionReferencia ?? this.configuracion.direccionReferencia ?? "";
+
+      const viaNum = [avCalle, num].filter(Boolean).join(" ");
+      const parts = [viaNum, dist, ciudad].filter(Boolean);
+      let dirGenerada = parts.join(", ");
+      if (ref) dirGenerada += ` (Ref: ${ref})`;
+      if (dirGenerada) {
+        this.configuracion.direccion = dirGenerada;
+      }
+    }
 
     this.registrarAuditLog({
       usuarioId: usuarioInfo?.id || "usr-admin-1",
@@ -1031,8 +1064,26 @@ class GestorFisioStore {
     const existe = this.pacientes.find((p) => p.dni === data.dni);
     if (existe) throw new Error(`Ya existe un paciente registrado con el DNI ${data.dni}`);
 
+    const primerNombre = data.primerNombre?.trim();
+    const segundoNombre = data.segundoNombre?.trim();
+    const apellidoPaterno = data.apellidoPaterno?.trim();
+    const apellidoMaterno = data.apellidoMaterno?.trim();
+
+    const nombres = data.nombres || [primerNombre, segundoNombre].filter(Boolean).join(" ");
+    const apellidos = data.apellidos || [apellidoPaterno, apellidoMaterno].filter(Boolean).join(" ");
+
+    let contactoEmergencia = data.contactoEmergencia;
+    if (!contactoEmergencia && data.contactoEmergenciaNombre) {
+      contactoEmergencia = `${data.contactoEmergenciaNombre}${
+        data.contactoEmergenciaParentesco ? ` (${data.contactoEmergenciaParentesco})` : ""
+      }${data.contactoEmergenciaTelefono ? ` - Tel: ${data.contactoEmergenciaTelefono}` : ""}`;
+    }
+
     const nuevo: PacienteItem = {
       ...data,
+      nombres,
+      apellidos,
+      contactoEmergencia,
       id: `pac-${Date.now()}`,
       createdAt: new Date().toISOString(),
     };
@@ -1056,9 +1107,36 @@ class GestorFisioStore {
     const index = this.pacientes.findIndex((p) => p.id === id);
     if (index === -1) throw new Error("Paciente no encontrado");
 
+    const current = this.pacientes[index];
+    const primerNombre = data.primerNombre !== undefined ? data.primerNombre.trim() : current.primerNombre;
+    const segundoNombre = data.segundoNombre !== undefined ? data.segundoNombre?.trim() : current.segundoNombre;
+    const apellidoPaterno = data.apellidoPaterno !== undefined ? data.apellidoPaterno.trim() : current.apellidoPaterno;
+    const apellidoMaterno = data.apellidoMaterno !== undefined ? data.apellidoMaterno?.trim() : current.apellidoMaterno;
+
+    let nombres = data.nombres ?? current.nombres;
+    if (data.primerNombre !== undefined || data.segundoNombre !== undefined) {
+      nombres = [primerNombre, segundoNombre].filter(Boolean).join(" ");
+    }
+
+    let apellidos = data.apellidos ?? current.apellidos;
+    if (data.apellidoPaterno !== undefined || data.apellidoMaterno !== undefined) {
+      apellidos = [apellidoPaterno, apellidoMaterno].filter(Boolean).join(" ");
+    }
+
+    let contactoEmergencia = data.contactoEmergencia ?? current.contactoEmergencia;
+    if (data.contactoEmergenciaNombre !== undefined || data.contactoEmergenciaParentesco !== undefined || data.contactoEmergenciaTelefono !== undefined) {
+      const nombreC = data.contactoEmergenciaNombre ?? current.contactoEmergenciaNombre ?? "";
+      const parC = data.contactoEmergenciaParentesco ?? current.contactoEmergenciaParentesco ?? "";
+      const telC = data.contactoEmergenciaTelefono ?? current.contactoEmergenciaTelefono ?? "";
+      contactoEmergencia = `${nombreC}${parC ? ` (${parC})` : ""}${telC ? ` - Tel: ${telC}` : ""}`;
+    }
+
     this.pacientes[index] = {
       ...this.pacientes[index],
       ...data,
+      nombres,
+      apellidos,
+      contactoEmergencia,
     };
 
     const actualizado = this.pacientes[index];

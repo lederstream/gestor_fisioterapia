@@ -106,12 +106,23 @@ export function ConfigurationManager({
     setSavingConfig(true);
     setMsgConfig(null);
 
+    const dirCalculada = [
+      [config.direccionAvenidaCalle, config.direccionNumero].filter(Boolean).join(" "),
+      config.direccionDistrito,
+      config.direccionCiudad,
+    ].filter(Boolean).join(", ") + (config.direccionReferencia ? ` (Ref: ${config.direccionReferencia})` : "") || config.direccion;
+
     const res = await guardarConfiguracionClinica({
       razonSocial: config.razonSocial,
       nombreComercial: config.nombreComercial,
       sedeNombre: config.sedeNombre || "Sede San Borja",
       ruc: config.ruc,
-      direccion: config.direccion,
+      direccionAvenidaCalle: config.direccionAvenidaCalle,
+      direccionNumero: config.direccionNumero,
+      direccionDistrito: config.direccionDistrito,
+      direccionCiudad: config.direccionCiudad,
+      direccionReferencia: config.direccionReferencia,
+      direccion: dirCalculada,
       telefono: config.telefono,
       whatsapp: config.whatsapp,
       horaApertura: config.horaApertura,
@@ -436,15 +447,102 @@ export function ConfigurationManager({
               />
             </div>
 
-            <div className="sm:col-span-2 md:col-span-1">
-              <label className="block font-semibold text-slate-700 mb-1">Dirección Física de la Sede</label>
-              <input
-                type="text"
-                value={config.direccion}
-                onChange={(e) => setConfig({ ...config, direccion: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-medium text-xs"
-                required
-              />
+            {/* Ubicación y Dirección Estructurada de la Sede */}
+            <div className="col-span-full bg-slate-50/70 p-4 rounded-xl border border-slate-200/90 space-y-3">
+              <span className="font-bold text-slate-800 text-xs block uppercase tracking-wider">
+                Dirección Física y Ubicación de la Sede (Campos Atómicos Estructurados)
+              </span>
+              <p className="text-[11px] text-slate-500">
+                Cada dato se registra en su cuadro individual. El sistema organiza la dirección oficial automáticamente sin requerir que ingreses comas manuales.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                {/* 1. Vía / Avenida / Calle */}
+                <div className="sm:col-span-2">
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Tipo y Nombre de Vía / Avenida / Calle *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej. Av. Guardia Civil"
+                    value={config.direccionAvenidaCalle || ""}
+                    onChange={(e) => setConfig({ ...config, direccionAvenidaCalle: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-medium text-xs"
+                    required
+                  />
+                </div>
+
+                {/* 2. Número / Piso / Interior */}
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Número / Dpto / Interior *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej. 520"
+                    value={config.direccionNumero || ""}
+                    onChange={(e) => setConfig({ ...config, direccionNumero: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-medium text-xs"
+                    required
+                  />
+                </div>
+
+                {/* 3. Distrito */}
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Distrito *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej. San Borja"
+                    value={config.direccionDistrito || ""}
+                    onChange={(e) => setConfig({ ...config, direccionDistrito: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-medium text-xs"
+                    required
+                  />
+                </div>
+
+                {/* 4. Ciudad / Provincia */}
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Ciudad / Provincia *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej. Lima"
+                    value={config.direccionCiudad || ""}
+                    onChange={(e) => setConfig({ ...config, direccionCiudad: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-medium text-xs"
+                    required
+                  />
+                </div>
+
+                {/* 5. Referencia */}
+                <div className="sm:col-span-3">
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Punto de Referencia (Opcional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej. Frente a parque Quiñones / A dos cuadras del Óvalo"
+                    value={config.direccionReferencia || ""}
+                    onChange={(e) => setConfig({ ...config, direccionReferencia: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-medium text-xs"
+                  />
+                </div>
+              </div>
+
+              {/* Vista previa generada automáticamente */}
+              <div className="pt-2 text-[11px] text-slate-500 flex flex-wrap items-center gap-1.5">
+                <span className="font-bold text-slate-700">Dirección completa resultante:</span>
+                <span className="font-medium text-teal-800 bg-teal-50 px-2 py-0.5 rounded-lg border border-teal-100">
+                  {[
+                    [config.direccionAvenidaCalle, config.direccionNumero].filter(Boolean).join(" "),
+                    config.direccionDistrito,
+                    config.direccionCiudad,
+                  ].filter(Boolean).join(", ") + (config.direccionReferencia ? ` (Ref: ${config.direccionReferencia})` : "") || config.direccion || "Completar campos de dirección"}
+                </span>
+              </div>
             </div>
 
             <div>

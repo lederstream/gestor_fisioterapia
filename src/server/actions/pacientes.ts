@@ -34,11 +34,18 @@ export async function crearPaciente(input: CrearPacienteInput): Promise<ServerAc
 
     const nuevo = dbStore.crearPaciente({
       dni: validated.dni,
-      nombres: validated.nombres,
-      apellidos: validated.apellidos,
+      primerNombre: validated.primerNombre || undefined,
+      segundoNombre: validated.segundoNombre || undefined,
+      apellidoPaterno: validated.apellidoPaterno || undefined,
+      apellidoMaterno: validated.apellidoMaterno || undefined,
+      nombres: validated.nombres || [validated.primerNombre, validated.segundoNombre].filter(Boolean).join(" "),
+      apellidos: validated.apellidos || [validated.apellidoPaterno, validated.apellidoMaterno].filter(Boolean).join(" "),
       telefono: validated.telefono,
       email: validated.email || undefined,
       fechaNacimiento: validated.fechaNacimiento.toISOString().split("T")[0],
+      contactoEmergenciaNombre: validated.contactoEmergenciaNombre || undefined,
+      contactoEmergenciaParentesco: validated.contactoEmergenciaParentesco || undefined,
+      contactoEmergenciaTelefono: validated.contactoEmergenciaTelefono || undefined,
       contactoEmergencia: validated.contactoEmergencia || undefined,
     });
 
@@ -78,11 +85,18 @@ export async function asignarPaqueteTratamiento(params: {
 export async function actualizarPaciente(
   id: string,
   data: {
-    telefono?: string;
-    email?: string;
-    contactoEmergencia?: string;
+    primerNombre?: string;
+    segundoNombre?: string;
+    apellidoPaterno?: string;
+    apellidoMaterno?: string;
     nombres?: string;
     apellidos?: string;
+    telefono?: string;
+    email?: string;
+    contactoEmergenciaNombre?: string;
+    contactoEmergenciaParentesco?: string;
+    contactoEmergenciaTelefono?: string;
+    contactoEmergencia?: string;
   }
 ): Promise<ServerActionResult> {
   try {

@@ -22,8 +22,10 @@ export function BookingForm({ servicios }: BookingFormProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [servicioId, setServicioId] = useState(servicios[0]?.id || "");
   const [dni, setDni] = useState("");
-  const [nombres, setNombres] = useState("");
-  const [apellidos, setApellidos] = useState("");
+  const [primerNombre, setPrimerNombre] = useState("");
+  const [segundoNombre, setSegundoNombre] = useState("");
+  const [apellidoPaterno, setApellidoPaterno] = useState("");
+  const [apellidoMaterno, setApellidoMaterno] = useState("");
   const [telefono, setTelefono] = useState("");
   const [email, setEmail] = useState("");
   const [fecha, setFecha] = useState(new Date().toISOString().split("T")[0]);
@@ -31,6 +33,9 @@ export function BookingForm({ servicios }: BookingFormProps) {
   const [motivo, setMotivo] = useState("");
   const [loading, setLoading] = useState(false);
   const [confirmado, setConfirmado] = useState(false);
+
+  const nombres = [primerNombre.trim(), segundoNombre.trim()].filter(Boolean).join(" ");
+  const apellidos = [apellidoPaterno.trim(), apellidoMaterno.trim()].filter(Boolean).join(" ");
 
   const selectedServicio = servicios.find((s) => s.id === servicioId) || servicios[0];
 
@@ -86,8 +91,10 @@ export function BookingForm({ servicios }: BookingFormProps) {
           onClick={() => {
             setConfirmado(false);
             setDni("");
-            setNombres("");
-            setApellidos("");
+            setPrimerNombre("");
+            setSegundoNombre("");
+            setApellidoPaterno("");
+            setApellidoMaterno("");
             setTelefono("");
             setMotivo("");
           }}
@@ -184,15 +191,16 @@ export function BookingForm({ servicios }: BookingFormProps) {
               />
             </div>
 
+            {/* Nombres y Apellidos Desglosados */}
             <div>
               <label className="block text-slate-600 font-semibold mb-1">
-                Nombres *
+                Primer Nombre *
               </label>
               <input
                 type="text"
                 required
-                value={nombres}
-                onChange={(e) => setNombres(e.target.value)}
+                value={primerNombre}
+                onChange={(e) => setPrimerNombre(e.target.value)}
                 placeholder="Ej. Carlos"
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
               />
@@ -200,14 +208,41 @@ export function BookingForm({ servicios }: BookingFormProps) {
 
             <div>
               <label className="block text-slate-600 font-semibold mb-1">
-                Apellidos *
+                Segundo Nombre (Opcional)
+              </label>
+              <input
+                type="text"
+                value={segundoNombre}
+                onChange={(e) => setSegundoNombre(e.target.value)}
+                placeholder="Ej. Eduardo"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-600 font-semibold mb-1">
+                Apellido Paterno *
               </label>
               <input
                 type="text"
                 required
-                value={apellidos}
-                onChange={(e) => setApellidos(e.target.value)}
-                placeholder="Ej. Mendoza Castro"
+                value={apellidoPaterno}
+                onChange={(e) => setApellidoPaterno(e.target.value)}
+                placeholder="Ej. Mendoza"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-600 font-semibold mb-1">
+                Apellido Materno *
+              </label>
+              <input
+                type="text"
+                required
+                value={apellidoMaterno}
+                onChange={(e) => setApellidoMaterno(e.target.value)}
+                placeholder="Ej. Castro"
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
               />
             </div>
