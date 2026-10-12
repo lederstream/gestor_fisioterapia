@@ -12,12 +12,7 @@ import {
   AlertCircle, 
   CalendarDays, 
   Search, 
-  Filter, 
-  FileSpreadsheet, 
-  BadgeCheck, 
   Sparkles,
-  ChevronDown,
-  ChevronUp,
   FileText,
   Printer,
   TrendingDown,
@@ -26,7 +21,12 @@ import {
   MapPin,
   Check,
   Maximize2,
-  Minimize2
+  Minimize2,
+  ChevronRight,
+  ChevronLeft,
+  X,
+  Columns,
+  Table as TableIcon
 } from "lucide-react";
 
 interface PatientSessionHistoryProps {
@@ -43,7 +43,10 @@ export function PatientSessionHistory({
   const [selectedYear, setSelectedYear] = useState<string>("TODOS");
   const [selectedStatus, setSelectedStatus] = useState<string>("TODOS");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [expandedSessionIds, setExpandedSessionIds] = useState<Set<string>>(new Set());
+  const [density, setDensity] = useState<"comoda" | "compacta">("compacta");
+  const [viewMode, setViewMode] = useState<"tabla" | "split">("tabla");
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
 
   // Extraer todos los años presentes en las citas
   const availableYears = useMemo(() => {
@@ -57,12 +60,12 @@ export function PatientSessionHistory({
     return Array.from(yearsSet).sort((a, b) => Number(b) - Number(a));
   }, [citas]);
 
-  // Contadores y métricas globales para visión ejecutiva
+  // Contadores y métricas globales
   const totalSesiones = citas.length;
   const sesionesAtendidas = citas.filter((c) => c.estado === "ATENDIDA").length;
   const sesionesPendientes = citas.filter((c) => c.estado === "PROGRAMADA" || c.estado === "CONFIRMADA").length;
   
-  // Cálculo de reducción promedio de dolor EVA
+  // Reducción promedio de dolor EVA
   const evolucionesValidas = citas.filter((c) => c.evolucion && c.evolucion.evaDolorInicio !== undefined);
   const reduccionPromedioEva = useMemo(() => {
     if (evolucionesValidas.length === 0) return null;
@@ -71,7 +74,7 @@ export function PatientSessionHistory({
     return (suma / evolucionesValidas.length).toFixed(1);
   }, [evolucionesValidas]);
 
-  // Filtrado de citas con búsqueda instantánea
+  // Filtrado de citas
   const citasFiltradas = useMemo(() => {
     return citas.filter((c) => {
       const d = new Date(c.fechaHoraInicio);
@@ -102,31 +105,32 @@ export function PatientSessionHistory({
     });
   }, [citas, selectedYear, selectedStatus, searchQuery]);
 
-  // Manejo de expansión individual y masiva
-  const toggleRow = (id: string) => {
-    setExpandedSessionIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
+  // Sesión actualmente seleccionada para inspección
+  const activeSessionIndex = citasFiltradas.findIndex((c) => c.id === selectedSessionId);
+  const activeSession = activeSessionIndex !== -1 
+    ? citasFiltradas[activeSessionIndex] 
+    : (citasFiltradas.length > 0 ? citasFiltradas[0] : null);
+
+  const handleSelectSession = (id: string) => {
+    setSelectedSessionId(id);
+    if (viewMode === "tabla") {
+      setIsDrawerOpen(true);
+    }
   };
 
-  const expandAll = () => {
-    const allIds = new Set(citasFiltradas.map((c) => c.id));
-    setExpandedSessionIds(allIds);
+  const handlePrevSession = () => {
+    if (activeSessionIndex > 0) {
+      setSelectedSessionId(citasFiltradas[activeSessionIndex - 1].id);
+    }
   };
 
-  const collapseAll = () => {
-    setExpandedSessionIds(new Set());
+  const handleNextSession = () => {
+    if (activeSessionIndex < citasFiltradas.length - 1) {
+      setSelectedSessionId(citasFiltradas[activeSessionIndex + 1].id);
+    }
   };
 
-  const allExpanded = citasFiltradas.length > 0 && expandedSessionIds.size >= citasFiltradas.length;
-
-  // Formateadores de fecha compactos
+  // Formateadores compactos
   const formatearFechaCorta = (iso: string) => {
     const d = new Date(iso);
     const dia = d.getDate().toString().padStart(2, "0");
@@ -138,11 +142,10 @@ export function PatientSessionHistory({
 
   const obtenerDiaSemana = (iso: string) => {
     const d = new Date(iso);
-    const dias = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+    const dias = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
     return dias[d.getDay()];
   };
 
-  // Helper de colores EVA para visualización inmediata
   const getEvaColorClass = (val: number) => {
     if (val === 0) return "bg-emerald-500 text-white";
     if (val <= 3) return "bg-teal-500 text-white";
@@ -153,19 +156,19 @@ export function PatientSessionHistory({
 
   const getEvaLabel = (val: number) => {
     if (val === 0) return "Sin Dolor";
-    if (val <= 3) return "Dolor Leve";
+    if (val <= 3) return "Leve";
     if (val <= 6) return "Moderado";
     if (val <= 8) return "Severo";
-    return "Máximo";
+    return "Intenso";
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4 sm:p-6 space-y-5">
+    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4 sm:p-5 space-y-4">
       {/* Cabecera Ejecutiva: Título y Métricas Clave */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-        <div className="space-y-1">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+        <div className="space-y-0.5">
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-800 text-[11px] font-bold border border-teal-200">
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 text-[10px] font-bold border border-teal-200">
               <CalendarDays className="w-3 h-3 text-teal-600" />
               <span>Cronología Multianual</span>
             </span>
@@ -173,51 +176,48 @@ export function PatientSessionHistory({
               {citasFiltradas.length} de {totalSesiones} registradas
             </span>
           </div>
-          <h2 className="text-base sm:text-lg font-black text-slate-800 tracking-tight flex items-center gap-2">
+          <h2 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-2">
             <span>Historial Clínico de Sesiones</span>
             <span className="text-xs font-semibold text-teal-700 bg-teal-50/80 px-2 py-0.5 rounded-lg border border-teal-100">
               {pacienteNombre}
             </span>
           </h2>
-          <p className="text-xs text-slate-500 max-w-2xl">
-            Monitoreo continuo de asistencia, evolución del dolor (EVA), técnicas aplicadas y trazabilidad operativa.
-          </p>
         </div>
 
-        {/* Tarjetas KPI compactas para dueños y terapeutas */}
+        {/* Tarjetas KPI compactas */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full lg:w-auto shrink-0">
-          <div className="bg-slate-50/80 border border-slate-200/80 rounded-xl px-3 py-2 text-center">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Total</span>
-            <span className="text-base font-black text-slate-800">{totalSesiones}</span>
+          <div className="bg-slate-50/80 border border-slate-200/80 rounded-xl px-2.5 py-1.5 text-center">
+            <span className="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">Total</span>
+            <span className="text-sm font-black text-slate-800">{totalSesiones}</span>
           </div>
-          <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl px-3 py-2 text-center">
-            <span className="text-[10px] uppercase font-bold text-emerald-700 block tracking-wider">Atendidas</span>
-            <span className="text-base font-black text-emerald-800">{sesionesAtendidas}</span>
+          <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl px-2.5 py-1.5 text-center">
+            <span className="text-[9px] uppercase font-bold text-emerald-700 block tracking-wider">Atendidas</span>
+            <span className="text-sm font-black text-emerald-800">{sesionesAtendidas}</span>
           </div>
-          <div className="bg-blue-50/70 border border-blue-200/80 rounded-xl px-3 py-2 text-center">
-            <span className="text-[10px] uppercase font-bold text-blue-700 block tracking-wider">Pendientes</span>
-            <span className="text-base font-black text-blue-800">{sesionesPendientes}</span>
+          <div className="bg-blue-50/70 border border-blue-200/80 rounded-xl px-2.5 py-1.5 text-center">
+            <span className="text-[9px] uppercase font-bold text-blue-700 block tracking-wider">Pendientes</span>
+            <span className="text-sm font-black text-blue-800">{sesionesPendientes}</span>
           </div>
-          <div className="bg-teal-50/70 border border-teal-200/80 rounded-xl px-3 py-2 text-center">
-            <span className="text-[10px] uppercase font-bold text-teal-700 block tracking-wider">Alivio EVA</span>
-            <span className="text-base font-black text-teal-800">
+          <div className="bg-teal-50/70 border border-teal-200/80 rounded-xl px-2.5 py-1.5 text-center">
+            <span className="text-[9px] uppercase font-bold text-teal-700 block tracking-wider">Alivio EVA</span>
+            <span className="text-sm font-black text-teal-800">
               {reduccionPromedioEva ? `-${reduccionPromedioEva} pts` : "—"}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Barra de Filtros Inteligente: Año, Estado, Búsqueda y Expansión Masiva */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 pt-1">
+      {/* Barra de Filtros, Vistas y Densidad */}
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5">
         {/* Selector de Años */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
-          <span className="text-xs font-bold text-slate-500 shrink-0 mr-1 flex items-center gap-1">
+        <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0">
+          <span className="text-[11px] font-bold text-slate-500 shrink-0 mr-1 flex items-center gap-1">
             <Calendar className="w-3.5 h-3.5 text-slate-400" />
             <span>Año:</span>
           </span>
           <button
             onClick={() => setSelectedYear("TODOS")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer shrink-0 ${
               selectedYear === "TODOS"
                 ? "bg-teal-600 text-white shadow-xs"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -231,7 +231,7 @@ export function PatientSessionHistory({
               <button
                 key={yr}
                 onClick={() => setSelectedYear(yr)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer shrink-0 ${
                   selectedYear === yr
                     ? "bg-teal-600 text-white shadow-xs"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -249,351 +249,500 @@ export function PatientSessionHistory({
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 font-semibold focus:outline-hidden focus:ring-2 focus:ring-teal-500/20"
+            className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 font-semibold focus:outline-hidden"
           >
             <option value="TODOS">Todos los estados</option>
             <option value="ATENDIDA">Solo Atendidas ({sesionesAtendidas})</option>
             <option value="CONFIRMADA">Confirmadas</option>
             <option value="PROGRAMADA">Programadas</option>
-            <option value="REEVALUACION">Reevaluaciones Obligatorias</option>
+            <option value="REEVALUACION">Reevaluaciones Hito 5</option>
             <option value="CANCELADA">Canceladas</option>
             <option value="NO_ASISTIO">No Asistió</option>
           </select>
 
           {/* Buscador Rápido */}
-          <div className="relative flex-1 sm:w-52">
+          <div className="relative flex-1 sm:w-48">
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               placeholder="Buscar técnica, terapeuta..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-teal-500/20"
+              className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden"
             />
           </div>
 
-          {/* Toggle Expandir / Colapsar Todo */}
-          <button
-            onClick={allExpanded ? collapseAll : expandAll}
-            className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shrink-0 cursor-pointer"
-            title={allExpanded ? "Colapsar todas las filas" : "Expandir todas las filas"}
-          >
-            {allExpanded ? (
-              <>
-                <Minimize2 className="w-3.5 h-3.5 text-slate-500" />
-                <span className="hidden sm:inline">Colapsar</span>
-              </>
+          {/* Alternar Vista: Tabla Completa vs Vista Dividida (Split) */}
+          <div className="hidden lg:flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200/80">
+            <button
+              onClick={() => setViewMode("tabla")}
+              className={`p-1.5 rounded-lg text-xs transition cursor-pointer ${
+                viewMode === "tabla" ? "bg-white text-teal-800 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900"
+              }`}
+              title="Vista de Tabla Completa con Inspector Lateral"
+            >
+              <TableIcon className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => {
+                setViewMode("split");
+                if (!selectedSessionId && citasFiltradas.length > 0) {
+                  setSelectedSessionId(citasFiltradas[0].id);
+                }
+              }}
+              className={`p-1.5 rounded-lg text-xs transition cursor-pointer ${
+                viewMode === "split" ? "bg-white text-teal-800 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900"
+              }`}
+              title="Vista Dividida (Master-Detail): Tabla + Ficha de Sesión al costado"
+            >
+              <Columns className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Selector de Densidad */}
+          <div className="hidden sm:flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl p-0.5 text-[11px] font-bold text-slate-600">
+            <button
+              onClick={() => setDensity("comoda")}
+              className={`px-2 py-1 rounded-lg transition cursor-pointer ${
+                density === "comoda" ? "bg-white text-teal-800 shadow-2xs font-bold" : "hover:text-slate-900"
+              }`}
+            >
+              Cómoda
+            </button>
+            <button
+              onClick={() => setDensity("compacta")}
+              className={`px-2 py-1 rounded-lg transition cursor-pointer ${
+                density === "compacta" ? "bg-teal-600 text-white shadow-2xs font-bold" : "hover:text-slate-900"
+              }`}
+            >
+              Compacta
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* CONTENEDOR PRINCIPAL: SEGÚN MODO TABLA O SPLIT VIEW */}
+      <div className={`grid gap-4 ${viewMode === "split" ? "grid-cols-1 lg:grid-cols-12" : "grid-cols-1"}`}>
+        
+        {/* PANEL IZQUIERDO: TABLA DE SESIONES (ESTABLE, SIN SALTOS VERTICALES) */}
+        <div className={`border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-2xs ${viewMode === "split" ? "lg:col-span-7" : "w-full"}`}>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="bg-slate-50/90 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px] select-none">
+                <tr>
+                  <th className="py-2.5 px-3"># / Estado</th>
+                  <th className="py-2.5 px-3">Fecha y Hora</th>
+                  <th className="py-2.5 px-3">Especialista & Box</th>
+                  <th className="py-2.5 px-3 text-center">Dolor EVA</th>
+                  {viewMode === "tabla" && (
+                    <th className="py-2.5 px-3">Tratamiento Clínico</th>
+                  )}
+                  <th className="py-2.5 px-3 text-right">Ficha</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {citasFiltradas.length === 0 ? (
+                  <tr>
+                    <td colSpan={viewMode === "tabla" ? 6 : 5} className="py-12 text-center text-slate-400 text-xs space-y-1">
+                      <AlertCircle className="w-6 h-6 mx-auto text-slate-300" />
+                      <p className="font-semibold text-slate-500">No se encontraron sesiones registradas</p>
+                      <p className="text-[11px] text-slate-400">
+                        Pruebe cambiando los filtros de año o estado.
+                      </p>
+                    </td>
+                  </tr>
+                ) : (
+                  citasFiltradas.map((c, index) => {
+                    const ev = c.evolucion;
+                    const isSelected = selectedSessionId === c.id;
+                    const correlativo = citasFiltradas.length - index;
+                    const terapeutaNombre = c.terapeuta?.nombre || "Terapeuta Clínico";
+                    const salaNombre = c.sala?.nombre || "Box Clínico";
+                    const rowPad = density === "compacta" ? "py-2 px-3" : "py-3 px-3";
+
+                    return (
+                      <tr
+                        key={c.id}
+                        onClick={() => handleSelectSession(c.id)}
+                        className={`transition-colors cursor-pointer group ${
+                          isSelected 
+                            ? "bg-teal-50/60 font-medium" 
+                            : "hover:bg-slate-50/80"
+                        }`}
+                      >
+                        {/* Columna 1: Sesión & Estado */}
+                        <td className={rowPad}>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-black text-slate-900 text-xs">
+                              #{correlativo}
+                            </span>
+                            {c.esReevaluacion && (
+                              <span className="px-1 py-0.2 rounded text-[9px] font-black bg-amber-100 text-amber-900 border border-amber-300">
+                                H5
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-0.5">
+                            {c.estado === "ATENDIDA" && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded-md border border-emerald-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                Atendida
+                              </span>
+                            )}
+                            {c.estado === "CONFIRMADA" && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded-md border border-blue-200">
+                                Confirmada
+                              </span>
+                            )}
+                            {c.estado === "PROGRAMADA" && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.2 rounded-md border border-indigo-200">
+                                Programada
+                              </span>
+                            )}
+                            {c.estado === "CANCELADA" && (
+                              <span className="inline-flex items-center text-[10px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.2 rounded-md border border-rose-200">
+                                Cancelada
+                              </span>
+                            )}
+                            {c.estado === "NO_ASISTIO" && (
+                              <span className="inline-flex items-center text-[10px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded-md border border-amber-200">
+                                No Asistió
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Columna 2: Fecha y Horario */}
+                        <td className={rowPad}>
+                          <span className="font-bold text-slate-800 block text-xs whitespace-nowrap">
+                            {formatearFechaCorta(c.fechaHoraInicio)}
+                          </span>
+                          <div className="flex items-center gap-1 text-[10px] text-slate-500 mt-0.5 font-medium">
+                            <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span>{formatTime(c.fechaHoraInicio)}</span>
+                            <span className="text-slate-300">•</span>
+                            <span>{obtenerDiaSemana(c.fechaHoraInicio)}</span>
+                          </div>
+                        </td>
+
+                        {/* Columna 3: Especialista y Sala */}
+                        <td className={rowPad}>
+                          <span className="font-semibold text-slate-800 block text-xs truncate max-w-[130px]" title={terapeutaNombre}>
+                            {terapeutaNombre}
+                          </span>
+                          <span className="text-[10px] text-slate-500 block truncate">
+                            {salaNombre}
+                          </span>
+                        </td>
+
+                        {/* Columna 4: Dolor EVA */}
+                        <td className={`${rowPad} text-center`}>
+                          {ev ? (
+                            <div className="inline-flex items-center gap-1 justify-center">
+                              <span
+                                className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black shadow-2xs ${getEvaColorClass(
+                                  ev.evaDolorInicio
+                                )}`}
+                                title={`EVA Inicial: ${ev.evaDolorInicio}/10 (${getEvaLabel(ev.evaDolorInicio)})`}
+                              >
+                                {ev.evaDolorInicio}
+                              </span>
+                              <span className="text-slate-400 font-bold text-[10px]">→</span>
+                              <span
+                                className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black shadow-2xs ${getEvaColorClass(
+                                  ev.evaDolorFin
+                                )}`}
+                                title={`EVA Final: ${ev.evaDolorFin}/10 (${getEvaLabel(ev.evaDolorFin)})`}
+                              >
+                                {ev.evaDolorFin}
+                              </span>
+                              {ev.evaDolorInicio > ev.evaDolorFin && (
+                                <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200">
+                                  -{ev.evaDolorInicio - ev.evaDolorFin}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-slate-400 italic">
+                              {c.estado === "PROGRAMADA" || c.estado === "CONFIRMADA"
+                                ? "Pendiente"
+                                : "—"}
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Columna 5: Tratamiento Clínico (Visible en Vista Tabla) */}
+                        {viewMode === "tabla" && (
+                          <td className={rowPad}>
+                            {ev ? (
+                              <p className="text-[11px] text-slate-700 line-clamp-1 max-w-[280px]" title={ev.tratamientoAplicado}>
+                                {ev.tratamientoAplicado}
+                              </p>
+                            ) : (
+                              <span className="text-[10px] text-slate-400 italic">
+                                {c.estado === "PROGRAMADA" || c.estado === "CONFIRMADA"
+                                  ? "Esperando ejecución"
+                                  : "Sin registro"}
+                              </span>
+                            )}
+                          </td>
+                        )}
+
+                        {/* Columna 6: Acción / Ficha */}
+                        <td className={`${rowPad} text-right`}>
+                          <button
+                            type="button"
+                            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                              isSelected
+                                ? "bg-teal-600 text-white"
+                                : "bg-slate-100 text-slate-600 group-hover:bg-teal-50 group-hover:text-teal-700"
+                            }`}
+                            title="Ver detalles clínicos completos"
+                          >
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+          
+          <div className="bg-slate-50/60 px-3 py-1.5 border-t border-slate-200/80 text-[10px] text-slate-400 flex items-center justify-between">
+            <span>{citasFiltradas.length} sesiones en este rango</span>
+            <span>Haga clic en cualquier fila para inspeccionar la ficha clínica</span>
+          </div>
+        </div>
+
+        {/* PANEL DERECHO: DETALLE EN VISTA DIVIDIDA (SPLIT VIEW) */}
+        {viewMode === "split" && (
+          <div className="hidden lg:block lg:col-span-5 border border-slate-200 rounded-2xl bg-white shadow-2xs p-4 sticky top-4 self-start space-y-3.5 max-h-[85vh] overflow-y-auto">
+            {activeSession ? (
+              <ClinicalDetailCard
+                session={activeSession}
+                onPrev={handlePrevSession}
+                onNext={handleNextSession}
+                canPrev={activeSessionIndex > 0}
+                canNext={activeSessionIndex < citasFiltradas.length - 1}
+                getEvaColorClass={getEvaColorClass}
+                getEvaLabel={getEvaLabel}
+                formatearFechaCorta={formatearFechaCorta}
+              />
             ) : (
-              <>
-                <Maximize2 className="w-3.5 h-3.5 text-slate-500" />
-                <span className="hidden sm:inline">Expandir Todo</span>
-              </>
+              <div className="p-8 text-center text-slate-400 text-xs">
+                Seleccione una sesión en la tabla para ver su detalle.
+              </div>
             )}
+          </div>
+        )}
+      </div>
+
+      {/* DRAWER / SLIDE-OVER LATERAL (Para cuando el usuario está en modo Tabla o en pantallas pequeñas) */}
+      {isDrawerOpen && activeSession && (
+        <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/40 backdrop-blur-xs flex justify-end animate-in fade-in duration-200">
+          <div 
+            className="w-full max-w-lg bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header del Drawer */}
+            <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
+              <div className="flex items-center gap-2">
+                <span className="font-black text-slate-900 text-sm">
+                  Ficha de Sesión #{citasFiltradas.length - activeSessionIndex}
+                </span>
+                {activeSession.esReevaluacion && (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">
+                    Hito 5 Reevaluación
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => setIsDrawerOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Contenido scrolleable del Drawer */}
+            <div className="p-5 flex-1 overflow-y-auto space-y-4">
+              <ClinicalDetailCard
+                session={activeSession}
+                onPrev={handlePrevSession}
+                onNext={handleNextSession}
+                canPrev={activeSessionIndex > 0}
+                canNext={activeSessionIndex < citasFiltradas.length - 1}
+                getEvaColorClass={getEvaColorClass}
+                getEvaLabel={getEvaLabel}
+                formatearFechaCorta={formatearFechaCorta}
+              />
+            </div>
+
+            {/* Footer del Drawer */}
+            <div className="p-3.5 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs">
+              <span className="text-slate-500 font-medium">
+                Sesión {activeSessionIndex + 1} de {citasFiltradas.length}
+              </span>
+              <button
+                onClick={() => setIsDrawerOpen(false)}
+                className="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl transition cursor-pointer"
+              >
+                Cerrar Detalle
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Subcomponente reutilizable: Tarjeta de Ficha Clínica Detallada
+interface ClinicalDetailCardProps {
+  session: any;
+  onPrev: () => void;
+  onNext: () => void;
+  canPrev: boolean;
+  canNext: boolean;
+  getEvaColorClass: (val: number) => string;
+  getEvaLabel: (val: number) => string;
+  formatearFechaCorta: (iso: string) => string;
+}
+
+function ClinicalDetailCard({
+  session,
+  onPrev,
+  onNext,
+  canPrev,
+  canNext,
+  getEvaColorClass,
+  getEvaLabel,
+  formatearFechaCorta,
+}: ClinicalDetailCardProps) {
+  const ev = session.evolucion;
+  const terapeutaNombre = session.terapeuta?.nombre || "Terapeuta Clínico";
+  const salaNombre = session.sala?.nombre || "Sala de Atención";
+
+  return (
+    <div className="space-y-4 text-xs">
+      {/* Navegación Rápida entre Sesiones */}
+      <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+        <div className="flex items-center gap-1.5">
+          <Calendar className="w-3.5 h-3.5 text-slate-400" />
+          <span className="font-bold text-slate-800">
+            {formatearFechaCorta(session.fechaHoraInicio)} • {formatTime(session.fechaHoraInicio)}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onPrev}
+            disabled={!canPrev}
+            className="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
+            title="Sesión anterior"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={onNext}
+            disabled={!canNext}
+            className="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
+            title="Sesión siguiente"
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
 
-      {/* TABLA OPTIMIZADA: DISEÑADA PARA CABER AL 100% EN PANTALLA SIN SCROLL HORIZONTAL */}
-      <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-2xs">
-        <div className="w-full">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead className="bg-slate-50/90 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
-              <tr>
-                <th className="py-3 px-3 w-[15%]">Sesión / Estado</th>
-                <th className="py-3 px-3 w-[18%]">Fecha y Horario</th>
-                <th className="py-3 px-3 w-[20%]">Especialista & Sala</th>
-                <th className="py-3 px-3 w-[15%] text-center">Dolor EVA</th>
-                <th className="py-3 px-3 w-[24%]">Tratamiento Clínico</th>
-                <th className="py-3 px-3 w-[8%] text-right">Detalle</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {citasFiltradas.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-400 text-xs space-y-1">
-                    <AlertCircle className="w-6 h-6 mx-auto text-slate-300" />
-                    <p className="font-semibold text-slate-500">No se encontraron sesiones registradas</p>
-                    <p className="text-[11px] text-slate-400">
-                      Pruebe cambiando los filtros de año o estado ({selectedYear !== "TODOS" ? `Año ${selectedYear}` : "Todos los años"}).
-                    </p>
-                  </td>
-                </tr>
-              ) : (
-                citasFiltradas.map((c, index) => {
-                  const ev = c.evolucion;
-                  const isExpanded = expandedSessionIds.has(c.id);
-                  const correlativo = citasFiltradas.length - index;
-                  const terapeutaNombre = c.terapeuta?.nombre || "Terapeuta Clínico";
-                  const salaNombre = c.sala?.nombre || "Sala de Atención";
+      {/* 1. Evaluación del Dolor EVA */}
+      <div className="bg-slate-50/80 p-3 rounded-xl border border-slate-200/80 space-y-2">
+        <span className="font-bold text-[10px] uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+          <Activity className="w-3.5 h-3.5 text-teal-600" />
+          <span>Escala Visual Analógica (EVA)</span>
+        </span>
 
-                  return (
-                    <tr
-                      key={c.id}
-                      className={`group transition-colors ${
-                        isExpanded ? "bg-teal-50/30" : "hover:bg-slate-50/70"
-                      }`}
-                    >
-                      <td colSpan={6} className="p-0">
-                        {/* Fila Principal Resumen (Siempre visible en 1 pantalla) */}
-                        <div 
-                          onClick={() => toggleRow(c.id)}
-                          className="flex items-center py-3 px-3 cursor-pointer select-none"
-                        >
-                          {/* Columna 1: Sesión & Estado (15%) */}
-                          <div className="w-[15%] pr-2 space-y-1">
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-black text-slate-900 text-xs tracking-tight">
-                                #{correlativo}
-                              </span>
-                              {c.esReevaluacion && (
-                                <span className="px-1.5 py-0.2 rounded text-[9px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300">
-                                  Hito 5
-                                </span>
-                              )}
-                            </div>
-                            <div>
-                              {c.estado === "ATENDIDA" && (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                  Atendida
-                                </span>
-                              )}
-                              {c.estado === "CONFIRMADA" && (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                                  Confirmada
-                                </span>
-                              )}
-                              {c.estado === "PROGRAMADA" && (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                                  Programada
-                                </span>
-                              )}
-                              {c.estado === "CANCELADA" && (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
-                                  Cancelada
-                                </span>
-                              )}
-                              {c.estado === "NO_ASISTIO" && (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                                  No Asistió
-                                </span>
-                              )}
-                            </div>
-                          </div>
+        {ev ? (
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2 text-center">
+              <div className="bg-white p-2 rounded-lg border border-slate-200">
+                <span className="text-[9px] text-slate-400 font-bold block uppercase">Pre-Sesión</span>
+                <span className="text-base font-black text-slate-800">{ev.evaDolorInicio}/10</span>
+                <span className="text-[10px] text-slate-500 block">{getEvaLabel(ev.evaDolorInicio)}</span>
+              </div>
+              <div className="bg-emerald-50 p-2 rounded-lg border border-emerald-200">
+                <span className="text-[9px] text-emerald-600 font-bold block uppercase">Post-Sesión</span>
+                <span className="text-base font-black text-emerald-800">{ev.evaDolorFin}/10</span>
+                <span className="text-[10px] text-emerald-600 block">{getEvaLabel(ev.evaDolorFin)}</span>
+              </div>
+            </div>
+            <div className="text-[11px] bg-white p-2 rounded-lg text-slate-600 flex items-center justify-between border border-slate-200/60">
+              <span>Alivio terapéutico:</span>
+              <span className="font-black text-emerald-700">
+                {ev.evaDolorInicio - ev.evaDolorFin > 0 
+                  ? `Reducción de ${ev.evaDolorInicio - ev.evaDolorFin} puntos`
+                  : "Dolor estable"}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <p className="text-slate-400 italic text-[11px] py-1">
+            Sin medición de dolor registrada para esta sesión.
+          </p>
+        )}
+      </div>
 
-                          {/* Columna 2: Fecha y Horario (18%) */}
-                          <div className="w-[18%] pr-2">
-                            <span className="font-bold text-slate-800 block text-xs">
-                              {formatearFechaCorta(c.fechaHoraInicio)}
-                            </span>
-                            <div className="flex items-center gap-1 text-[11px] text-slate-500 mt-0.5 font-medium">
-                              <Clock className="w-3 h-3 text-slate-400 shrink-0" />
-                              <span>
-                                {formatTime(c.fechaHoraInicio)}
-                              </span>
-                              <span className="text-slate-300">•</span>
-                              <span className="text-[10px] text-slate-400">{obtenerDiaSemana(c.fechaHoraInicio).slice(0, 3)}</span>
-                            </div>
-                          </div>
+      {/* 2. Tratamiento Clínico y Procedimientos */}
+      <div className="space-y-1.5">
+        <span className="font-bold text-[10px] uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+          <Stethoscope className="w-3.5 h-3.5 text-teal-600" />
+          <span>Técnica & Tratamiento Aplicado</span>
+        </span>
+        <div className="bg-white p-3 rounded-xl border border-slate-200 text-slate-800 text-xs leading-relaxed whitespace-pre-wrap shadow-2xs">
+          {ev?.tratamientoAplicado || (
+            <span className="text-slate-400 italic">
+              {session.estado === "PROGRAMADA" || session.estado === "CONFIRMADA"
+                ? "Sesión pendiente de atención clínica."
+                : "No se detalló procedimiento para esta sesión."}
+            </span>
+          )}
+        </div>
+      </div>
 
-                          {/* Columna 3: Especialista y Sala (20%) */}
-                          <div className="w-[20%] pr-2">
-                            <span className="font-semibold text-slate-800 block text-xs truncate" title={terapeutaNombre}>
-                              {terapeutaNombre}
-                            </span>
-                            <div className="flex items-center gap-1 text-[10px] text-slate-500 mt-0.5">
-                              <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-medium">
-                                {salaNombre}
-                              </span>
-                              <span className="text-slate-300">•</span>
-                              <span className="truncate">{c.terapeuta?.especialidad || "Fisioterapia"}</span>
-                            </div>
-                          </div>
+      {/* 3. Reevaluación Funcional / Hito 5 */}
+      {ev?.notasReevaluacion && (
+        <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl text-amber-900 space-y-1">
+          <span className="text-[10px] font-black uppercase block tracking-wider text-amber-800 flex items-center gap-1">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+            <span>Reevaluación Funcional (Hito 5)</span>
+          </span>
+          <p className="text-[11px] leading-relaxed font-medium">
+            {ev.notasReevaluacion}
+          </p>
+        </div>
+      )}
 
-                          {/* Columna 4: Dolor EVA (15%) - Impacto Visual Directo */}
-                          <div className="w-[15%] pr-2 flex flex-col items-center justify-center">
-                            {ev ? (
-                              <div className="flex items-center gap-1.5">
-                                <div className="flex items-center gap-1">
-                                  <span
-                                    className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black shadow-2xs ${getEvaColorClass(
-                                      ev.evaDolorInicio
-                                    )}`}
-                                    title={`EVA Inicial: ${ev.evaDolorInicio}/10 (${getEvaLabel(ev.evaDolorInicio)})`}
-                                  >
-                                    {ev.evaDolorInicio}
-                                  </span>
-                                  <span className="text-slate-400 font-bold text-xs">→</span>
-                                  <span
-                                    className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black shadow-2xs ${getEvaColorClass(
-                                      ev.evaDolorFin
-                                    )}`}
-                                    title={`EVA Final: ${ev.evaDolorFin}/10 (${getEvaLabel(ev.evaDolorFin)})`}
-                                  >
-                                    {ev.evaDolorFin}
-                                  </span>
-                                </div>
-                                {ev.evaDolorInicio > ev.evaDolorFin && (
-                                  <span className="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-100">
-                                    -{ev.evaDolorInicio - ev.evaDolorFin}
-                                  </span>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-[11px] text-slate-400 italic">
-                                {c.estado === "PROGRAMADA" || c.estado === "CONFIRMADA"
-                                  ? "Pendiente"
-                                  : "Sin registro"}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Columna 5: Tratamiento Clínico (24%) */}
-                          <div className="w-[24%] pr-2">
-                            {ev ? (
-                              <div>
-                                <p className="text-[11px] text-slate-700 line-clamp-2 leading-relaxed" title={ev.tratamientoAplicado}>
-                                  {ev.tratamientoAplicado}
-                                </p>
-                                {ev.notasReevaluacion && (
-                                  <span className="inline-block mt-0.5 text-[9px] font-bold text-amber-800 bg-amber-50 px-1 py-0.2 rounded border border-amber-200">
-                                    Con notas clínicas
-                                  </span>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-[11px] text-slate-400 italic">
-                                {c.estado === "PROGRAMADA" || c.estado === "CONFIRMADA"
-                                  ? "Esperando inicio de sesión"
-                                  : "No se aplicó tratamiento"}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Columna 6: Detalle / Acordeón (8%) */}
-                          <div className="w-[8%] text-right flex items-center justify-end gap-1.5">
-                            <span className="text-[10px] font-bold text-teal-700 hidden sm:inline">
-                              {isExpanded ? "Cerrar" : "Ver"}
-                            </span>
-                            <div className={`p-1 rounded-lg transition-transform duration-200 ${isExpanded ? "bg-teal-100 text-teal-800 rotate-180" : "bg-slate-100 text-slate-600 group-hover:bg-slate-200"}`}>
-                              <ChevronDown className="w-3.5 h-3.5" />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* PANEL EXPANDIBLE DE DETALLE PROFUNDO (Cuando el usuario desea inspeccionar notas completas) */}
-                        {isExpanded && (
-                          <div className="px-4 pb-4 pt-1 bg-gradient-to-b from-teal-50/40 to-slate-50/80 border-t border-teal-100/60 animate-in fade-in duration-150">
-                            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                              
-                              {/* 1. Evolución de Dolor EVA & Métricas */}
-                              <div className="space-y-2 border-b md:border-b-0 md:border-r border-slate-100 pb-3 md:pb-0 md:pr-4">
-                                <span className="font-extrabold text-[11px] text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                                  <Activity className="w-3.5 h-3.5 text-teal-600" />
-                                  <span>Evaluación del Dolor (EVA)</span>
-                                </span>
-                                
-                                {ev ? (
-                                  <div className="space-y-2.5 pt-1">
-                                    <div className="grid grid-cols-2 gap-2 text-center">
-                                      <div className="bg-slate-50 p-2 rounded-lg border border-slate-200/80">
-                                        <span className="text-[10px] text-slate-400 font-bold block uppercase">Pre-Sesión</span>
-                                        <span className="text-base font-black text-slate-800">{ev.evaDolorInicio}/10</span>
-                                        <span className="text-[10px] text-slate-500 block">{getEvaLabel(ev.evaDolorInicio)}</span>
-                                      </div>
-                                      <div className="bg-emerald-50 p-2 rounded-lg border border-emerald-200/80">
-                                        <span className="text-[10px] text-emerald-600 font-bold block uppercase">Post-Sesión</span>
-                                        <span className="text-base font-black text-emerald-800">{ev.evaDolorFin}/10</span>
-                                        <span className="text-[10px] text-emerald-600 block">{getEvaLabel(ev.evaDolorFin)}</span>
-                                      </div>
-                                    </div>
-                                    <div className="text-[11px] bg-slate-50 p-2 rounded-lg text-slate-600 flex items-center justify-between">
-                                      <span>Alivio inmediato:</span>
-                                      <span className="font-bold text-emerald-700">
-                                        {ev.evaDolorInicio - ev.evaDolorFin > 0 
-                                          ? `Reducción de ${ev.evaDolorInicio - ev.evaDolorFin} puntos`
-                                          : "Dolor estable"}
-                                      </span>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <p className="text-slate-400 italic text-[11px] pt-1">
-                                    Sin mediciones registradas para esta sesión.
-                                  </p>
-                                )}
-                              </div>
-
-                              {/* 2. Tratamiento Aplicado y Reevaluación */}
-                              <div className="space-y-2 border-b md:border-b-0 md:border-r border-slate-100 pb-3 md:pb-0 md:pr-4">
-                                <span className="font-extrabold text-[11px] text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                                  <Stethoscope className="w-3.5 h-3.5 text-teal-600" />
-                                  <span>Tratamiento y Técnicas</span>
-                                </span>
-                                
-                                {ev ? (
-                                  <div className="space-y-2 pt-1">
-                                    <div>
-                                      <span className="text-[10px] text-slate-400 font-bold block uppercase">Técnica aplicada:</span>
-                                      <p className="text-slate-700 text-xs leading-relaxed mt-0.5 whitespace-pre-wrap">
-                                        {ev.tratamientoAplicado}
-                                      </p>
-                                    </div>
-
-                                    {ev.notasReevaluacion && (
-                                      <div className="p-2.5 bg-amber-50/80 border border-amber-200 rounded-lg text-amber-900">
-                                        <span className="text-[10px] font-black uppercase block tracking-wider text-amber-800">
-                                          Evaluación Funcional / Hito 5:
-                                        </span>
-                                        <p className="text-[11px] mt-0.5 leading-relaxed font-medium">
-                                          {ev.notasReevaluacion}
-                                        </p>
-                                      </div>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <p className="text-slate-400 italic text-[11px] pt-1">
-                                    Tratamiento pendiente de ejecución.
-                                  </p>
-                                )}
-                              </div>
-
-                              {/* 3. Trazabilidad Operativa y Recepción */}
-                              <div className="space-y-2">
-                                <span className="font-extrabold text-[11px] text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                                  <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
-                                  <span>Trazabilidad y Sede</span>
-                                </span>
-
-                                <div className="space-y-2 pt-1 text-[11px]">
-                                  <div className="flex items-center justify-between text-slate-600 bg-slate-50 p-2 rounded-lg">
-                                    <span>Especialista asignado:</span>
-                                    <span className="font-bold text-slate-800">{terapeutaNombre}</span>
-                                  </div>
-                                  <div className="flex items-center justify-between text-slate-600 bg-slate-50 p-2 rounded-lg">
-                                    <span>Espacio físico:</span>
-                                    <span className="font-semibold text-slate-700">{salaNombre}</span>
-                                  </div>
-                                  <div className="flex items-center justify-between text-slate-600 bg-slate-50 p-2 rounded-lg">
-                                    <span>Gestión / Recepción:</span>
-                                    <span className="font-semibold text-teal-700">
-                                      {c.confirmadoPorNombre || c.creadoPorNombre || "Recepción Principal"}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-
-                            </div>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+      {/* 4. Trazabilidad Operativa */}
+      <div className="space-y-1.5 pt-1">
+        <span className="font-bold text-[10px] uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+          <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
+          <span>Trazabilidad en Sede</span>
+        </span>
+        <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-[11px] space-y-1.5 text-slate-600">
+          <div className="flex items-center justify-between">
+            <span>Fisioterapeuta:</span>
+            <span className="font-bold text-slate-800">{terapeutaNombre}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>Espacio asignado:</span>
+            <span className="font-semibold text-slate-700">{salaNombre}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>Confirmado por:</span>
+            <span className="font-semibold text-teal-700">
+              {session.confirmadoPorNombre || session.creadoPorNombre || "Recepción San Borja"}
+            </span>
+          </div>
         </div>
       </div>
     </div>
