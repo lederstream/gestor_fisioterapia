@@ -131,7 +131,7 @@ export function PacientesClient({ initialPacientes }: PacientesClientProps) {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por DNI (8 dígitos), Nombres o Teléfono..."
+              placeholder="Buscar por DNI, documento, nombres o teléfono..."
               className="w-full pl-9 pr-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
           </div>
@@ -202,7 +202,7 @@ export function PacientesClient({ initialPacientes }: PacientesClientProps) {
                         {p.nombres} {p.apellidos}
                       </h3>
                       <p className="text-[11px] text-slate-500 font-mono">
-                        DNI: {p.dni} • Tel: {p.telefono}
+                        {p.tipoDocumento || "DNI"}: {p.dni} • Tel: {p.telefono}
                       </p>
                     </div>
                   </div>
@@ -271,7 +271,7 @@ export function PacientesClient({ initialPacientes }: PacientesClientProps) {
             <thead className="bg-slate-50 text-slate-500 border-b border-slate-200 uppercase text-[10px] font-bold tracking-wider">
               <tr>
                 <th className="py-3 px-4">Paciente</th>
-                <th className="py-3 px-4">DNI</th>
+                <th className="py-3 px-4">Documento</th>
                 <th className="py-3 px-4">Teléfono & WhatsApp</th>
                 <th className="py-3 px-4">Paquetes</th>
                 <th className="py-3 px-4">Sesiones</th>
@@ -304,6 +304,9 @@ export function PacientesClient({ initialPacientes }: PacientesClientProps) {
                         </span>
                       </td>
                       <td className="py-3.5 px-4 font-mono font-semibold text-slate-700">
+                        <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold mr-1.5 font-sans">
+                          {p.tipoDocumento || "DNI"}
+                        </span>
                         {p.dni}
                       </td>
                       <td className="py-3.5 px-4">

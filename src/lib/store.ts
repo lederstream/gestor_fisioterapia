@@ -27,6 +27,7 @@ export interface ServicioItem {
 
 export interface PacienteItem {
   id: string;
+  tipoDocumento?: "DNI" | "CE" | "PASAPORTE" | "CEDULA" | "OTRO";
   dni: string;
   primerNombre?: string;
   segundoNombre?: string;

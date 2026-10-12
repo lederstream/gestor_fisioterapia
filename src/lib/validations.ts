@@ -40,7 +40,8 @@ export type RegistrarPagoInput = z.infer<typeof registrarPagoSchema>;
 
 // Validación para crear nuevo paciente
 export const crearPacienteSchema = z.object({
-  dni: z.string().regex(/^\d{8}$/, "El DNI debe tener exactamente 8 dígitos"),
+  tipoDocumento: z.enum(["DNI", "CE", "PASAPORTE", "CEDULA", "OTRO"]).default("DNI").optional(),
+  dni: z.string().min(5, "El documento debe tener al menos 5 caracteres").max(20, "Máximo 20 caracteres"),
   primerNombre: z.string().optional(),
   segundoNombre: z.string().optional().nullable(),
   apellidoPaterno: z.string().optional(),

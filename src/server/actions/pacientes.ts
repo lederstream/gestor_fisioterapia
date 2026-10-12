@@ -33,6 +33,7 @@ export async function crearPaciente(input: CrearPacienteInput): Promise<ServerAc
     const validated = crearPacienteSchema.parse(input);
 
     const nuevo = dbStore.crearPaciente({
+      tipoDocumento: validated.tipoDocumento || "DNI",
       dni: validated.dni,
       primerNombre: validated.primerNombre || undefined,
       segundoNombre: validated.segundoNombre || undefined,
@@ -85,6 +86,8 @@ export async function asignarPaqueteTratamiento(params: {
 export async function actualizarPaciente(
   id: string,
   data: {
+    tipoDocumento?: "DNI" | "CE" | "PASAPORTE" | "CEDULA" | "OTRO";
+    dni?: string;
     primerNombre?: string;
     segundoNombre?: string;
     apellidoPaterno?: string;

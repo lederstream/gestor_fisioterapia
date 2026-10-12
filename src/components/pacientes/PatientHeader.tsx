@@ -58,7 +58,7 @@ export function PatientHeader({ paciente }: PatientHeaderProps) {
               className="font-mono font-bold text-slate-700 hover:text-teal-700 flex items-center gap-1 transition cursor-pointer"
               title="Copiar DNI"
             >
-              <span>DNI: {paciente.dni}</span>
+              <span>{paciente.tipoDocumento || "DNI"}: {paciente.dni}</span>
               {copied ? (
                 <Check className="w-3 h-3 text-emerald-600" />
               ) : (
