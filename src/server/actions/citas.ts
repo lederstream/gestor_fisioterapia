@@ -129,3 +129,38 @@ export async function actualizarEstadoCita(
     return { success: false, error: message };
   }
 }
+
+/**
+ * Reprogramar una cita (cambio de fecha, hora, sala o terapeuta) con control de concurrencia
+ */
+export async function reprogramarCita(params: {
+  citaId: string;
+  nuevaFechaHoraInicio: string | Date;
+  nuevaSalaId: string;
+  nuevoTerapeutaId: string;
+  duracionMinutos?: number;
+  usuarioInfo?: { id?: string; nombre: string; rol: any };
+}): Promise<ServerActionResult> {
+  try {
+    const clientIp = await obtenerIpCliente();
+    const fechaDate = new Date(params.nuevaFechaHoraInicio);
+    const reprogramada = dbStore.reprogramarCita({
+      citaId: params.citaId,
+      nuevaFechaHoraInicio: fechaDate,
+      nuevaSalaId: params.nuevaSalaId,
+      nuevoTerapeutaId: params.nuevoTerapeutaId,
+      duracionMinutos: params.duracionMinutos,
+      usuarioAuditoria: params.usuarioInfo || { id: "usr-rec-1", nombre: "Recepción AJ Fisioterapia", rol: "RECEPCION" },
+      ipAddress: clientIp,
+    });
+
+    revalidatePath("/dashboard/agenda");
+    revalidatePath("/dashboard/auditoria");
+    revalidatePath("/dashboard");
+    return { success: true, data: reprogramada };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Error al reprogramar la cita.";
+    return { success: false, error: message };
+  }
+}
+

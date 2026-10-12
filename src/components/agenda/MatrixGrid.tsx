@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { formatTime, cn, formatCurrency } from "@/lib/utils";
 import { 
@@ -9,6 +9,7 @@ import {
   Plus, 
   User, 
   AlertTriangle, 
+  AlertCircle,
   CheckCircle2, 
   ChevronLeft, 
   ChevronRight,
@@ -18,7 +19,14 @@ import {
   CreditCard,
   X,
   ExternalLink,
-  ShieldAlert
+  ShieldAlert,
+  Activity,
+  TrendingUp,
+  RefreshCw,
+  Sparkles,
+  Check,
+  CalendarCheck2,
+  SlidersHorizontal
 } from "lucide-react";
 import { NewAppointmentModal } from "./NewAppointmentModal";
 import { useAuth } from "@/lib/auth-context";
@@ -50,17 +58,31 @@ export function MatrixGrid({
   const [prefilledTime, setPrefilledTime] = useState<string | undefined>(undefined);
   const [selectedCitaDetail, setSelectedCitaDetail] = useState<any | null>(null);
 
+  // Modo de Reprogramación dentro del detalle
+  const [isRescheduling, setIsRescheduling] = useState(false);
+  const [rescheduleDate, setRescheduleDate] = useState("");
+  const [rescheduleTime, setRescheduleTime] = useState("");
+  const [rescheduleSalaId, setRescheduleSalaId] = useState("");
+  const [rescheduleTerapeutaId, setRescheduleTerapeutaId] = useState("");
+  const [rescheduleLoading, setRescheduleLoading] = useState(false);
+  const [rescheduleError, setRescheduleError] = useState<string | null>(null);
+
+  // Filtros de Productividad
   const [filterTerapeuta, setFilterTerapeuta] = useState("TODOS");
   const [selectedMobileSala, setSelectedMobileSala] = useState<string>("TODAS");
+  const [productivityFilter, setProductivityFilter] = useState<"TODAS" | "POR_CONFIRMAR" | "SOLO_LIBRES">("TODAS");
 
   // Generación dinámica de ranuras horarias según la configuración de la clínica
   const aperturaHour = parseInt((configuracion?.horaApertura || "08:00").split(":")[0], 10) || 8;
   const cierreHour = parseInt((configuracion?.horaCierre || "20:00").split(":")[0], 10) || 20;
   
-  const timeSlots: string[] = [];
-  for (let h = aperturaHour; h < cierreHour; h++) {
-    timeSlots.push(`${h.toString().padStart(2, "0")}:00`);
-  }
+  const timeSlots: string[] = useMemo(() => {
+    const slots: string[] = [];
+    for (let h = aperturaHour; h < cierreHour; h++) {
+      slots.push(`${h.toString().padStart(2, "0")}:00`);
+    }
+    return slots;
+  }, [aperturaHour, cierreHour]);
 
   const getStatusBadge = (estado: string) => {
     switch (estado) {
@@ -103,13 +125,52 @@ export function MatrixGrid({
     setIsModalOpen(true);
   };
 
-  // Filtrar citas por fecha seleccionada y terapeuta
-  const citasDelDia = citas.filter((c) => {
-    const dStr = new Date(c.fechaHoraInicio).toISOString().split("T")[0];
-    if (dStr !== selectedDate) return false;
-    if (filterTerapeuta !== "TODOS" && c.terapeutaId !== filterTerapeuta) return false;
-    return true;
-  });
+  // Citas del día seleccionado
+  const citasDelDia = useMemo(() => {
+    return citas.filter((c) => {
+      const dStr = new Date(c.fechaHoraInicio).toISOString().split("T")[0];
+      if (dStr !== selectedDate) return false;
+      if (filterTerapeuta !== "TODOS" && c.terapeutaId !== filterTerapeuta) return false;
+      if (productivityFilter === "POR_CONFIRMAR" && c.estado !== "PROGRAMADA") return false;
+      return true;
+    });
+  }, [citas, selectedDate, filterTerapeuta, productivityFilter]);
+
+  // Métricas de Saturación y Ocupación Clínica del Día
+  const citasActivasDelDia = useMemo(() => {
+    return citas.filter((c) => {
+      const dStr = new Date(c.fechaHoraInicio).toISOString().split("T")[0];
+      return dStr === selectedDate && c.estado !== "CANCELADA";
+    });
+  }, [citas, selectedDate]);
+
+  const salasDisponibles = useMemo(() => salas.filter((s) => s.estado === "DISPONIBLE"), [salas]);
+  const totalCuposDelDia = (timeSlots.length || 1) * (salasDisponibles.length || 1);
+  const porcentajeOcupacion = Math.min(100, Math.round((citasActivasDelDia.length / (totalCuposDelDia || 1)) * 100));
+
+  const totalProgramadas = citasActivasDelDia.filter((c) => c.estado === "PROGRAMADA").length;
+  const totalConfirmadas = citasActivasDelDia.filter((c) => c.estado === "CONFIRMADA").length;
+  const totalAtendidas = citasActivasDelDia.filter((c) => c.estado === "ATENDIDA").length;
+
+  // Detección de Horas Pico (horas con mayor cantidad de salas ocupadas)
+  const ocupacionPorHora = useMemo(() => {
+    return timeSlots.map((slot) => {
+      const slotH = parseInt(slot.split(":")[0], 10);
+      const citasSlot = citasActivasDelDia.filter((c) => {
+        const cDate = new Date(c.fechaHoraInicio);
+        return cDate.getHours() === slotH;
+      });
+      const ratio = salasDisponibles.length > 0 ? citasSlot.length / salasDisponibles.length : 0;
+      return {
+        slot,
+        ocupadas: citasSlot.length,
+        ratio: Math.round(ratio * 100),
+        esPico: ratio >= 0.75,
+      };
+    });
+  }, [timeSlots, citasActivasDelDia, salasDisponibles]);
+
+  const horasPico = ocupacionPorHora.filter((o) => o.esPico);
 
   const getCitasCountPorSala = (salaId: string) => {
     return citas.filter((c) => {
@@ -121,14 +182,203 @@ export function MatrixGrid({
   const displayedSalas = selectedMobileSala === "TODAS" ? salas : salas.filter((s) => s.id === selectedMobileSala);
   const numSalas = displayedSalas.length;
 
-  // Estilo dinámico de grilla para N salas
   const gridHeaderStyle = selectedMobileSala === "TODAS"
-    ? { gridTemplateColumns: `80px repeat(${numSalas}, minmax(160px, 1fr))` }
-    : { gridTemplateColumns: "80px 1fr" };
+    ? { gridTemplateColumns: `95px repeat(${numSalas}, minmax(165px, 1fr))` }
+    : { gridTemplateColumns: "95px 1fr" };
+
+  // Abrir modal de reprogramación
+  const handleStartReschedule = (cita: any) => {
+    const cDate = new Date(cita.fechaHoraInicio);
+    const dateStr = cDate.toISOString().split("T")[0];
+    const timeStr = `${cDate.getHours().toString().padStart(2, "0")}:${cDate.getMinutes().toString().padStart(2, "0")}`;
+    
+    setRescheduleDate(dateStr);
+    setRescheduleTime(timeStr);
+    setRescheduleSalaId(cita.salaId);
+    setRescheduleTerapeutaId(cita.terapeutaId);
+    setRescheduleError(null);
+    setIsRescheduling(true);
+  };
+
+  const handleSaveReschedule = async () => {
+    if (!selectedCitaDetail) return;
+    setRescheduleLoading(true);
+    setRescheduleError(null);
+
+    try {
+      const { reprogramarCita } = await import("@/server/actions/citas");
+      const [h, m] = rescheduleTime.split(":").map(Number);
+      const [y, mo, d] = rescheduleDate.split("-").map(Number);
+      const nuevaFecha = new Date(y, mo - 1, d, h, m);
+
+      const usuarioInfo = currentUser ? {
+        id: currentUser.id,
+        nombre: `${currentUser.nombre} (${currentUser.rol === "RECEPCION" ? "Recepción" : currentUser.rol})`,
+        rol: currentUser.rol
+      } : undefined;
+
+      const res = await reprogramarCita({
+        citaId: selectedCitaDetail.id,
+        nuevaFechaHoraInicio: nuevaFecha,
+        nuevaSalaId: rescheduleSalaId,
+        nuevoTerapeutaId: rescheduleTerapeutaId,
+        duracionMinutos: 45,
+        usuarioInfo,
+      });
+
+      if (!res.success) {
+        setRescheduleError(res.error || "Error al reprogramar la cita.");
+        setRescheduleLoading(false);
+        return;
+      }
+
+      const actualizada = res.data as any;
+      setCitas((prev) => prev.map((c) => c.id === actualizada.id ? actualizada : c));
+      setSelectedCitaDetail(actualizada);
+      setIsRescheduling(false);
+    } catch (err: unknown) {
+      setRescheduleError(err instanceof Error ? err.message : "Error inesperado al reprogramar.");
+    } finally {
+      setRescheduleLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
-      {/* Cabecera y Selector de Fecha */}
+      
+      {/* 1. BARRA EJECUTIVA DE CAPACIDAD Y SATURACIÓN DIARIA */}
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs space-y-3">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+          
+          {/* Termómetro de Ocupación */}
+          <div className="space-y-1.5 flex-1 w-full lg:max-w-md">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-extrabold text-slate-800 flex items-center gap-1.5">
+                <Activity className="w-4 h-4 text-teal-600" />
+                <span>Ocupación de Citas del Día</span>
+              </span>
+              <span className="font-mono font-bold text-slate-700">
+                {citasActivasDelDia.length} de {totalCuposDelDia} turnos ({porcentajeOcupacion}%)
+              </span>
+            </div>
+
+            {/* Barra de Progreso Dinámica con Código de Color */}
+            <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden p-0.5 border border-slate-200">
+              <div 
+                className={cn(
+                  "h-full rounded-full transition-all duration-500",
+                  porcentajeOcupacion >= 75 ? "bg-rose-500" : porcentajeOcupacion >= 40 ? "bg-amber-500" : "bg-teal-500"
+                )}
+                style={{ width: `${Math.max(4, porcentajeOcupacion)}%` }}
+              />
+            </div>
+
+            <div className="flex items-center justify-between text-[11px] text-slate-500">
+              <span className={cn(
+                "font-bold px-2 py-0.5 rounded-md text-[10px]",
+                porcentajeOcupacion >= 75 ? "bg-rose-50 text-rose-800 border border-rose-200" :
+                porcentajeOcupacion >= 40 ? "bg-amber-50 text-amber-800 border border-amber-200" :
+                "bg-emerald-50 text-emerald-800 border border-emerald-200"
+              )}>
+                {porcentajeOcupacion >= 75 ? "🔴 Clínica de Alta Demanda / Saturada" :
+                 porcentajeOcupacion >= 40 ? "🟡 Flujo Saludable y Óptimo" :
+                 "🟢 Disponibilidad Alta (Espacios Libres)"}
+              </span>
+
+              {horasPico.length > 0 && (
+                <span className="text-amber-800 font-bold bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 text-[10px]">
+                  Pico: {horasPico.map(h => h.slot).join(", ")}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Tarjetas KPI de Estado de Gestión */}
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 w-full lg:w-auto shrink-0">
+            <div className="p-2 sm:p-2.5 bg-slate-50 rounded-xl border border-slate-200/80 text-center">
+              <span className="text-[10px] text-slate-500 uppercase font-bold block">Total Citas</span>
+              <span className="text-base sm:text-lg font-black text-slate-900 block leading-tight">
+                {citasActivasDelDia.length}
+              </span>
+            </div>
+
+            <div className="p-2 sm:p-2.5 bg-blue-50/70 rounded-xl border border-blue-200/80 text-center">
+              <span className="text-[10px] text-blue-700 uppercase font-bold block">Confirmadas</span>
+              <span className="text-base sm:text-lg font-black text-blue-900 block leading-tight">
+                {totalConfirmadas}
+              </span>
+            </div>
+
+            <div className="p-2 sm:p-2.5 bg-amber-50/70 rounded-xl border border-amber-200/80 text-center">
+              <span className="text-[10px] text-amber-800 uppercase font-bold block">Por Confirmar</span>
+              <span className="text-base sm:text-lg font-black text-amber-950 block leading-tight">
+                {totalProgramadas}
+              </span>
+            </div>
+
+            <div className="p-2 sm:p-2.5 bg-emerald-50/70 rounded-xl border border-emerald-200/80 text-center col-span-3 sm:col-span-1">
+              <span className="text-[10px] text-emerald-700 uppercase font-bold block">Atendidas</span>
+              <span className="text-base sm:text-lg font-black text-emerald-900 block leading-tight">
+                {totalAtendidas}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Filtros Rápidos de Productividad para Recepción */}
+        <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider pr-1 flex items-center gap-1">
+              <SlidersHorizontal className="w-3 h-3 text-slate-400" />
+              <span>Filtro Recepción:</span>
+            </span>
+
+            <button
+              onClick={() => setProductivityFilter("TODAS")}
+              className={cn(
+                "px-2.5 py-1 rounded-xl text-xs font-semibold transition cursor-pointer",
+                productivityFilter === "TODAS"
+                  ? "bg-slate-800 text-white shadow-xs"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              )}
+            >
+              Todas las Citas ({citasActivasDelDia.length})
+            </button>
+
+            <button
+              onClick={() => setProductivityFilter("POR_CONFIRMAR")}
+              className={cn(
+                "px-2.5 py-1 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-1",
+                productivityFilter === "POR_CONFIRMAR"
+                  ? "bg-amber-600 text-white shadow-xs"
+                  : "bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200"
+              )}
+            >
+              <AlertTriangle className="w-3 h-3" />
+              <span>Por Confirmar ({totalProgramadas})</span>
+            </button>
+
+            <button
+              onClick={() => setProductivityFilter(productivityFilter === "SOLO_LIBRES" ? "TODAS" : "SOLO_LIBRES")}
+              className={cn(
+                "px-2.5 py-1 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-1",
+                productivityFilter === "SOLO_LIBRES"
+                  ? "bg-teal-700 text-white shadow-xs"
+                  : "bg-teal-50 text-teal-800 hover:bg-teal-100 border border-teal-200"
+              )}
+            >
+              <Sparkles className="w-3 h-3" />
+              <span>{productivityFilter === "SOLO_LIBRES" ? "Mostrando Solo Libres" : "Detectar Huecos Libres"}</span>
+            </button>
+          </div>
+
+          <div className="text-[11px] text-slate-400 font-medium ml-auto">
+            Actualizado en tiempo real con control de concurrencia
+          </div>
+        </div>
+      </div>
+
+      {/* 2. BARRA DE CONTROL Y SELECTOR DE FECHA */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2.5 bg-teal-50 text-teal-700 rounded-xl border border-teal-100 shrink-0">
@@ -139,7 +389,7 @@ export function MatrixGrid({
               Control de Citas del Día por Salas
             </h2>
             <p className="text-xs text-slate-500">
-              Mostrando {displayedSalas.length} de {salas.length} sala(s) física(s) ({salas.filter((s) => s.estado === "DISPONIBLE").length} operativas).
+              Mostrando {displayedSalas.length} de {salas.length} salas de atención ({salasDisponibles.length} operativas).
             </p>
           </div>
         </div>
@@ -152,7 +402,7 @@ export function MatrixGrid({
             onChange={(e) => setFilterTerapeuta(e.target.value)}
             className="px-2.5 py-1.5 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
           >
-            <option value="TODOS">Todos los Terapeutas</option>
+            <option value="TODOS">Todos los Terapeutas ({terapeutas.length})</option>
             {terapeutas.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.nombre}
@@ -210,7 +460,7 @@ export function MatrixGrid({
         </div>
       </div>
 
-      {/* Selector Rápido de Salas Dinámicas */}
+      {/* Selector de Salas Dinámicas */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
         <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider pl-1 pr-2 shrink-0 hidden sm:inline">
           Vista Sala:
@@ -246,81 +496,107 @@ export function MatrixGrid({
         ))}
       </div>
 
-      {/* Leyenda de Estados */}
-      <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs bg-white px-4 py-2.5 rounded-2xl border border-slate-200 shadow-xs">
-        <span className="font-bold text-slate-700">Estados:</span>
-        <span className="inline-flex items-center gap-1.5 text-indigo-700 font-semibold">
-          <span className="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> Programada
-        </span>
-        <span className="inline-flex items-center gap-1.5 text-blue-700 font-semibold">
-          <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Confirmada
-        </span>
-        <span className="inline-flex items-center gap-1.5 text-emerald-700 font-semibold">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Atendida
-        </span>
-        <span className="inline-flex items-center gap-1.5 text-amber-700 font-semibold">
-          <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span> No Asistió
-        </span>
-        <span className="inline-flex items-center gap-1.5 text-rose-700 font-semibold">
-          <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Cancelada
-        </span>
-        <span className="inline-flex items-center gap-1.5 text-amber-900 font-bold ml-auto bg-amber-50 px-2.5 py-1 rounded-xl border border-amber-200">
-          <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-          Reevaluación Obligatoria (Sesión 5)
-        </span>
-      </div>
-
-      {/* Matriz 100% Dinámica de Citas por Salas con Scroll Elástico */}
+      {/* 3. MATRIZ DINÁMICA DE CITAS CON DETECTOR DE HORAS PICO Y TERMÓMETROS DE SALA */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <div className="min-w-full" style={{ minWidth: selectedMobileSala === "TODAS" ? `${Math.max(900, numSalas * 160 + 80)}px` : "100%" }}>
+          <div className="min-w-full" style={{ minWidth: selectedMobileSala === "TODAS" ? `${Math.max(900, numSalas * 165 + 95)}px` : "100%" }}>
             
-            {/* Header Dinámico de Salas */}
+            {/* Header de Salas con Termómetro de Ocupación por Sala */}
             <div 
               className="bg-slate-100/90 text-slate-800 text-xs font-bold border-b border-slate-200 sticky top-0 z-10 grid"
               style={gridHeaderStyle}
             >
-              <div className="p-3 text-center border-r border-slate-200 text-slate-500 font-bold text-[10px] uppercase tracking-wider">
-                Horario
+              <div className="p-3 text-center border-r border-slate-200 text-slate-500 font-bold text-[10px] uppercase tracking-wider flex flex-col justify-center items-center">
+                <span>Horario</span>
+                <span className="text-[9px] text-slate-400 font-normal">Saturación</span>
               </div>
-              {displayedSalas.map((sala) => (
-                <div key={sala.id} className="p-3 text-center border-r border-slate-200 last:border-r-0">
-                  <div className="flex items-center justify-center gap-1.5">
-                    <span className="text-slate-900 font-extrabold text-sm">{sala.nombre}</span>
-                    <span className={cn(
-                      "w-2 h-2 rounded-full",
-                      sala.estado === "DISPONIBLE" ? "bg-emerald-500" : "bg-amber-500"
-                    )} />
+              
+              {displayedSalas.map((sala) => {
+                const count = getCitasCountPorSala(sala.id);
+                const salaPct = Math.round((count / (timeSlots.length || 1)) * 100);
+
+                return (
+                  <div key={sala.id} className="p-3 text-center border-r border-slate-200 last:border-r-0 space-y-1">
+                    <div className="flex items-center justify-center gap-1.5">
+                      <span className="text-slate-900 font-extrabold text-sm">{sala.nombre}</span>
+                      <span className={cn(
+                        "w-2 h-2 rounded-full",
+                        sala.estado === "DISPONIBLE" ? "bg-emerald-500" : "bg-amber-500"
+                      )} />
+                    </div>
+
+                    {sala.equipamiento && (
+                      <span className="text-[10px] text-slate-400 block truncate font-normal">
+                        {sala.equipamiento}
+                      </span>
+                    )}
+
+                    {sala.estado === "DISPONIBLE" ? (
+                      <div className="space-y-0.5">
+                        <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                          <div 
+                            className={cn(
+                              "h-full rounded-full",
+                              salaPct >= 75 ? "bg-rose-500" : salaPct >= 40 ? "bg-amber-500" : "bg-teal-500"
+                            )}
+                            style={{ width: `${Math.max(5, salaPct)}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-slate-500 font-medium block">
+                          {count} citas ({salaPct}%)
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-amber-700 font-bold block">
+                        ⚠️ Mantenimiento
+                      </span>
+                    )}
                   </div>
-                  {sala.equipamiento && (
-                    <span className="text-[10px] text-slate-400 block truncate font-normal">
-                      {sala.equipamiento}
-                    </span>
-                  )}
-                  <span className="text-[11px] text-teal-700 font-semibold block mt-0.5">
-                    {sala.estado === "DISPONIBLE" 
-                      ? `${getCitasCountPorSala(sala.id)} citas (${Math.round((getCitasCountPorSala(sala.id) / (timeSlots.length || 1)) * 100)}%)`
-                      : "⚠️ En Mantenimiento"}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
-            {/* Filas Dinámicas por Horario según Configuración */}
+            {/* Filas de Horario con Detector de Saturación por Franja */}
             <div className="divide-y divide-slate-100">
               {timeSlots.map((slot) => {
                 const [slotHour] = slot.split(":").map(Number);
+                const statHour = ocupacionPorHora.find((o) => o.slot === slot);
+                const ocupadas = statHour?.ocupadas || 0;
+                const ratio = statHour?.ratio || 0;
+                const esPico = statHour?.esPico || false;
+
+                // Si el filtro "SOLO_LIBRES" está activo y este slot está al 100% de ocupación, lo oculta
+                if (productivityFilter === "SOLO_LIBRES" && ocupadas >= salasDisponibles.length && salasDisponibles.length > 0) {
+                  return null;
+                }
 
                 return (
                   <div 
                     key={slot} 
-                    className="min-h-[85px] grid"
+                    className={cn(
+                      "min-h-[85px] grid transition-colors",
+                      esPico ? "bg-rose-50/20" : ""
+                    )}
                     style={gridHeaderStyle}
                   >
-                    {/* Columna de Horario */}
-                    <div className="p-2.5 bg-slate-50/70 border-r border-slate-200 text-center flex flex-col justify-start items-center">
-                      <span className="text-xs font-bold text-slate-700">{slot}</span>
-                      <span className="text-[10px] text-slate-400">45-60m</span>
+                    {/* Columna de Horario con Detector de Demanda */}
+                    <div className="p-2.5 bg-slate-50/70 border-r border-slate-200 text-center flex flex-col justify-between items-center">
+                      <div>
+                        <span className="text-xs font-bold text-slate-800">{slot}</span>
+                        <span className="text-[10px] text-slate-400 block">45m</span>
+                      </div>
+
+                      {/* Badge de Saturación Horaria */}
+                      <span className={cn(
+                        "text-[9px] font-bold px-1.5 py-0.2 rounded-md border block leading-tight",
+                        esPico 
+                          ? "bg-rose-100 text-rose-800 border-rose-300"
+                          : ocupadas > 0 
+                          ? "bg-slate-100 text-slate-600 border-slate-200" 
+                          : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      )}>
+                        {esPico ? "HORA PICO" : `${ocupadas}/${salasDisponibles.length} salas`}
+                      </span>
                     </div>
 
                     {/* Columnas para cada sala mostrada */}
@@ -354,6 +630,7 @@ export function MatrixGrid({
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedCitaDetail(appointment);
+                                setIsRescheduling(false);
                               }}
                               className={cn(
                                 "h-full w-full p-2 rounded-lg border text-left flex flex-col justify-between shadow-xs transition hover:shadow-md cursor-pointer",
@@ -426,14 +703,13 @@ export function MatrixGrid({
         />
       )}
 
-      {/* Modal / Panel Interactivo de Gestión Rápida de Cita */}
+      {/* 4. MODAL INTERACTIVO CON MODO DE REPROGRAMACIÓN Y GESTIÓN RÁPIDA */}
       {selectedCitaDetail && (() => {
         const paciente = pacientes.find((p) => p.id === selectedCitaDetail.pacienteId);
         const sala = salas.find((s) => s.id === selectedCitaDetail.salaId);
         const terapeuta = terapeutas.find((t) => t.id === selectedCitaDetail.terapeutaId);
         const paquete = paquetes.find((p) => p.id === selectedCitaDetail.paqueteId);
 
-        // Limpiar teléfono y preparar enlace WhatsApp para recordatorio inteligente
         const cleanPhone = (paciente?.telefono || "").replace(/\D/g, "");
         const formattedDate = new Date(selectedCitaDetail.fechaHoraInicio).toLocaleDateString("es-PE", {
           weekday: "long",
@@ -448,17 +724,17 @@ export function MatrixGrid({
 
         return (
           <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-hidden">
-            <div className="bg-white rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="bg-white rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 duration-150 max-h-[92vh] flex flex-col overflow-hidden">
               
               {/* Encabezado */}
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
                 <div className="flex items-center gap-2">
                   <div className="p-2 bg-teal-50 text-teal-700 rounded-xl">
-                    <CalendarIcon className="w-4 h-4" />
+                    <CalendarCheck2 className="w-4 h-4" />
                   </div>
                   <div>
                     <h3 className="font-extrabold text-slate-900 text-sm">
-                      Gestión Operativa de Cita
+                      {isRescheduling ? "Reprogramar Turno de Cita" : "Gestión Operativa de Cita"}
                     </h3>
                     <p className="text-[11px] text-slate-500">
                       ID: {selectedCitaDetail.id} • {selectedCitaDetail.estado}
@@ -466,7 +742,10 @@ export function MatrixGrid({
                   </div>
                 </div>
                 <button
-                  onClick={() => setSelectedCitaDetail(null)}
+                  onClick={() => {
+                    setSelectedCitaDetail(null);
+                    setIsRescheduling(false);
+                  }}
                   className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
                   aria-label="Cerrar modal"
                 >
@@ -474,199 +753,287 @@ export function MatrixGrid({
                 </button>
               </div>
 
-              {/* Contenido de la Ficha */}
-              <div className="space-y-3 text-xs">
-                
-                {/* Paciente y Contacto */}
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 flex items-start justify-between gap-3">
-                  <div>
-                    <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Paciente</span>
-                    <span className="text-slate-900 font-extrabold text-sm block">
-                      {paciente?.nombres} {paciente?.apellidos}
+              {/* Formulario de Reprogramación Activo */}
+              {isRescheduling ? (
+                <div className="overflow-y-auto flex-1 space-y-4 text-xs">
+                  {rescheduleError && (
+                    <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-rose-800 text-xs">
+                      <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                      <span>{rescheduleError}</span>
+                    </div>
+                  )}
+
+                  <div className="p-3 bg-teal-50/70 border border-teal-200 rounded-xl space-y-1">
+                    <span className="font-bold text-teal-900 block text-xs">
+                      Paciente: {paciente?.nombres} {paciente?.apellidos}
                     </span>
-                    <span className="text-slate-500 block text-[11px] font-mono mt-0.5">
-                      {paciente?.tipoDocumento || "DNI"}: {paciente?.dni} • Tel: {paciente?.telefono}
-                    </span>
+                    <p className="text-[11px] text-teal-800">
+                      Modifique el horario, sala o fisioterapeuta. El sistema validará automáticamente que no existan conflictos de concurrencia.
+                    </p>
                   </div>
 
-                  {/* Botón WhatsApp de Recordatorio Directo */}
-                  {waUrl && (
-                    <a
-                      href={waUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] rounded-xl flex items-center gap-1.5 shadow-xs transition shrink-0 cursor-pointer"
-                      title="Enviar recordatorio automático por WhatsApp"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5" />
-                      <span>WhatsApp</span>
-                    </a>
-                  )}
-                </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">Nueva Fecha *</label>
+                      <input
+                        type="date"
+                        required
+                        value={rescheduleDate}
+                        onChange={(e) => setRescheduleDate(e.target.value)}
+                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-medium"
+                      />
+                    </div>
 
-                {/* Sala, Terapeuta y Horario */}
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/70">
-                    <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider block">Sala Asignada</span>
-                    <span className="font-bold text-slate-800 block text-xs mt-0.5">
-                      {sala?.nombre || "Sin Sala"}
-                    </span>
-                    {sala?.equipamiento && (
-                      <span className="text-[10px] text-slate-500 truncate block">{sala.equipamiento}</span>
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">Nueva Hora *</label>
+                      <input
+                        type="time"
+                        required
+                        value={rescheduleTime}
+                        onChange={(e) => setRescheduleTime(e.target.value)}
+                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">Nueva Sala Física *</label>
+                      <select
+                        value={rescheduleSalaId}
+                        onChange={(e) => setRescheduleSalaId(e.target.value)}
+                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-medium"
+                      >
+                        {salas.map((s) => (
+                          <option key={s.id} value={s.id} disabled={s.estado === "MANTENIMIENTO"}>
+                            {s.nombre} {s.estado === "MANTENIMIENTO" ? "(⚠️ En Mantenimiento)" : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">Terapeuta Responsable *</label>
+                      <select
+                        value={rescheduleTerapeutaId}
+                        onChange={(e) => setRescheduleTerapeutaId(e.target.value)}
+                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-medium"
+                      >
+                        {terapeutas.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.nombre}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsRescheduling(false)}
+                      className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      disabled={rescheduleLoading}
+                      onClick={handleSaveReschedule}
+                      className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-xs transition disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+                    >
+                      <RefreshCw className={cn("w-3.5 h-3.5", rescheduleLoading && "animate-spin")} />
+                      <span>{rescheduleLoading ? "Guardando..." : "Confirmar Reprogramación"}</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Vista de Detalle y Acciones Rápidas */
+                <div className="overflow-y-auto flex-1 space-y-3 text-xs">
+                  
+                  {/* Paciente y Contacto */}
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 flex items-start justify-between gap-3">
+                    <div>
+                      <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Paciente</span>
+                      <span className="text-slate-900 font-extrabold text-sm block">
+                        {paciente?.nombres} {paciente?.apellidos}
+                      </span>
+                      <span className="text-slate-500 block text-[11px] font-mono mt-0.5">
+                        {paciente?.tipoDocumento || "DNI"}: {paciente?.dni} • Tel: {paciente?.telefono}
+                      </span>
+                    </div>
+
+                    {/* Botón WhatsApp de Recordatorio Directo */}
+                    {waUrl && (
+                      <a
+                        href={waUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] rounded-xl flex items-center gap-1.5 shadow-xs transition shrink-0 cursor-pointer"
+                        title="Enviar recordatorio automático por WhatsApp"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        <span>WhatsApp</span>
+                      </a>
                     )}
                   </div>
 
-                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/70">
-                    <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider block">Terapeuta Responsable</span>
-                    <span className="font-bold text-slate-800 block text-xs mt-0.5 truncate">
-                      {terapeuta?.nombre || "Terapeuta"}
-                    </span>
-                    <span className="text-[10px] text-slate-500 block">Lic. Fisioterapia</span>
-                  </div>
-                </div>
+                  {/* Sala, Terapeuta y Horario */}
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/70">
+                      <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider block">Sala Asignada</span>
+                      <span className="font-bold text-slate-800 block text-xs mt-0.5">
+                        {sala?.nombre || "Sin Sala"}
+                      </span>
+                      {sala?.equipamiento && (
+                        <span className="text-[10px] text-slate-500 truncate block">{sala.equipamiento}</span>
+                      )}
+                    </div>
 
-                {/* Horario y Fecha */}
-                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/70 flex items-center justify-between">
-                  <div>
-                    <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider block">Horario Programado</span>
-                    <span className="font-bold text-slate-800 text-xs">
-                      {new Date(selectedCitaDetail.fechaHoraInicio).toLocaleDateString("es-PE")} • {formatTime(selectedCitaDetail.fechaHoraInicio)} a {formatTime(selectedCitaDetail.fechaHoraFin)}
-                    </span>
+                    <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/70">
+                      <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider block">Terapeuta Responsable</span>
+                      <span className="font-bold text-slate-800 block text-xs mt-0.5 truncate">
+                        {terapeuta?.nombre || "Terapeuta"}
+                      </span>
+                      <span className="text-[10px] text-slate-500 block">Lic. Fisioterapia</span>
+                    </div>
                   </div>
-                  <span className={cn(
-                    "px-2.5 py-1 rounded-full text-[10px] font-bold border",
-                    getStatusBadge(selectedCitaDetail.estado).bg
-                  )}>
-                    {getStatusBadge(selectedCitaDetail.estado).label}
-                  </span>
-                </div>
 
-                {/* Estado del Paquete / Financiero */}
-                {paquete && (
-                  <div className="bg-indigo-50/70 p-2.5 rounded-xl border border-indigo-200 flex items-center justify-between text-indigo-950">
-                    <div className="flex items-center gap-2">
-                      <CreditCard className="w-4 h-4 text-indigo-600 shrink-0" />
-                      <div>
-                        <span className="font-bold block text-xs">Paquete de {paquete.totalSesiones} Sesiones</span>
-                        <span className="text-[10px] text-indigo-700">Consumo: {paquete.sesionesConsumidas}/{paquete.totalSesiones} sesiones</span>
-                      </div>
+                  {/* Horario y Fecha */}
+                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/70 flex items-center justify-between">
+                    <div>
+                      <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider block">Horario Programado</span>
+                      <span className="font-bold text-slate-800 text-xs">
+                        {new Date(selectedCitaDetail.fechaHoraInicio).toLocaleDateString("es-PE")} • {formatTime(selectedCitaDetail.fechaHoraInicio)} a {formatTime(selectedCitaDetail.fechaHoraFin)}
+                      </span>
                     </div>
                     <span className={cn(
-                      "px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase",
-                      paquete.estadoPago === "PAGADO" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-900"
+                      "px-2.5 py-1 rounded-full text-[10px] font-bold border",
+                      getStatusBadge(selectedCitaDetail.estado).bg
                     )}>
-                      {paquete.estadoPago}
+                      {getStatusBadge(selectedCitaDetail.estado).label}
                     </span>
                   </div>
-                )}
 
-                {/* Alerta de Reevaluación */}
-                {selectedCitaDetail.esReevaluacion && (
-                  <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-900 space-y-1">
-                    <p className="font-bold flex items-center gap-1.5 text-xs">
-                      <AlertTriangle className="w-4 h-4 text-amber-600" />
-                      Reevaluación Clínica Obligatoria
-                    </p>
-                    <p className="text-[11px] text-amber-800 leading-tight">
-                      Esta sesión coincide con el hito de 5 sesiones asistidas. El terapeuta debe registrar la escala EVA y el test biomecánico antes de dar de alta.
-                    </p>
-                  </div>
-                )}
-
-                {/* Trazabilidad de Recepción */}
-                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 text-xs space-y-1">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Trazabilidad</span>
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-slate-500">Agendada por:</span>
-                    <span className="font-semibold text-slate-700">{selectedCitaDetail.creadoPorNombre || "Recepción AJ Fisioterapia"}</span>
-                  </div>
-                  {selectedCitaDetail.confirmadoPorNombre ? (
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-slate-500">Aceptada / Confirmada por:</span>
-                      <span className="font-bold text-teal-700">{selectedCitaDetail.confirmadoPorNombre}</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-slate-500">Estado de Aceptación:</span>
-                      <span className="text-slate-400 italic">Pendiente de confirmación</span>
+                  {/* Estado del Paquete / Financiero */}
+                  {paquete && (
+                    <div className="bg-indigo-50/70 p-2.5 rounded-xl border border-indigo-200 flex items-center justify-between text-indigo-950">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="w-4 h-4 text-indigo-600 shrink-0" />
+                        <div>
+                          <span className="font-bold block text-xs">Paquete de {paquete.totalSesiones} Sesiones</span>
+                          <span className="text-[10px] text-indigo-700">Consumo: {paquete.sesionesConsumidas}/{paquete.totalSesiones} sesiones</span>
+                        </div>
+                      </div>
+                      <span className={cn(
+                        "px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase",
+                        paquete.estadoPago === "PAGADO" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-900"
+                      )}>
+                        {paquete.estadoPago}
+                      </span>
                     </div>
                   )}
-                </div>
 
-                {/* Botones de Cambio de Estado Rápido en 1 Clic */}
-                <div className="pt-2 border-t border-slate-100 space-y-2">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Acciones Rápidas</span>
-                  <div className="grid grid-cols-3 gap-2">
-                    {selectedCitaDetail.estado === "PROGRAMADA" && (
+                  {/* Alerta de Reevaluación */}
+                  {selectedCitaDetail.esReevaluacion && (
+                    <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-900 space-y-1">
+                      <p className="font-bold flex items-center gap-1.5 text-xs">
+                        <AlertTriangle className="w-4 h-4 text-amber-600" />
+                        Reevaluación Clínica Obligatoria
+                      </p>
+                      <p className="text-[11px] text-amber-800 leading-tight">
+                        Esta sesión coincide con el hito de 5 sesiones asistidas. El terapeuta debe registrar la escala EVA y el test biomecánico antes de dar de alta.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Botones de Cambio de Estado Rápido y Reprogramar */}
+                  <div className="pt-2 border-t border-slate-100 space-y-2">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Acciones Operativas</span>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      
+                      {/* Botón Reprogramar Turno */}
                       <button
-                        onClick={async () => {
-                          const { actualizarEstadoCita } = await import("@/server/actions/citas");
-                          const usuarioInfo = currentUser ? {
-                            id: currentUser.id,
-                            nombre: `${currentUser.nombre} (${currentUser.rol === "RECEPCION" ? "Recepción" : currentUser.rol})`,
-                            rol: currentUser.rol
-                          } : undefined;
-                          await actualizarEstadoCita(selectedCitaDetail.id, "CONFIRMADA", usuarioInfo);
-                          const respNombre = usuarioInfo?.nombre || "Karin Palacios (Recepción)";
-                          setCitas((prev) => prev.map((c) => c.id === selectedCitaDetail.id ? { ...c, estado: "CONFIRMADA", confirmadoPorNombre: respNombre } : c));
-                          setSelectedCitaDetail((prev: any) => ({ ...prev, estado: "CONFIRMADA", confirmadoPorNombre: respNombre }));
-                        }}
-                        className="py-2 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl border border-blue-200 text-center transition cursor-pointer text-xs"
+                        type="button"
+                        onClick={() => handleStartReschedule(selectedCitaDetail)}
+                        className="py-2 px-2 bg-teal-50 hover:bg-teal-100 text-teal-800 font-bold rounded-xl border border-teal-200 text-center transition cursor-pointer text-xs flex items-center justify-center gap-1"
+                        title="Cambiar fecha, hora o sala"
                       >
-                        Confirmar Cita
+                        <RefreshCw className="w-3 h-3 text-teal-600" />
+                        <span>Reprogramar</span>
                       </button>
-                    )}
 
-                    {selectedCitaDetail.estado !== "CANCELADA" && selectedCitaDetail.estado !== "ATENDIDA" && (
-                      <button
-                        onClick={async () => {
-                          const { actualizarEstadoCita } = await import("@/server/actions/citas");
-                          await actualizarEstadoCita(selectedCitaDetail.id, "NO_ASISTIO");
-                          setCitas((prev) => prev.map((c) => c.id === selectedCitaDetail.id ? { ...c, estado: "NO_ASISTIO" } : c));
-                          setSelectedCitaDetail((prev: any) => ({ ...prev, estado: "NO_ASISTIO" }));
-                        }}
-                        className="py-2 px-2 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-xl border border-amber-200 text-center transition cursor-pointer text-xs"
-                      >
-                        No Asistió
-                      </button>
-                    )}
-
-                    {selectedCitaDetail.estado !== "CANCELADA" && selectedCitaDetail.estado !== "ATENDIDA" && (
-                      <button
-                        onClick={async () => {
-                          if (confirm("¿Está seguro de cancelar esta cita? La sala quedará libre para agendar.")) {
+                      {selectedCitaDetail.estado === "PROGRAMADA" && (
+                        <button
+                          onClick={async () => {
                             const { actualizarEstadoCita } = await import("@/server/actions/citas");
-                            await actualizarEstadoCita(selectedCitaDetail.id, "CANCELADA");
-                            setCitas((prev) => prev.map((c) => c.id === selectedCitaDetail.id ? { ...c, estado: "CANCELADA" } : c));
-                            setSelectedCitaDetail((prev: any) => ({ ...prev, estado: "CANCELADA" }));
-                          }
-                        }}
-                        className="py-2 px-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl border border-rose-200 text-center transition cursor-pointer text-xs"
-                      >
-                        Cancelar Cita
-                      </button>
-                    )}
+                            const usuarioInfo = currentUser ? {
+                              id: currentUser.id,
+                              nombre: `${currentUser.nombre} (${currentUser.rol === "RECEPCION" ? "Recepción" : currentUser.rol})`,
+                              rol: currentUser.rol
+                            } : undefined;
+                            await actualizarEstadoCita(selectedCitaDetail.id, "CONFIRMADA", usuarioInfo);
+                            const respNombre = usuarioInfo?.nombre || "Karin Palacios (Recepción)";
+                            setCitas((prev) => prev.map((c) => c.id === selectedCitaDetail.id ? { ...c, estado: "CONFIRMADA", confirmadoPorNombre: respNombre } : c));
+                            setSelectedCitaDetail((prev: any) => ({ ...prev, estado: "CONFIRMADA", confirmadoPorNombre: respNombre }));
+                          }}
+                          className="py-2 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl border border-blue-200 text-center transition cursor-pointer text-xs"
+                        >
+                          Confirmar Cita
+                        </button>
+                      )}
+
+                      {selectedCitaDetail.estado !== "CANCELADA" && selectedCitaDetail.estado !== "ATENDIDA" && (
+                        <button
+                          onClick={async () => {
+                            const { actualizarEstadoCita } = await import("@/server/actions/citas");
+                            await actualizarEstadoCita(selectedCitaDetail.id, "NO_ASISTIO");
+                            setCitas((prev) => prev.map((c) => c.id === selectedCitaDetail.id ? { ...c, estado: "NO_ASISTIO" } : c));
+                            setSelectedCitaDetail((prev: any) => ({ ...prev, estado: "NO_ASISTIO" }));
+                          }}
+                          className="py-2 px-2 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-xl border border-amber-200 text-center transition cursor-pointer text-xs"
+                        >
+                          No Asistió
+                        </button>
+                      )}
+
+                      {selectedCitaDetail.estado !== "CANCELADA" && selectedCitaDetail.estado !== "ATENDIDA" && (
+                        <button
+                          onClick={async () => {
+                            if (confirm("¿Está seguro de cancelar esta cita? La sala quedará libre para agendar.")) {
+                              const { actualizarEstadoCita } = await import("@/server/actions/citas");
+                              await actualizarEstadoCita(selectedCitaDetail.id, "CANCELADA");
+                              setCitas((prev) => prev.map((c) => c.id === selectedCitaDetail.id ? { ...c, estado: "CANCELADA" } : c));
+                              setSelectedCitaDetail((prev: any) => ({ ...prev, estado: "CANCELADA" }));
+                            }
+                          }}
+                          className="py-2 px-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl border border-rose-200 text-center transition cursor-pointer text-xs"
+                        >
+                          Cancelar Cita
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Acciones Inferiores */}
+                  <div className="pt-3 flex items-center justify-between border-t border-slate-100">
+                    <Link
+                      href={`/dashboard/pacientes/${selectedCitaDetail.pacienteId}`}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold rounded-xl border border-teal-200 transition"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>Ver Expediente y EVA</span>
+                    </Link>
+
+                    <button
+                      onClick={() => setSelectedCitaDetail(null)}
+                      className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition cursor-pointer"
+                    >
+                      Cerrar
+                    </button>
                   </div>
                 </div>
-              </div>
-
-              {/* Botones Inferiores de Navegación */}
-              <div className="pt-3 flex items-center justify-between border-t border-slate-100">
-                <Link
-                  href={`/dashboard/pacientes/${selectedCitaDetail.pacienteId}`}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold rounded-xl border border-teal-200 transition"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Ver Expediente y EVA</span>
-                </Link>
-
-                <button
-                  onClick={() => setSelectedCitaDetail(null)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition cursor-pointer"
-                >
-                  Cerrar
-                </button>
-              </div>
+              )}
             </div>
           </div>
         );

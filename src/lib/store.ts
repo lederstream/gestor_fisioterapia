@@ -895,6 +895,90 @@ class GestorFisioStore {
     return this.citas[index];
   }
 
+  // Reprogramación / Edición de Cita con validación de conflictos y auditoría
+  reprogramarCita(params: {
+    citaId: string;
+    nuevaFechaHoraInicio: Date;
+    nuevaSalaId: string;
+    nuevoTerapeutaId: string;
+    duracionMinutos?: number;
+    usuarioAuditoria?: { id?: string; nombre: string; rol: any };
+    ipAddress?: string;
+  }) {
+    const index = this.citas.findIndex((c) => c.id === params.citaId);
+    if (index === -1) throw new Error("Cita no encontrada.");
+
+    const citaActual = this.citas[index];
+    const duracion = params.duracionMinutos || 45;
+    const inicio = new Date(params.nuevaFechaHoraInicio);
+    const fin = new Date(inicio.getTime() + duracion * 60000);
+
+    const sala = this.salas.find((s) => s.id === params.nuevaSalaId);
+    if (!sala) throw new Error("La sala seleccionada no existe.");
+    if (sala.estado === "MANTENIMIENTO") {
+      throw new Error(`La ${sala.nombre} se encuentra temporalmente en MANTENIMIENTO.`);
+    }
+
+    const terapeuta = this.users.find((u) => u.id === params.nuevoTerapeutaId);
+    if (!terapeuta) throw new Error("Terapeuta no encontrado.");
+
+    // Validar conflicto de sala (excluyendo la misma cita)
+    const conflictoSala = this.citas.find((c) => {
+      if (c.id === params.citaId) return false;
+      if (c.salaId !== params.nuevaSalaId) return false;
+      if (c.estado === "CANCELADA") return false;
+      const cInicio = new Date(c.fechaHoraInicio).getTime();
+      const cFin = new Date(c.fechaHoraFin).getTime();
+      return inicio.getTime() < cFin && fin.getTime() > cInicio;
+    });
+
+    if (conflictoSala) {
+      const pac = this.pacientes.find((p) => p.id === conflictoSala.pacienteId);
+      throw new Error(`Conflicto de Horario en Sala: La ${sala.nombre} ya está reservada en ese horario para el paciente ${pac?.nombres || ""}.`);
+    }
+
+    // Validar conflicto de terapeuta (excluyendo la misma cita)
+    const conflictoTerapeuta = this.citas.find((c) => {
+      if (c.id === params.citaId) return false;
+      if (c.terapeutaId !== params.nuevoTerapeutaId) return false;
+      if (c.estado === "CANCELADA") return false;
+      const cInicio = new Date(c.fechaHoraInicio).getTime();
+      const cFin = new Date(c.fechaHoraFin).getTime();
+      return inicio.getTime() < cFin && fin.getTime() > cInicio;
+    });
+
+    if (conflictoTerapeuta) {
+      throw new Error(`Conflicto de Terapeuta: El profesional ${terapeuta.nombre} ya tiene otra atención asignada en ese bloque horario.`);
+    }
+
+    const anteriorStr = `${new Date(citaActual.fechaHoraInicio).toLocaleDateString("es-PE")} ${new Date(citaActual.fechaHoraInicio).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+    const nuevoStr = `${inicio.toLocaleDateString("es-PE")} ${inicio.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+
+    this.citas[index] = {
+      ...citaActual,
+      fechaHoraInicio: inicio.toISOString(),
+      fechaHoraFin: fin.toISOString(),
+      salaId: params.nuevaSalaId,
+      terapeutaId: params.nuevoTerapeutaId,
+      estado: "CONFIRMADA", // al reprogramar por recepción se confirma el nuevo turno
+    };
+
+    const paciente = this.pacientes.find((p) => p.id === citaActual.pacienteId);
+
+    this.registrarAuditLog({
+      usuarioId: params.usuarioAuditoria?.id || "usr-rec-1",
+      usuarioNombre: params.usuarioAuditoria?.nombre || "Recepción AJ Fisioterapia",
+      usuarioRol: params.usuarioAuditoria?.rol || "RECEPCION",
+      accion: "CITA_REPROGRAMADA",
+      modulo: "AGENDA",
+      entidadId: citaActual.id,
+      detalles: `Cita de ${paciente?.nombres} ${paciente?.apellidos} reprogramada de [${anteriorStr}] a [${nuevoStr} en ${sala.nombre} con ${terapeuta.nombre}].`,
+      ipAddress: params.ipAddress || "192.168.1.108",
+    });
+
+    return this.citas[index];
+  }
+
   // REGLA 2: registrarAsistenciaYEvolucion() con auditoría
   registrarAsistenciaYEvolucion(params: {
     citaId: string;
