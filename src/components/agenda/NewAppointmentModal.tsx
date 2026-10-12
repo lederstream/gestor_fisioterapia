@@ -186,8 +186,8 @@ export function NewAppointmentModal({
                 required
               >
                 {salas.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.nombre} ({s.estado})
+                  <option key={s.id} value={s.id} disabled={s.estado === "MANTENIMIENTO"}>
+                    {s.nombre} {s.estado === "MANTENIMIENTO" ? "(⚠️ En Mantenimiento)" : s.equipamiento ? `— ${s.equipamiento}` : ""}
                   </option>
                 ))}
               </select>

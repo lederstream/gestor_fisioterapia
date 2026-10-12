@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { formatTime, cn } from "@/lib/utils";
+import Link from "next/link";
+import { formatTime, cn, formatCurrency } from "@/lib/utils";
 import { 
   Clock, 
   Calendar as CalendarIcon, 
@@ -11,7 +12,13 @@ import {
   CheckCircle2, 
   ChevronLeft, 
   ChevronRight,
-  Filter
+  Filter,
+  MessageSquare,
+  Phone,
+  CreditCard,
+  X,
+  ExternalLink,
+  ShieldAlert
 } from "lucide-react";
 import { NewAppointmentModal } from "./NewAppointmentModal";
 import { useAuth } from "@/lib/auth-context";
@@ -23,13 +30,8 @@ interface MatrixGridProps {
   pacientes: any[];
   paquetes: any[];
   servicios: any[];
+  configuracion?: any;
 }
-
-// Horarios de atención: 08:00 a 20:00 (bloques de 45-60 min)
-const TIME_SLOTS = [
-  "08:00", "09:00", "10:00", "11:00", "12:00", 
-  "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"
-];
 
 export function MatrixGrid({
   initialCitas,
@@ -38,6 +40,7 @@ export function MatrixGrid({
   pacientes,
   paquetes,
   servicios,
+  configuracion,
 }: MatrixGridProps) {
   const { currentUser } = useAuth();
   const [citas, setCitas] = useState(initialCitas);
@@ -46,6 +49,18 @@ export function MatrixGrid({
   const [prefilledSalaId, setPrefilledSalaId] = useState<string | undefined>(undefined);
   const [prefilledTime, setPrefilledTime] = useState<string | undefined>(undefined);
   const [selectedCitaDetail, setSelectedCitaDetail] = useState<any | null>(null);
+
+  const [filterTerapeuta, setFilterTerapeuta] = useState("TODOS");
+  const [selectedMobileSala, setSelectedMobileSala] = useState<string>("TODAS");
+
+  // Generación dinámica de ranuras horarias según la configuración de la clínica
+  const aperturaHour = parseInt((configuracion?.horaApertura || "08:00").split(":")[0], 10) || 8;
+  const cierreHour = parseInt((configuracion?.horaCierre || "20:00").split(":")[0], 10) || 20;
+  
+  const timeSlots: string[] = [];
+  for (let h = aperturaHour; h < cierreHour; h++) {
+    timeSlots.push(`${h.toString().padStart(2, "0")}:00`);
+  }
 
   const getStatusBadge = (estado: string) => {
     switch (estado) {
@@ -88,9 +103,6 @@ export function MatrixGrid({
     setIsModalOpen(true);
   };
 
-  const [filterTerapeuta, setFilterTerapeuta] = useState("TODOS");
-  const [selectedMobileSala, setSelectedMobileSala] = useState<string>("TODAS");
-
   // Filtrar citas por fecha seleccionada y terapeuta
   const citasDelDia = citas.filter((c) => {
     const dStr = new Date(c.fechaHoraInicio).toISOString().split("T")[0];
@@ -107,26 +119,32 @@ export function MatrixGrid({
   };
 
   const displayedSalas = selectedMobileSala === "TODAS" ? salas : salas.filter((s) => s.id === selectedMobileSala);
+  const numSalas = displayedSalas.length;
+
+  // Estilo dinámico de grilla para N salas
+  const gridHeaderStyle = selectedMobileSala === "TODAS"
+    ? { gridTemplateColumns: `80px repeat(${numSalas}, minmax(160px, 1fr))` }
+    : { gridTemplateColumns: "80px 1fr" };
 
   return (
     <div className="space-y-4">
-      {/* Action Header & Date Selector */}
+      {/* Cabecera y Selector de Fecha */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-teal-50 text-teal-700 rounded-xl border border-teal-100">
+          <div className="p-2.5 bg-teal-50 text-teal-700 rounded-xl border border-teal-100 shrink-0">
             <CalendarIcon className="w-5 h-5" />
           </div>
           <div>
             <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
-              Agenda del Día por Salas
+              Control de Citas del Día por Salas
             </h2>
             <p className="text-xs text-slate-500">
-              Organiza y visualiza las citas programadas en las 6 salas de atención.
+              Mostrando {displayedSalas.length} de {salas.length} sala(s) física(s) ({salas.filter((s) => s.estado === "DISPONIBLE").length} operativas).
             </p>
           </div>
         </div>
 
-        {/* Filters and Date Navigator */}
+        {/* Filtros y Navegación de Fecha */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Filtro por Terapeuta */}
           <select
@@ -149,7 +167,7 @@ export function MatrixGrid({
                 d.setDate(d.getDate() - 1);
                 setSelectedDate(d.toISOString().split("T")[0]);
               }}
-              className="p-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition"
+              className="p-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition cursor-pointer"
               aria-label="Día anterior"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -168,7 +186,7 @@ export function MatrixGrid({
                 d.setDate(d.getDate() + 1);
                 setSelectedDate(d.toISOString().split("T")[0]);
               }}
-              className="p-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition"
+              className="p-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition cursor-pointer"
               aria-label="Día siguiente"
             >
               <ChevronRight className="w-4 h-4" />
@@ -177,14 +195,14 @@ export function MatrixGrid({
 
           <button
             onClick={() => setSelectedDate(new Date().toISOString().split("T")[0])}
-            className="px-2.5 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition"
+            className="px-2.5 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition cursor-pointer"
           >
             Hoy
           </button>
 
           <button
             onClick={() => handleOpenAddModal()}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-xs transition ml-auto sm:ml-0"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-xs transition ml-auto sm:ml-0 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Agendar Cita</span>
@@ -192,7 +210,7 @@ export function MatrixGrid({
         </div>
       </div>
 
-      {/* Selector de Salas para Móviles y Tablet */}
+      {/* Selector Rápido de Salas Dinámicas */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
         <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider pl-1 pr-2 shrink-0 hidden sm:inline">
           Vista Sala:
@@ -200,20 +218,20 @@ export function MatrixGrid({
         <button
           onClick={() => setSelectedMobileSala("TODAS")}
           className={cn(
-            "px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition shrink-0",
+            "px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition shrink-0 cursor-pointer",
             selectedMobileSala === "TODAS"
               ? "bg-teal-600 text-white shadow-xs"
               : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
           )}
         >
-          Todas las Salas (6)
+          Todas las Salas ({salas.length})
         </button>
         {salas.map((sala) => (
           <button
             key={sala.id}
             onClick={() => setSelectedMobileSala(sala.id)}
             className={cn(
-              "px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 shrink-0",
+              "px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 shrink-0 cursor-pointer",
               selectedMobileSala === sala.id
                 ? "bg-teal-600 text-white shadow-xs"
                 : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
@@ -252,56 +270,60 @@ export function MatrixGrid({
         </span>
       </div>
 
-      {/* Matriz Interactiva de Salas (Daylight Theme) */}
+      {/* Matriz 100% Dinámica de Citas por Salas con Scroll Elástico */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <div className={selectedMobileSala === "TODAS" ? "min-w-[960px]" : "w-full"}>
-            {/* Header Daylight de Salas */}
+          <div className="min-w-full" style={{ minWidth: selectedMobileSala === "TODAS" ? `${Math.max(900, numSalas * 160 + 80)}px` : "100%" }}>
+            
+            {/* Header Dinámico de Salas */}
             <div 
-              className={cn(
-                "bg-slate-100/90 text-slate-800 text-xs font-bold border-b border-slate-200 sticky top-0 z-10",
-                selectedMobileSala === "TODAS" 
-                  ? "grid grid-cols-[80px_repeat(6,1fr)]" 
-                  : "grid grid-cols-[80px_1fr]"
-              )}
+              className="bg-slate-100/90 text-slate-800 text-xs font-bold border-b border-slate-200 sticky top-0 z-10 grid"
+              style={gridHeaderStyle}
             >
               <div className="p-3 text-center border-r border-slate-200 text-slate-500 font-bold text-[10px] uppercase tracking-wider">
                 Horario
               </div>
               {displayedSalas.map((sala) => (
                 <div key={sala.id} className="p-3 text-center border-r border-slate-200 last:border-r-0">
-                  <span className="text-slate-900 block font-extrabold text-sm">{sala.nombre}</span>
+                  <div className="flex items-center justify-center gap-1.5">
+                    <span className="text-slate-900 font-extrabold text-sm">{sala.nombre}</span>
+                    <span className={cn(
+                      "w-2 h-2 rounded-full",
+                      sala.estado === "DISPONIBLE" ? "bg-emerald-500" : "bg-amber-500"
+                    )} />
+                  </div>
+                  {sala.equipamiento && (
+                    <span className="text-[10px] text-slate-400 block truncate font-normal">
+                      {sala.equipamiento}
+                    </span>
+                  )}
                   <span className="text-[11px] text-teal-700 font-semibold block mt-0.5">
                     {sala.estado === "DISPONIBLE" 
-                      ? `${getCitasCountPorSala(sala.id)} citas (${Math.round((getCitasCountPorSala(sala.id) / TIME_SLOTS.length) * 100)}%)`
-                      : "⚠️ Mantenimiento"}
+                      ? `${getCitasCountPorSala(sala.id)} citas (${Math.round((getCitasCountPorSala(sala.id) / (timeSlots.length || 1)) * 100)}%)`
+                      : "⚠️ En Mantenimiento"}
                   </span>
                 </div>
               ))}
             </div>
 
-            {/* Time Slot Rows */}
+            {/* Filas Dinámicas por Horario según Configuración */}
             <div className="divide-y divide-slate-100">
-              {TIME_SLOTS.map((slot) => {
+              {timeSlots.map((slot) => {
                 const [slotHour] = slot.split(":").map(Number);
 
                 return (
                   <div 
                     key={slot} 
-                    className={cn(
-                      "min-h-[85px]",
-                      selectedMobileSala === "TODAS" 
-                        ? "grid grid-cols-[80px_repeat(6,1fr)]" 
-                        : "grid grid-cols-[80px_1fr]"
-                    )}
+                    className="min-h-[85px] grid"
+                    style={gridHeaderStyle}
                   >
-                    {/* Time Label */}
+                    {/* Columna de Horario */}
                     <div className="p-2.5 bg-slate-50/70 border-r border-slate-200 text-center flex flex-col justify-start items-center">
                       <span className="text-xs font-bold text-slate-700">{slot}</span>
                       <span className="text-[10px] text-slate-400">45-60m</span>
                     </div>
 
-                    {/* Columns for displayed room(s) */}
+                    {/* Columnas para cada sala mostrada */}
                     {displayedSalas.map((sala) => {
                       const appointment = citasDelDia.find((c) => {
                         if (c.salaId !== sala.id) return false;
@@ -318,10 +340,11 @@ export function MatrixGrid({
                           key={sala.id}
                           className={cn(
                             "p-1.5 border-r border-slate-200 last:border-r-0 transition-colors relative group",
-                            !appointment && "hover:bg-teal-50/40 cursor-pointer"
+                            !appointment && sala.estado === "DISPONIBLE" && "hover:bg-teal-50/40 cursor-pointer",
+                            sala.estado === "MANTENIMIENTO" && "bg-slate-50/80 cursor-not-allowed"
                           )}
                           onClick={() => {
-                            if (!appointment) {
+                            if (!appointment && sala.estado === "DISPONIBLE") {
                               handleOpenAddModal(sala.id, slot);
                             }
                           }}
@@ -354,13 +377,17 @@ export function MatrixGrid({
                                 </p>
                               </div>
 
-                              {/* ALERTA DE REEVALUACIÓN OBLIGATORIA */}
+                              {/* Alerta de Reevaluación */}
                               {appointment.esReevaluacion && (
                                 <div className="mt-1.5 flex items-center gap-1 text-[9px] font-bold text-amber-900 bg-amber-200/90 border border-amber-400/80 px-1.5 py-0.5 rounded animate-pulse">
                                   <AlertTriangle className="w-2.5 h-2.5 text-amber-700 shrink-0" />
                                   <span className="truncate">Reevaluación Fisioterapéutica</span>
                                 </div>
                               )}
+                            </div>
+                          ) : sala.estado === "MANTENIMIENTO" ? (
+                            <div className="h-full w-full rounded flex items-center justify-center text-[10px] text-amber-700 font-semibold bg-amber-50/50">
+                              Mantenimiento
                             </div>
                           ) : (
                             <div className="h-full w-full rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -399,160 +426,251 @@ export function MatrixGrid({
         />
       )}
 
-      {/* Modal / Panel de detalle rápido de cita */}
-      {selectedCitaDetail && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-            <div className="flex items-center justify-between border-b pb-3">
-              <h3 className="font-bold text-slate-800 text-base">Ficha de Cita Reservada</h3>
-              <button
-                onClick={() => setSelectedCitaDetail(null)}
-                className="text-slate-400 hover:text-slate-600 text-sm font-semibold"
-              >
-                ✕
-              </button>
-            </div>
+      {/* Modal / Panel Interactivo de Gestión Rápida de Cita */}
+      {selectedCitaDetail && (() => {
+        const paciente = pacientes.find((p) => p.id === selectedCitaDetail.pacienteId);
+        const sala = salas.find((s) => s.id === selectedCitaDetail.salaId);
+        const terapeuta = terapeutas.find((t) => t.id === selectedCitaDetail.terapeutaId);
+        const paquete = paquetes.find((p) => p.id === selectedCitaDetail.paqueteId);
 
-            <div className="space-y-3 text-xs">
-              <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                <span className="text-slate-400 block text-[10px] uppercase font-bold">Paciente</span>
-                <span className="text-slate-800 font-bold text-sm">
-                  {pacientes.find((p) => p.id === selectedCitaDetail.pacienteId)?.nombres}{" "}
-                  {pacientes.find((p) => p.id === selectedCitaDetail.pacienteId)?.apellidos}
-                </span>
-                <span className="text-slate-500 block text-[11px]">
-                  DNI: {pacientes.find((p) => p.id === selectedCitaDetail.pacienteId)?.dni} • Tel: {pacientes.find((p) => p.id === selectedCitaDetail.pacienteId)?.telefono}
-                </span>
-              </div>
+        // Limpiar teléfono y preparar enlace WhatsApp para recordatorio inteligente
+        const cleanPhone = (paciente?.telefono || "").replace(/\D/g, "");
+        const formattedDate = new Date(selectedCitaDetail.fechaHoraInicio).toLocaleDateString("es-PE", {
+          weekday: "long",
+          day: "numeric",
+          month: "long"
+        });
+        const horaCita = formatTime(selectedCitaDetail.fechaHoraInicio);
+        const waText = `Hola ${paciente?.nombres || "Estimado(a) paciente"}, le saludamos de AJ Fisioterapia (San Borja). Le recordamos su cita programada para el ${formattedDate} a las ${horaCita} en ${sala?.nombre || "nuestra clínica"} con ${terapeuta?.nombre || "su terapeuta"}. Por favor confírmenos su asistencia. ¡Muchas gracias!`;
+        const waUrl = cleanPhone.length >= 9
+          ? `https://wa.me/51${cleanPhone.startsWith("51") ? cleanPhone.slice(2) : cleanPhone}?text=${encodeURIComponent(waText)}`
+          : null;
 
-              <div className="grid grid-cols-2 gap-2">
-                <div className="bg-slate-50 p-2.5 rounded-lg border">
-                  <span className="text-slate-400 text-[10px] block">Sala Asignada</span>
-                  <span className="font-semibold text-slate-800">
-                    {salas.find((s) => s.id === selectedCitaDetail.salaId)?.nombre}
-                  </span>
-                </div>
-                <div className="bg-slate-50 p-2.5 rounded-lg border">
-                  <span className="text-slate-400 text-[10px] block">Terapeuta</span>
-                  <span className="font-semibold text-slate-800 truncate block">
-                    {terapeutas.find((t) => t.id === selectedCitaDetail.terapeutaId)?.nombre}
-                  </span>
-                </div>
-              </div>
-
-              <div className="bg-slate-50 p-2.5 rounded-lg border">
-                <span className="text-slate-400 text-[10px] block">Horario Programado</span>
-                <span className="font-bold text-slate-800">
-                  {new Date(selectedCitaDetail.fechaHoraInicio).toLocaleDateString("es-PE")} • {formatTime(selectedCitaDetail.fechaHoraInicio)} a {formatTime(selectedCitaDetail.fechaHoraFin)}
-                </span>
-              </div>
-
-              {selectedCitaDetail.esReevaluacion && (
-                <div className="p-3 bg-amber-50 border border-amber-300 rounded-lg text-amber-900">
-                  <p className="font-bold flex items-center gap-1.5 text-xs">
-                    <AlertTriangle className="w-4 h-4 text-amber-600" />
-                    Reevaluación Clínica Obligatoria
-                  </p>
-                  <p className="text-[11px] text-amber-800 mt-1">
-                    Esta sesión coincide con el hito de 5 sesiones asistidas. El terapeuta debe rellenar la escala EVA y test biomecánico antes del alta.
-                  </p>
-                </div>
-              )}
-
-              {/* Trazabilidad de Recepción */}
-              <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs space-y-1">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Trazabilidad de Recepción</span>
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-500">Agendada por:</span>
-                  <span className="font-semibold text-slate-700">{selectedCitaDetail.creadoPorNombre || "Recepción AJ Fisioterapia"}</span>
-                </div>
-                {selectedCitaDetail.confirmadoPorNombre ? (
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-slate-500">Aceptada / Confirmada por:</span>
-                    <span className="font-bold text-teal-700">{selectedCitaDetail.confirmadoPorNombre}</span>
+        return (
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-hidden">
+            <div className="bg-white rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+              
+              {/* Encabezado */}
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-teal-50 text-teal-700 rounded-xl">
+                    <CalendarIcon className="w-4 h-4" />
                   </div>
-                ) : (
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-slate-500">Estado de Aceptación:</span>
-                    <span className="text-slate-400 italic">Pendiente de confirmación</span>
+                  <div>
+                    <h3 className="font-extrabold text-slate-900 text-sm">
+                      Gestión Operativa de Cita
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      ID: {selectedCitaDetail.id} • {selectedCitaDetail.estado}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedCitaDetail(null)}
+                  className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
+                  aria-label="Cerrar modal"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Contenido de la Ficha */}
+              <div className="space-y-3 text-xs">
+                
+                {/* Paciente y Contacto */}
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 flex items-start justify-between gap-3">
+                  <div>
+                    <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Paciente</span>
+                    <span className="text-slate-900 font-extrabold text-sm block">
+                      {paciente?.nombres} {paciente?.apellidos}
+                    </span>
+                    <span className="text-slate-500 block text-[11px] font-mono mt-0.5">
+                      {paciente?.tipoDocumento || "DNI"}: {paciente?.dni} • Tel: {paciente?.telefono}
+                    </span>
+                  </div>
+
+                  {/* Botón WhatsApp de Recordatorio Directo */}
+                  {waUrl && (
+                    <a
+                      href={waUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] rounded-xl flex items-center gap-1.5 shadow-xs transition shrink-0 cursor-pointer"
+                      title="Enviar recordatorio automático por WhatsApp"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span>WhatsApp</span>
+                    </a>
+                  )}
+                </div>
+
+                {/* Sala, Terapeuta y Horario */}
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/70">
+                    <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider block">Sala Asignada</span>
+                    <span className="font-bold text-slate-800 block text-xs mt-0.5">
+                      {sala?.nombre || "Sin Sala"}
+                    </span>
+                    {sala?.equipamiento && (
+                      <span className="text-[10px] text-slate-500 truncate block">{sala.equipamiento}</span>
+                    )}
+                  </div>
+
+                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/70">
+                    <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider block">Terapeuta Responsable</span>
+                    <span className="font-bold text-slate-800 block text-xs mt-0.5 truncate">
+                      {terapeuta?.nombre || "Terapeuta"}
+                    </span>
+                    <span className="text-[10px] text-slate-500 block">Lic. Fisioterapia</span>
+                  </div>
+                </div>
+
+                {/* Horario y Fecha */}
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/70 flex items-center justify-between">
+                  <div>
+                    <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider block">Horario Programado</span>
+                    <span className="font-bold text-slate-800 text-xs">
+                      {new Date(selectedCitaDetail.fechaHoraInicio).toLocaleDateString("es-PE")} • {formatTime(selectedCitaDetail.fechaHoraInicio)} a {formatTime(selectedCitaDetail.fechaHoraFin)}
+                    </span>
+                  </div>
+                  <span className={cn(
+                    "px-2.5 py-1 rounded-full text-[10px] font-bold border",
+                    getStatusBadge(selectedCitaDetail.estado).bg
+                  )}>
+                    {getStatusBadge(selectedCitaDetail.estado).label}
+                  </span>
+                </div>
+
+                {/* Estado del Paquete / Financiero */}
+                {paquete && (
+                  <div className="bg-indigo-50/70 p-2.5 rounded-xl border border-indigo-200 flex items-center justify-between text-indigo-950">
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="w-4 h-4 text-indigo-600 shrink-0" />
+                      <div>
+                        <span className="font-bold block text-xs">Paquete de {paquete.totalSesiones} Sesiones</span>
+                        <span className="text-[10px] text-indigo-700">Consumo: {paquete.sesionesConsumidas}/{paquete.totalSesiones} sesiones</span>
+                      </div>
+                    </div>
+                    <span className={cn(
+                      "px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase",
+                      paquete.estadoPago === "PAGADO" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-900"
+                    )}>
+                      {paquete.estadoPago}
+                    </span>
                   </div>
                 )}
-              </div>
 
-              {/* Botones de Cambio de Estado Rápido */}
-              <div className="pt-2 border-t border-slate-100">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-2">Acciones de Recepción y Control</span>
-                <div className="grid grid-cols-3 gap-2">
-                  {selectedCitaDetail.estado === "PROGRAMADA" && (
-                    <button
-                      onClick={async () => {
-                        const { actualizarEstadoCita } = await import("@/server/actions/citas");
-                        const usuarioInfo = currentUser ? {
-                          id: currentUser.id,
-                          nombre: `${currentUser.nombre} (${currentUser.rol === "RECEPCION" ? "Recepción" : currentUser.rol})`,
-                          rol: currentUser.rol
-                        } : undefined;
-                        await actualizarEstadoCita(selectedCitaDetail.id, "CONFIRMADA", usuarioInfo);
-                        const respNombre = usuarioInfo?.nombre || "Karin Palacios (Recepción)";
-                        setCitas((prev) => prev.map((c) => c.id === selectedCitaDetail.id ? { ...c, estado: "CONFIRMADA", confirmadoPorNombre: respNombre } : c));
-                        setSelectedCitaDetail((prev: any) => ({ ...prev, estado: "CONFIRMADA", confirmadoPorNombre: respNombre }));
-                      }}
-                      className="py-1.5 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-lg border border-blue-200 text-center transition"
-                    >
-                      Confirmar Cita
-                    </button>
-                  )}
+                {/* Alerta de Reevaluación */}
+                {selectedCitaDetail.esReevaluacion && (
+                  <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-900 space-y-1">
+                    <p className="font-bold flex items-center gap-1.5 text-xs">
+                      <AlertTriangle className="w-4 h-4 text-amber-600" />
+                      Reevaluación Clínica Obligatoria
+                    </p>
+                    <p className="text-[11px] text-amber-800 leading-tight">
+                      Esta sesión coincide con el hito de 5 sesiones asistidas. El terapeuta debe registrar la escala EVA y el test biomecánico antes de dar de alta.
+                    </p>
+                  </div>
+                )}
 
-                  {selectedCitaDetail.estado !== "CANCELADA" && selectedCitaDetail.estado !== "ATENDIDA" && (
-                    <button
-                      onClick={async () => {
-                        const { actualizarEstadoCita } = await import("@/server/actions/citas");
-                        await actualizarEstadoCita(selectedCitaDetail.id, "NO_ASISTIO");
-                        setCitas((prev) => prev.map((c) => c.id === selectedCitaDetail.id ? { ...c, estado: "NO_ASISTIO" } : c));
-                        setSelectedCitaDetail((prev: any) => ({ ...prev, estado: "NO_ASISTIO" }));
-                      }}
-                      className="py-1.5 px-2 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-lg border border-amber-200 text-center transition"
-                    >
-                      No Asistió
-                    </button>
-                  )}
-
-                  {selectedCitaDetail.estado !== "CANCELADA" && selectedCitaDetail.estado !== "ATENDIDA" && (
-                    <button
-                      onClick={async () => {
-                        if (confirm("¿Está seguro de cancelar esta cita? La sala quedará libre.")) {
-                          const { actualizarEstadoCita } = await import("@/server/actions/citas");
-                          await actualizarEstadoCita(selectedCitaDetail.id, "CANCELADA");
-                          setCitas((prev) => prev.map((c) => c.id === selectedCitaDetail.id ? { ...c, estado: "CANCELADA" } : c));
-                          setSelectedCitaDetail((prev: any) => ({ ...prev, estado: "CANCELADA" }));
-                        }
-                      }}
-                      className="py-1.5 px-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-lg border border-rose-200 text-center transition"
-                    >
-                      Cancelar Cita
-                    </button>
+                {/* Trazabilidad de Recepción */}
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 text-xs space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Trazabilidad</span>
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-500">Agendada por:</span>
+                    <span className="font-semibold text-slate-700">{selectedCitaDetail.creadoPorNombre || "Recepción AJ Fisioterapia"}</span>
+                  </div>
+                  {selectedCitaDetail.confirmadoPorNombre ? (
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500">Aceptada / Confirmada por:</span>
+                      <span className="font-bold text-teal-700">{selectedCitaDetail.confirmadoPorNombre}</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500">Estado de Aceptación:</span>
+                      <span className="text-slate-400 italic">Pendiente de confirmación</span>
+                    </div>
                   )}
                 </div>
+
+                {/* Botones de Cambio de Estado Rápido en 1 Clic */}
+                <div className="pt-2 border-t border-slate-100 space-y-2">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Acciones Rápidas</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {selectedCitaDetail.estado === "PROGRAMADA" && (
+                      <button
+                        onClick={async () => {
+                          const { actualizarEstadoCita } = await import("@/server/actions/citas");
+                          const usuarioInfo = currentUser ? {
+                            id: currentUser.id,
+                            nombre: `${currentUser.nombre} (${currentUser.rol === "RECEPCION" ? "Recepción" : currentUser.rol})`,
+                            rol: currentUser.rol
+                          } : undefined;
+                          await actualizarEstadoCita(selectedCitaDetail.id, "CONFIRMADA", usuarioInfo);
+                          const respNombre = usuarioInfo?.nombre || "Karin Palacios (Recepción)";
+                          setCitas((prev) => prev.map((c) => c.id === selectedCitaDetail.id ? { ...c, estado: "CONFIRMADA", confirmadoPorNombre: respNombre } : c));
+                          setSelectedCitaDetail((prev: any) => ({ ...prev, estado: "CONFIRMADA", confirmadoPorNombre: respNombre }));
+                        }}
+                        className="py-2 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl border border-blue-200 text-center transition cursor-pointer text-xs"
+                      >
+                        Confirmar Cita
+                      </button>
+                    )}
+
+                    {selectedCitaDetail.estado !== "CANCELADA" && selectedCitaDetail.estado !== "ATENDIDA" && (
+                      <button
+                        onClick={async () => {
+                          const { actualizarEstadoCita } = await import("@/server/actions/citas");
+                          await actualizarEstadoCita(selectedCitaDetail.id, "NO_ASISTIO");
+                          setCitas((prev) => prev.map((c) => c.id === selectedCitaDetail.id ? { ...c, estado: "NO_ASISTIO" } : c));
+                          setSelectedCitaDetail((prev: any) => ({ ...prev, estado: "NO_ASISTIO" }));
+                        }}
+                        className="py-2 px-2 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-xl border border-amber-200 text-center transition cursor-pointer text-xs"
+                      >
+                        No Asistió
+                      </button>
+                    )}
+
+                    {selectedCitaDetail.estado !== "CANCELADA" && selectedCitaDetail.estado !== "ATENDIDA" && (
+                      <button
+                        onClick={async () => {
+                          if (confirm("¿Está seguro de cancelar esta cita? La sala quedará libre para agendar.")) {
+                            const { actualizarEstadoCita } = await import("@/server/actions/citas");
+                            await actualizarEstadoCita(selectedCitaDetail.id, "CANCELADA");
+                            setCitas((prev) => prev.map((c) => c.id === selectedCitaDetail.id ? { ...c, estado: "CANCELADA" } : c));
+                            setSelectedCitaDetail((prev: any) => ({ ...prev, estado: "CANCELADA" }));
+                          }
+                        }}
+                        className="py-2 px-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl border border-rose-200 text-center transition cursor-pointer text-xs"
+                      >
+                        Cancelar Cita
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Botones Inferiores de Navegación */}
+              <div className="pt-3 flex items-center justify-between border-t border-slate-100">
+                <Link
+                  href={`/dashboard/pacientes/${selectedCitaDetail.pacienteId}`}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold rounded-xl border border-teal-200 transition"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Ver Expediente y EVA</span>
+                </Link>
+
+                <button
+                  onClick={() => setSelectedCitaDetail(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition cursor-pointer"
+                >
+                  Cerrar
+                </button>
               </div>
             </div>
-
-            <div className="pt-2 flex justify-end gap-2 border-t border-slate-100">
-              <a
-                href={`/dashboard/pacientes/${selectedCitaDetail.pacienteId}`}
-                className="px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-lg transition"
-              >
-                Ficha EVA y Evolución
-              </a>
-              <button
-                onClick={() => setSelectedCitaDetail(null)}
-                className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg"
-              >
-                Cerrar
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

@@ -5,7 +5,7 @@ export const agendarCitaSchema = z.object({
   pacienteId: z.string().min(1, "Debe seleccionar un paciente"),
   paqueteId: z.string().optional().nullable(),
   terapeutaId: z.string().min(1, "Debe asignar un terapeuta"),
-  salaId: z.string().min(1, "Debe seleccionar una sala física (1-6)"),
+  salaId: z.string().min(1, "Debe seleccionar una sala física"),
   fechaHoraInicio: z.string().or(z.date()).transform((val) => new Date(val)),
   duracionMinutos: z.number().int().min(30).max(120).default(45),
   esReevaluacion: z.boolean().default(false),

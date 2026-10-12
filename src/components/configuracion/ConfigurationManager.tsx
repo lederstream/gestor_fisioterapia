@@ -177,7 +177,7 @@ export function ConfigurationManager({
       setNuevaSalaNombre("");
       setNuevaSalaEquip("");
       setIsCreatingSala(false);
-      showToast(`Sala "${salaCreada.nombre || nuevaSalaNombre}" creada y disponible en agenda.`);
+      showToast(`Sala "${salaCreada.nombre || nuevaSalaNombre}" creada y disponible en citas.`);
     } else {
       alert(res.error || "Error al crear nueva sala.");
     }

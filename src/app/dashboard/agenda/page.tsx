@@ -8,6 +8,7 @@ export default function AgendaPage() {
   const pacientes = dbStore.getPacientes();
   const paquetes = dbStore.getPaquetes();
   const servicios = dbStore.getServicios();
+  const configuracion = dbStore.getConfiguracion();
 
   return (
     <div className="space-y-6">
@@ -18,6 +19,7 @@ export default function AgendaPage() {
         pacientes={pacientes}
         paquetes={paquetes}
         servicios={servicios}
+        configuracion={configuracion}
       />
     </div>
   );

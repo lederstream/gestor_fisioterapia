@@ -16,7 +16,7 @@ export default async function ConfiguracionPage() {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
             <h1 className="text-xl md:text-2xl font-extrabold text-slate-800">
-              Ajustes de la Clínica
+              Configuración de la Clínica
             </h1>
             <p className="text-xs text-slate-500">
               Gestiona los datos de la sede, sube el logotipo institucional, administra las salas y personaliza los precios de servicios.

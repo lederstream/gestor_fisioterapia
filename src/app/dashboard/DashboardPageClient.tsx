@@ -94,7 +94,7 @@ export function DashboardPageClient({
             className="px-4 py-2.5 bg-white hover:bg-teal-50 text-teal-900 text-xs font-bold rounded-xl shadow-md flex items-center gap-2 transition"
           >
             <Calendar className="w-4 h-4 text-teal-700" />
-            <span>Ir a la Agenda</span>
+            <span>Ir a Citas</span>
           </Link>
           {canManageUsers && (
             <Link
@@ -267,7 +267,7 @@ export function DashboardPageClient({
               href="/dashboard/agenda"
               className="text-xs font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1"
             >
-              Ver agenda completa <ArrowUpRight className="w-3.5 h-3.5" />
+              Ver citas completas <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 

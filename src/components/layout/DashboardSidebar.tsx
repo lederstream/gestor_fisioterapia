@@ -42,12 +42,12 @@ interface NavItem {
 
 const staffNavigation: NavItem[] = [
   { name: "Inicio", href: "/dashboard", icon: Home },
-  { name: "Agenda", href: "/dashboard/agenda", icon: Calendar, permission: "agenda:ver" },
+  { name: "Citas", href: "/dashboard/agenda", icon: Calendar, permission: "agenda:ver" },
   { name: "Pacientes", href: "/dashboard/pacientes", icon: Users, permission: "pacientes:ver" },
   { name: "Caja", href: "/dashboard/caja", icon: CreditCard, permission: "caja:ver" },
   { name: "Equipo", href: "/dashboard/usuarios", icon: KeyRound, permission: "usuarios:gestionar" },
   { name: "Historial", href: "/dashboard/auditoria", icon: History, permission: "auditoria:ver" },
-  { name: "Ajustes", href: "/dashboard/configuracion", icon: Settings, permission: "config:ver" },
+  { name: "Configuración", href: "/dashboard/configuracion", icon: Settings, permission: "config:ver" },
 ];
 
 const patientNavigation: NavItem[] = [
