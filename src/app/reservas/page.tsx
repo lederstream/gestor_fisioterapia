@@ -20,7 +20,7 @@ export default function ReservasPage() {
               {configuracion.nombreComercial || "AJ Fisioterapia"}
             </span>
             <span className="text-xs text-teal-600 font-semibold tracking-wide">
-              {configuracion.sedeNombre || "Sede San Borja"} • Gestor Fisioterapia
+              Centro Clínico Especializado • Gestor Fisioterapia
             </span>
           </div>
         </div>
@@ -41,7 +41,7 @@ export default function ReservasPage() {
         <div className="mt-8 bg-white p-6 rounded-2xl border border-slate-200 text-xs text-slate-500 space-y-3">
           <div className="flex items-center gap-2 font-bold text-slate-700">
             <MapPin className="w-4 h-4 text-teal-600" />
-            <span>Centro Clínico {configuracion.nombreComercial} — {configuracion.sedeNombre || "Sede San Borja"}</span>
+            <span>Centro Clínico {configuracion.nombreComercial}</span>
           </div>
           <p className="leading-relaxed">
             {configuracion.direccion || "Av. Guardia Civil 520, San Borja, Lima"}. Contamos con {configuracion.totalSalasFisicas || 6} salas físicas equipadas para terapia traumatológica, deportiva, ortopédica y neurorehabilitación.

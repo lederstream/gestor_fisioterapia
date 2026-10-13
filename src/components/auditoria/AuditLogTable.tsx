@@ -630,7 +630,7 @@ export function AuditLogTable({ initialLogs }: AuditLogTableProps) {
               <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-[11px] flex items-start gap-2">
                 <Lock className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                 <span>
-                  Registro de auditoría sellado criptográficamente en tiempo de ejecución. Conforme a normativa de calidad y trazabilidad de AJ Fisioterapia Sede San Borja.
+                  Registro de auditoría sellado criptográficamente en tiempo de ejecución. Conforme a normativa de calidad y trazabilidad de AJ Fisioterapia.
                 </span>
               </div>
             </div>

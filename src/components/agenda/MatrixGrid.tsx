@@ -605,7 +605,7 @@ export function MatrixGrid({
                 </div>
                 <div className="max-w-md mx-auto">
                   <h4 className="font-extrabold text-slate-800 text-sm">
-                    Sede Cerrada el día {diaSemanaClave.charAt(0).toUpperCase() + diaSemanaClave.slice(1)}
+                    Clínica Cerrada el día {diaSemanaClave.charAt(0).toUpperCase() + diaSemanaClave.slice(1)}
                   </h4>
                   <p className="text-xs text-slate-500 mt-1">
                     La configuración institucional de AJ Fisioterapia establece que este día no tiene atención clínica. Puedes seleccionar otra fecha en la barra superior o modificar los días de atención en Configuración.
@@ -617,7 +617,7 @@ export function MatrixGrid({
                     className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white text-teal-700 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold shadow-2xs transition"
                   >
                     <SlidersHorizontal className="w-3.5 h-3.5" />
-                    <span>Ajustar Horarios de la Sede</span>
+                    <span>Ajustar Horarios de Atención</span>
                   </Link>
                 </div>
               </div>

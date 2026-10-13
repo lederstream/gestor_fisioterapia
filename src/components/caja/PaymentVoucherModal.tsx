@@ -25,7 +25,6 @@ export function PaymentVoucherModal({
   let clinicConfig = {
     razonSocial: "AJ FISIOTERAPIA S.A.C.",
     nombreComercial: "AJ FISIOTERAPIA",
-    sedeNombre: "Sede San Borja",
     ruc: "20608912345",
     direccion: "Av. Guardia Civil 520, San Borja, Lima",
     telefono: "(01) 475-2010",
@@ -49,7 +48,7 @@ export function PaymentVoucherModal({
   const handleWhatsApp = () => {
     const telefono = paciente?.telefono || "";
     const texto = encodeURIComponent(
-      `*${clinicConfig.nombreComercial} (${clinicConfig.sedeNombre})* - Comprobante de Cobranza\n\nEstimado(a) ${paciente?.nombres} ${paciente?.apellidos}:\nHemos registrado su pago de *${formatCurrency(pago.monto)}* (${pago.metodoPago}, Ref: ${pago.numeroOperacion}).\nServicio: ${servicio?.nombre || "Fisioterapia"}\n¡Gracias por su preferencia!`
+      `*${clinicConfig.nombreComercial}* - Comprobante de Cobranza\n\nEstimado(a) ${paciente?.nombres} ${paciente?.apellidos}:\nHemos registrado su pago de *${formatCurrency(pago.monto)}* (${pago.metodoPago}, Ref: ${pago.numeroOperacion}).\nServicio: ${servicio?.nombre || "Fisioterapia"}\n¡Gracias por su preferencia!`
     );
     window.open(`https://wa.me/51${telefono}?text=${texto}`, "_blank");
   };

@@ -48,7 +48,7 @@ export function CashArqueoModal({ isOpen, onClose, reporte }: CashArqueoModalPro
                 Arqueo y Cierre Diario de Caja
               </h3>
               <p className="text-[11px] text-slate-500">
-                Conciliación física vs digital en Sede San Borja
+                Conciliación de caja física vs digital
               </p>
             </div>
           </div>

@@ -126,7 +126,7 @@ export function BookingForm({ servicios, configuracion }: BookingFormProps) {
             <span className="font-bold text-slate-800">{new Date(fecha).toLocaleDateString("es-PE")} ({horario})</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-500">Sede Física:</span>
+            <span className="text-slate-500">Dirección:</span>
             <span className="font-bold text-teal-700">Av. Guardia Civil 520, San Borja</span>
           </div>
           <div className="flex justify-between">
@@ -163,7 +163,7 @@ export function BookingForm({ servicios, configuracion }: BookingFormProps) {
       {/* Clinic Welcome Header */}
       <div className="bg-gradient-to-r from-teal-700 via-teal-800 to-emerald-700 p-6 sm:p-8 text-white">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 border border-white/20 text-teal-100 text-xs font-semibold mb-3 backdrop-blur-xs">
-          <MapPin className="w-3.5 h-3.5" /> Sede San Borja • AJ Fisioterapia
+          <MapPin className="w-3.5 h-3.5" /> San Borja • AJ Fisioterapia
         </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
           Agenda tu Cita de Fisioterapia
@@ -327,7 +327,7 @@ export function BookingForm({ servicios, configuracion }: BookingFormProps) {
               {isDayClosed ? (
                 <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs font-semibold flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
-                  <span>Sede cerrada los {diaSemanaNombre}. Elige otra fecha.</span>
+                  <span>Clínica cerrada los {diaSemanaNombre}. Elige otra fecha.</span>
                 </div>
               ) : (
                 <select

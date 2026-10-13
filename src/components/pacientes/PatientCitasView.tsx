@@ -26,7 +26,6 @@ export function PatientCitasView({ citas, salas, personal }: PatientCitasViewPro
   const [filter, setFilter] = useState<"proximas" | "historial">("proximas");
   const [clinicConfig, setClinicConfig] = useState({
     nombreComercial: "AJ Fisioterapia",
-    sedeNombre: "Sede San Borja",
     whatsapp: "+51 987 654 321",
   });
 
@@ -103,7 +102,7 @@ export function PatientCitasView({ citas, salas, personal }: PatientCitasViewPro
               </span>
               <span className="inline-flex items-center gap-1">
                 <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-                {clinicConfig.sedeNombre} • {sala?.nombre || "Sala Principal"}
+                {clinicConfig.nombreComercial} • {sala?.nombre || "Sala Principal"}
               </span>
             </div>
           </div>
@@ -136,7 +135,7 @@ export function PatientCitasView({ citas, salas, personal }: PatientCitasViewPro
             Mis Citas de Terapia
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Consulta los horarios confirmados, terapeuta a cargo y sede asignada para tu tratamiento.
+            Consulta los horarios confirmados, terapeuta a cargo y sala asignada para tu tratamiento.
           </p>
         </div>
 

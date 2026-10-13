@@ -99,7 +99,7 @@ export function PacientesClient({ initialPacientes }: PacientesClientProps) {
             Directorio Clínico de Pacientes
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Fichas clínicas integrales, control de dolor EVA y paquetes de tratamiento en Sede San Borja.
+            Fichas clínicas integrales, control de dolor EVA y paquetes de tratamiento en AJ Fisioterapia.
           </p>
         </div>
 
@@ -122,7 +122,7 @@ export function PacientesClient({ initialPacientes }: PacientesClientProps) {
         <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
           <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Total Pacientes</span>
           <span className="text-xl font-black text-slate-800">{totalPacientes}</span>
-          <p className="text-[10px] text-slate-500">Expedientes activos en sede</p>
+          <p className="text-[10px] text-slate-500">Expedientes activos en clínica</p>
         </div>
         <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
           <span className="text-[10px] uppercase font-bold text-teal-700 block tracking-wider">Con Paquete Activo</span>
@@ -470,7 +470,7 @@ export function PacientesClient({ initialPacientes }: PacientesClientProps) {
         {/* Pie de tabla con resumen */}
         <div className="bg-slate-50/60 px-4 py-2 border-t border-slate-200/80 text-[11px] text-slate-500 flex items-center justify-between">
           <span>Mostrando <strong>{filtered.length}</strong> de <strong>{pacientes.length}</strong> expedientes</span>
-          <span className="text-slate-400">AJ Fisioterapia • Sede San Borja</span>
+          <span className="text-slate-400">AJ Fisioterapia</span>
         </div>
       </div>
 

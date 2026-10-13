@@ -24,7 +24,6 @@ interface PatientTratamientoViewProps {
 export function PatientTratamientoView({ paquetes, historias }: PatientTratamientoViewProps) {
   const [clinicConfig, setClinicConfig] = useState({
     nombreComercial: "AJ Fisioterapia",
-    sedeNombre: "Sede San Borja",
   });
 
   useEffect(() => {
@@ -59,7 +58,7 @@ export function PatientTratamientoView({ paquetes, historias }: PatientTratamien
             Mi Tratamiento & Evolución EVA
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Supervisa el consumo de tus sesiones contratadas, la reducción del dolor y las pautas terapéuticas en {clinicConfig.sedeNombre}.
+            Supervisa el consumo de tus sesiones contratadas, la reducción del dolor y las pautas terapéuticas en {clinicConfig.nombreComercial}.
           </p>
         </div>
 

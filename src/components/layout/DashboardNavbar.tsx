@@ -13,7 +13,6 @@ export function DashboardNavbar({ onToggleMobileMenu }: DashboardNavbarProps) {
   const { currentRole } = useAuth();
   const [clinicConfig, setClinicConfig] = useState({
     nombreComercial: "AJ Fisioterapia",
-    sedeNombre: "Sede San Borja",
     direccion: "Av. Guardia Civil 520, San Borja, Lima",
   });
 
@@ -84,9 +83,9 @@ export function DashboardNavbar({ onToggleMobileMenu }: DashboardNavbarProps) {
           <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200/80 shadow-xs">
             <MapPin className="w-3.5 h-3.5 text-teal-600 shrink-0" />
             <span className="hidden sm:inline">
-              {clinicConfig.sedeNombre} ({shortAddress})
+              {clinicConfig.nombreComercial} • {shortAddress}
             </span>
-            <span className="sm:hidden">{clinicConfig.sedeNombre}</span>
+            <span className="sm:hidden">{clinicConfig.nombreComercial}</span>
           </div>
         )}
 

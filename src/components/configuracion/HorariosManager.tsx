@@ -120,7 +120,7 @@ export function HorariosManager({
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Define la disponibilidad de la sede, recesos de almuerzo y el intervalo de citas para la agenda y reservas en línea.
+            Define la disponibilidad de la clínica, recesos de almuerzo y el intervalo de citas para la agenda y reservas en línea.
           </p>
         </div>
 
@@ -302,7 +302,7 @@ export function HorariosManager({
                 ) : (
                   <div className="text-xs text-slate-400 italic flex items-center gap-1.5 py-2">
                     <AlertCircle className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Sede cerrada este día. No se generarán turnos en la agenda ni en reservas.</span>
+                    <span>Clínica cerrada este día. No se generarán turnos en la agenda ni en reservas.</span>
                   </div>
                 )}
               </div>

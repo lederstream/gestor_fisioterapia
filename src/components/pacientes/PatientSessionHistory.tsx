@@ -726,7 +726,7 @@ function ClinicalDetailCard({
       <div className="space-y-1.5 pt-1">
         <span className="font-bold text-[10px] uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
           <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
-          <span>Trazabilidad en Sede</span>
+          <span>Trazabilidad en Clínica</span>
         </span>
         <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-[11px] space-y-1.5 text-slate-600">
           <div className="flex items-center justify-between">

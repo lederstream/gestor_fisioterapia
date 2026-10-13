@@ -135,7 +135,6 @@ export interface ConfiguracionClinicaItem {
   id: string;
   razonSocial: string;
   nombreComercial: string;
-  sedeNombre?: string;
   ruc: string;
   direccionAvenidaCalle?: string;
   direccionNumero?: string;
@@ -252,7 +251,6 @@ const initialConfiguracion: ConfiguracionClinicaItem = {
   id: "config-principal",
   razonSocial: "AJ Fisioterapia S.A.C.",
   nombreComercial: "AJ Fisioterapia",
-  sedeNombre: "Sede San Borja",
   ruc: "20608912345",
   direccionAvenidaCalle: "Av. Guardia Civil",
   direccionNumero: "520",
@@ -290,7 +288,7 @@ const initialAuditLogs: AuditLogItem[] = [
     accion: "SISTEMA_INICIALIZADO",
     modulo: "SISTEMA",
     entidadId: "core-setup",
-    detalles: "Inicialización del sistema Gestor Fisioterapia para AJ Fisioterapia Sede San Borja con 6 salas operativas.",
+    detalles: "Inicialización del sistema Gestor Fisioterapia para AJ Fisioterapia con 6 salas operativas.",
     ipAddress: "192.168.1.100",
     createdAt: new Date(Date.now() - 4 * 3600000).toISOString(),
   },

@@ -107,7 +107,7 @@ export function ConfigurationManager({
     setConfig((prev: any) => ({ ...prev, logoUrl: "/images/logo-clinica.svg" }));
   };
 
-  // Guardar datos generales de la sede
+  // Guardar datos generales de la clínica
   const handleSaveGeneral = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingConfig(true);
@@ -121,7 +121,6 @@ export function ConfigurationManager({
     const payload = {
       razonSocial: config.razonSocial,
       nombreComercial: config.nombreComercial,
-      sedeNombre: config.sedeNombre || "Sede San Borja",
       ruc: config.ruc,
       direccionAvenidaCalle: config.direccionAvenidaCalle,
       direccionNumero: config.direccionNumero,
@@ -145,7 +144,7 @@ export function ConfigurationManager({
         window.dispatchEvent(new Event("clinic-logo-change"));
         window.dispatchEvent(new Event("clinic-config-change"));
       }
-      showToast("Datos de sede e identidad guardados correctamente.");
+      showToast("Datos de la clínica guardados correctamente.");
     }
   };
 
@@ -309,7 +308,7 @@ export function ConfigurationManager({
   };
 
   const TABS: { id: TabType; label: string; icon: any; badge?: string }[] = [
-    { id: "general", label: "Clínica y Sede", icon: Building2 },
+    { id: "general", label: "Datos de la Clínica", icon: Building2 },
     { id: "horarios", label: "Horarios y Agenda", icon: Clock },
     { id: "salas", label: "Salas y Boxes", icon: Layers, badge: `${salas.length}` },
     { id: "servicios", label: "Servicios y Tarifas", icon: DollarSign, badge: `${servicios.length}` },
@@ -378,7 +377,7 @@ export function ConfigurationManager({
       </div>
 
       {/* ========================================================================= */}
-      {/* PESTAÑA 1: CLÍNICA Y SEDE                                                  */}
+      {/* PESTAÑA 1: DATOS DE LA CLÍNICA                                             */}
       {/* ========================================================================= */}
       {activeTab === "general" && (
         <form onSubmit={handleSaveGeneral} className="space-y-5">
@@ -451,7 +450,7 @@ export function ConfigurationManager({
               <p className="text-[11px] text-slate-500">Información comercial y tributaria de la clínica.</p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Nombre Comercial</label>
                 <input
@@ -483,17 +482,6 @@ export function ConfigurationManager({
                   onChange={(e) => setConfig({ ...config, ruc: e.target.value })}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-mono font-bold"
                   required
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Nombre de Sede</label>
-                <input
-                  type="text"
-                  value={config.sedeNombre || ""}
-                  onChange={(e) => setConfig({ ...config, sedeNombre: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                  placeholder="Sede San Borja"
                 />
               </div>
             </div>
@@ -595,7 +583,7 @@ export function ConfigurationManager({
               className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-md shadow-teal-600/25 flex items-center gap-2 transition disabled:opacity-50 cursor-pointer text-xs"
             >
               <Save className="w-4 h-4" />
-              <span>{savingConfig ? "Guardando..." : "Guardar Cambios de Sede"}</span>
+              <span>{savingConfig ? "Guardando..." : "Guardar Cambios"}</span>
             </button>
           </div>
         </form>

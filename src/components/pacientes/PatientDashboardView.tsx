@@ -41,7 +41,6 @@ export function PatientDashboardView({
   const { currentUser } = useAuth();
   const [clinicConfig, setClinicConfig] = useState({
     nombreComercial: "AJ Fisioterapia",
-    sedeNombre: "Sede San Borja",
     whatsapp: "+51 987 654 321",
   });
 
@@ -85,7 +84,7 @@ export function PatientDashboardView({
       <div className="bg-gradient-to-r from-teal-700 via-teal-800 to-emerald-700 p-6 sm:p-8 rounded-3xl text-white shadow-lg shadow-teal-900/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-teal-600/50">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-teal-100 text-xs font-semibold mb-3 border border-white/20 backdrop-blur-xs">
-            <Sparkles className="w-3.5 h-3.5 text-teal-200" /> Portal Oficial del Paciente • {clinicConfig.sedeNombre}
+            <Sparkles className="w-3.5 h-3.5 text-teal-200" /> Portal Oficial del Paciente • {clinicConfig.nombreComercial}
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
             Hola, {pacienteNombre}
@@ -217,7 +216,7 @@ export function PatientDashboardView({
             <span>{proximaCita ? formatTime(proximaCita.fechaHoraInicio) : "08:00 AM"}</span>
           </div>
           <p className="text-[11px] text-slate-600">
-            {clinicConfig.sedeNombre} • Sala 1 (Camilla 1)
+            {clinicConfig.nombreComercial} • Sala 1 (Camilla 1)
           </p>
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
             Confirmada

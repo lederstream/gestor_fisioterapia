@@ -1,5 +1,5 @@
 # 🎓 Guía Estratégica: Avances Semanales y Defensa de Proyecto
-> **Proyecto:** Gestor Fisioterapia (AJ Fisioterapia - Sede San Borja)  
+> **Proyecto:** Gestor Fisioterapia (AJ Fisioterapia - San Borja, Lima)  
 > **Autor:** Marco Antonio Yana  
 > **Tecnologías:** Next.js (App Router), React 19, TypeScript, Tailwind CSS v4, Prisma ORM, Server Actions.
 
@@ -75,7 +75,7 @@ El profesor querrá ver **el código a un lado y la aplicación al otro**.
 * **Qué mostrar en la Web (Pantalla Derecha):**
   1. **Navegación limpia:** Muestra el Sidebar con botones concisos de una palabra: **Dashboard, Agenda, Pacientes, Caja, Usuarios, Auditoría, Configuración**.
   2. **Logotipo corporativo:** Muestra el logo oficial en el encabezado del Sidebar.
-  3. **Subida de Logo (Admin):** Entra a `Configuración ➔ Sede y Reglas Clínicas`, sube un nuevo logo o imagen y muestra cómo el Sidebar y la web lo actualizan automáticamente.
+  3. **Subida de Logo (Admin):** Entra a `Configuración ➔ Datos de la Clínica`, sube un nuevo logo o imagen y muestra cómo el Sidebar y la web lo actualizan automáticamente.
   4. **Modo Móvil:** Reduce la pantalla o activa el modo móvil con `F12`. Abre y cierra el menú hamburguesa responsivo.
 
 * **Qué mostrar en el Código (Pantalla Izquierda):**

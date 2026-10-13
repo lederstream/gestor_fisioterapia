@@ -9,8 +9,8 @@ export default async function ConfiguracionPage() {
   return (
     <PermissionGuard
       permission="config:ver"
-      fallbackTitle="Acceso Restringido a Parámetros de Sede"
-      fallbackMessage="La modificación de salas físicas, aranceles de servicios y reglas institucionales de la sede es exclusiva para la Dirección Médica y Gerencia."
+      fallbackTitle="Acceso Restringido a Configuración Clínica"
+      fallbackMessage="La modificación de salas físicas, aranceles de servicios y reglas institucionales de la clínica es exclusiva para la Dirección Médica y Gerencia."
     >
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -19,7 +19,7 @@ export default async function ConfiguracionPage() {
               Configuración de la Clínica
             </h1>
             <p className="text-xs text-slate-500">
-              Gestiona los datos de la sede, horarios de atención semanales, salas físicas y catálogo de servicios.
+              Gestiona la información de la clínica, horarios de atención semanales, salas físicas y catálogo de servicios.
             </p>
           </div>
 

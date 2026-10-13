@@ -1,6 +1,6 @@
 # INFORME TÉCNICO DE ARQUITECTURA, TECNOLOGÍAS Y DEPENDENCIAS
 ## Sistema de Gestión Integral de Fisioterapia y Rehabilitación (KineFlow Core)
-**Centro Clínico:** AJ Fisioterapia (Sede San Borja - Lima, Perú)  
+**Centro Clínico:** AJ Fisioterapia (San Borja - Lima, Perú)  
 **Autor y Desarrollador:** Marco Antonio Yana (Lederstream)  
 **Fecha de Publicación:** Octubre 2026  
 **Versión del Sistema:** 0.1.0 Enterprise  

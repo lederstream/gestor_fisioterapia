@@ -65,7 +65,6 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: Dashbo
   const [logoUrl, setLogoUrl] = useState<string>("/images/logo-clinica.svg");
   const [clinicConfig, setClinicConfig] = useState({
     nombreComercial: "AJ Fisioterapia",
-    sedeNombre: "Sede San Borja",
     whatsapp: "+51 987 654 321",
     totalSalasFisicas: 6,
   });
@@ -159,7 +158,7 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: Dashbo
                 {clinicConfig.nombreComercial}
               </span>
               <span className="text-[11px] text-teal-300 font-semibold tracking-wide block truncate">
-                {isPatient ? "Portal del Paciente" : clinicConfig.sedeNombre}
+                {isPatient ? "Portal del Paciente" : "Gestión Clínica"}
               </span>
             </div>
           </Link>
@@ -263,7 +262,7 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: Dashbo
               <span className="text-xs font-bold text-white">{clinicConfig.nombreComercial}</span>
             </div>
             <p className="text-[11px] text-teal-200/80 leading-relaxed">
-              {clinicConfig.sedeNombre} • {clinicConfig.totalSalasFisicas} salas de atención activas.
+              Centro de Fisioterapia • {clinicConfig.totalSalasFisicas} salas de atención activas.
             </p>
           </div>
         )}

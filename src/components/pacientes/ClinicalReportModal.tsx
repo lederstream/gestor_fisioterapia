@@ -127,7 +127,7 @@ export function ClinicalReportModal({
                 </div>
               </div>
               <p className="text-[11px] text-slate-400 mt-1">
-                Sede Central: Av. San Borja Sur 450, San Borja, Lima | Tel: (01) 475-2289
+                Dirección: Av. Guardia Civil 520, San Borja, Lima | Tel: (01) 475-2010
               </p>
             </div>
 
@@ -346,14 +346,14 @@ export function ClinicalReportModal({
                 Colegio de Tecnólogos Médicos del Perú (CTMP)
               </span>
               <span className="text-[10px] text-slate-400 block">
-                AJ Fisioterapia — Sede San Borja
+                AJ Fisioterapia
               </span>
             </div>
           </div>
 
           {/* Pie de Página Institucional */}
           <div className="text-center text-[10px] text-slate-400 pt-4 border-t border-slate-100">
-            Documento emitido válidamente por el sistema transaccional Gestor Fisioterapia (AJ Fisioterapia San Borja). Confidencialidad bajo ley general de salud.
+            Documento emitido válidamente por el sistema transaccional Gestor Fisioterapia (AJ Fisioterapia). Confidencialidad bajo ley general de salud.
           </div>
         </div>
 
