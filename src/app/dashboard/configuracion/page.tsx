@@ -19,7 +19,7 @@ export default async function ConfiguracionPage() {
               Configuración de la Clínica
             </h1>
             <p className="text-xs text-slate-500">
-              Gestiona los datos de la sede, sube el logotipo institucional, administra las salas y personaliza los precios de servicios.
+              Gestiona los datos de la sede, horarios de atención semanales, salas físicas y catálogo de servicios.
             </p>
           </div>
 

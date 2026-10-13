@@ -72,17 +72,58 @@ export function MatrixGrid({
   const [selectedMobileSala, setSelectedMobileSala] = useState<string>("TODAS");
   const [productivityFilter, setProductivityFilter] = useState<"TODAS" | "POR_CONFIRMAR" | "SOLO_LIBRES">("TODAS");
 
-  // Generación dinámica de ranuras horarias según la configuración de la clínica
-  const aperturaHour = parseInt((configuracion?.horaApertura || "08:00").split(":")[0], 10) || 8;
-  const cierreHour = parseInt((configuracion?.horaCierre || "20:00").split(":")[0], 10) || 20;
-  
+  // Detección del día de la semana para horarios personalizados
+  const diaSemanaClave = useMemo(() => {
+    if (!selectedDate) return "lunes";
+    const [y, m, d] = selectedDate.split("-").map(Number);
+    const day = new Date(y, m - 1, d).getDay();
+    const map: Record<number, string> = {
+      0: "domingo",
+      1: "lunes",
+      2: "martes",
+      3: "miercoles",
+      4: "jueves",
+      5: "viernes",
+      6: "sabado",
+    };
+    return map[day] || "lunes";
+  }, [selectedDate]);
+
+  const diaConfig = configuracion?.horariosSemana?.[diaSemanaClave];
+  const isDiaCerrado = diaConfig ? !diaConfig.activo : false;
+
+  const aperturaHour = useMemo(() => {
+    if (diaConfig?.apertura) {
+      return parseInt(diaConfig.apertura.split(":")[0], 10) || 8;
+    }
+    return parseInt((configuracion?.horaApertura || "08:00").split(":")[0], 10) || 8;
+  }, [diaConfig, configuracion]);
+
+  const cierreHour = useMemo(() => {
+    if (diaConfig?.cierre) {
+      return parseInt(diaConfig.cierre.split(":")[0], 10) || 20;
+    }
+    return parseInt((configuracion?.horaCierre || "20:00").split(":")[0], 10) || 20;
+  }, [diaConfig, configuracion]);
+
+  const intervaloMinutos = configuracion?.intervaloMinutos || 45;
+
   const timeSlots: string[] = useMemo(() => {
+    if (isDiaCerrado) return [];
     const slots: string[] = [];
     for (let h = aperturaHour; h < cierreHour; h++) {
       slots.push(`${h.toString().padStart(2, "0")}:00`);
     }
     return slots;
-  }, [aperturaHour, cierreHour]);
+  }, [aperturaHour, cierreHour, isDiaCerrado]);
+
+  const isPausaSlot = (slot: string) => {
+    if (!diaConfig?.tienePausa || !diaConfig.pausaInicio || !diaConfig.pausaFin) return false;
+    const [hSlot] = slot.split(":").map(Number);
+    const [hPIni] = diaConfig.pausaInicio.split(":").map(Number);
+    const [hPFin] = diaConfig.pausaFin.split(":").map(Number);
+    return hSlot >= hPIni && hSlot < hPFin;
+  };
 
   const getStatusBadge = (estado: string) => {
     switch (estado) {
@@ -556,7 +597,31 @@ export function MatrixGrid({
               })}
             </div>
 
-            {/* Filas de Horario con Detector de Saturación por Franja */}
+            {/* Filas de Horario con Detector de Saturación por Franja o Aviso de Día Cerrado */}
+            {isDiaCerrado ? (
+              <div className="p-12 text-center space-y-3 bg-slate-50/60">
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center mx-auto border border-amber-200 shadow-2xs">
+                  <Clock className="w-6 h-6" />
+                </div>
+                <div className="max-w-md mx-auto">
+                  <h4 className="font-extrabold text-slate-800 text-sm">
+                    Sede Cerrada el día {diaSemanaClave.charAt(0).toUpperCase() + diaSemanaClave.slice(1)}
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-1">
+                    La configuración institucional de AJ Fisioterapia establece que este día no tiene atención clínica. Puedes seleccionar otra fecha en la barra superior o modificar los días de atención en Configuración.
+                  </p>
+                </div>
+                <div className="pt-1">
+                  <Link
+                    href="/dashboard/configuracion"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white text-teal-700 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold shadow-2xs transition"
+                  >
+                    <SlidersHorizontal className="w-3.5 h-3.5" />
+                    <span>Ajustar Horarios de la Sede</span>
+                  </Link>
+                </div>
+              </div>
+            ) : (
             <div className="divide-y divide-slate-100">
               {timeSlots.map((slot) => {
                 const [slotHour] = slot.split(":").map(Number);
@@ -564,6 +629,7 @@ export function MatrixGrid({
                 const ocupadas = statHour?.ocupadas || 0;
                 const ratio = statHour?.ratio || 0;
                 const esPico = statHour?.esPico || false;
+                const esPausa = isPausaSlot(slot);
 
                 // Si el filtro "SOLO_LIBRES" está activo y este slot está al 100% de ocupación, lo oculta
                 if (productivityFilter === "SOLO_LIBRES" && ocupadas >= salasDisponibles.length && salasDisponibles.length > 0) {
@@ -575,28 +641,37 @@ export function MatrixGrid({
                     key={slot} 
                     className={cn(
                       "min-h-[85px] grid transition-colors",
-                      esPico ? "bg-rose-50/20" : ""
+                      esPico ? "bg-rose-50/20" : esPausa ? "bg-amber-50/25" : ""
                     )}
                     style={gridHeaderStyle}
                   >
                     {/* Columna de Horario con Detector de Demanda */}
-                    <div className="p-2.5 bg-slate-50/70 border-r border-slate-200 text-center flex flex-col justify-between items-center">
+                    <div className={cn(
+                      "p-2.5 border-r border-slate-200 text-center flex flex-col justify-between items-center",
+                      esPausa ? "bg-amber-50/70" : "bg-slate-50/70"
+                    )}>
                       <div>
                         <span className="text-xs font-bold text-slate-800">{slot}</span>
-                        <span className="text-[10px] text-slate-400 block">45m</span>
+                        <span className="text-[10px] text-slate-400 block">{intervaloMinutos}m</span>
                       </div>
 
-                      {/* Badge de Saturación Horaria */}
-                      <span className={cn(
-                        "text-[9px] font-bold px-1.5 py-0.2 rounded-md border block leading-tight",
-                        esPico 
-                          ? "bg-rose-100 text-rose-800 border-rose-300"
-                          : ocupadas > 0 
-                          ? "bg-slate-100 text-slate-600 border-slate-200" 
-                          : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                      )}>
-                        {esPico ? "HORA PICO" : `${ocupadas}/${salasDisponibles.length} salas`}
-                      </span>
+                      {/* Badge de Saturación Horaria o Refrigerio */}
+                      {esPausa ? (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md border bg-amber-100 text-amber-900 border-amber-300 block leading-tight">
+                          ☕ RECESO
+                        </span>
+                      ) : (
+                        <span className={cn(
+                          "text-[9px] font-bold px-1.5 py-0.2 rounded-md border block leading-tight",
+                          esPico 
+                            ? "bg-rose-100 text-rose-800 border-rose-300"
+                            : ocupadas > 0 
+                            ? "bg-slate-100 text-slate-600 border-slate-200" 
+                            : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        )}>
+                          {esPico ? "HORA PICO" : `${ocupadas}/${salasDisponibles.length} salas`}
+                        </span>
+                      )}
                     </div>
 
                     {/* Columnas para cada sala mostrada */}
@@ -680,6 +755,7 @@ export function MatrixGrid({
                 );
               })}
             </div>
+            )}
           </div>
         </div>
       </div>

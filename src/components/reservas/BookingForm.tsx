@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { 
   Calendar, 
   Clock, 
@@ -10,15 +10,17 @@ import {
   CheckCircle2, 
   ShieldCheck, 
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  AlertCircle
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
 interface BookingFormProps {
   servicios: any[];
+  configuracion?: any;
 }
 
-export function BookingForm({ servicios }: BookingFormProps) {
+export function BookingForm({ servicios, configuracion }: BookingFormProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [servicioId, setServicioId] = useState(servicios[0]?.id || "");
   const [dni, setDni] = useState("");
@@ -33,6 +35,56 @@ export function BookingForm({ servicios }: BookingFormProps) {
   const [motivo, setMotivo] = useState("");
   const [loading, setLoading] = useState(false);
   const [confirmado, setConfirmado] = useState(false);
+
+  // Calcular dinámicamente slots del día según la configuración institucional
+  const { diaSemanaNombre, isDayClosed, availableSlots } = useMemo(() => {
+    if (!fecha) return { diaSemanaNombre: "", isDayClosed: false, availableSlots: [] };
+    const [y, m, d] = fecha.split("-").map(Number);
+    const day = new Date(y, m - 1, d).getDay();
+    const map: Record<number, { clave: string; nombre: string }> = {
+      0: { clave: "domingo", nombre: "Domingo" },
+      1: { clave: "lunes", nombre: "Lunes" },
+      2: { clave: "martes", nombre: "Martes" },
+      3: { clave: "miercoles", nombre: "Miércoles" },
+      4: { clave: "jueves", nombre: "Jueves" },
+      5: { clave: "viernes", nombre: "Viernes" },
+      6: { clave: "sabado", nombre: "Sábado" },
+    };
+    const info = map[day] || { clave: "lunes", nombre: "Lunes" };
+    const diaConfig = configuracion?.horariosSemana?.[info.clave];
+
+    if (diaConfig && !diaConfig.activo) {
+      return { diaSemanaNombre: info.nombre, isDayClosed: true, availableSlots: [] };
+    }
+
+    const aperturaH = diaConfig?.apertura 
+      ? parseInt(diaConfig.apertura.split(":")[0], 10) 
+      : parseInt((configuracion?.horaApertura || "08:00").split(":")[0], 10);
+    const cierreH = diaConfig?.cierre 
+      ? parseInt(diaConfig.cierre.split(":")[0], 10) 
+      : parseInt((configuracion?.horaCierre || "20:00").split(":")[0], 10);
+
+    const pIni = diaConfig?.tienePausa && diaConfig.pausaInicio ? parseInt(diaConfig.pausaInicio.split(":")[0], 10) : -1;
+    const pFin = diaConfig?.tienePausa && diaConfig.pausaFin ? parseInt(diaConfig.pausaFin.split(":")[0], 10) : -1;
+
+    const slots: string[] = [];
+    for (let h = aperturaH; h < cierreH; h++) {
+      if (h >= pIni && h < pFin) continue; // Excluir pausa de refrigerio
+      const nextH = h + 1;
+      const startStr = `${h.toString().padStart(2, "0")}:00`;
+      const endStr = `${nextH.toString().padStart(2, "0")}:00`;
+      slots.push(`${startStr} - ${endStr}`);
+    }
+
+    return { diaSemanaNombre: info.nombre, isDayClosed: false, availableSlots: slots };
+  }, [fecha, configuracion]);
+
+  // Sincronizar horario seleccionado al cambiar de fecha
+  useEffect(() => {
+    if (availableSlots.length > 0 && !availableSlots.includes(horario)) {
+      setHorario(availableSlots[0]);
+    }
+  }, [availableSlots, horario]);
 
   const nombres = [primerNombre.trim(), segundoNombre.trim()].filter(Boolean).join(" ");
   const apellidos = [apellidoPaterno.trim(), apellidoMaterno.trim()].filter(Boolean).join(" ");
@@ -272,20 +324,32 @@ export function BookingForm({ servicios }: BookingFormProps) {
               <label className="block text-slate-600 font-semibold mb-1">
                 Horario de Preferencia
               </label>
-              <select
-                value={horario}
-                onChange={(e) => setHorario(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
-              >
-                <option value="08:00 - 09:00">Mañana: 08:00 - 09:00 AM</option>
-                <option value="09:00 - 10:00">Mañana: 09:00 - 10:00 AM</option>
-                <option value="10:00 - 11:00">Mañana: 10:00 - 11:00 AM</option>
-                <option value="11:00 - 12:00">Mañana: 11:00 - 12:00 PM</option>
-                <option value="15:00 - 16:00">Tarde: 03:00 - 04:00 PM</option>
-                <option value="16:00 - 17:00">Tarde: 04:00 - 05:00 PM</option>
-                <option value="17:00 - 18:00">Tarde: 05:00 - 06:00 PM</option>
-                <option value="18:00 - 19:00">Tarde: 06:00 - 07:00 PM</option>
-              </select>
+              {isDayClosed ? (
+                <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs font-semibold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+                  <span>Sede cerrada los {diaSemanaNombre}. Elige otra fecha.</span>
+                </div>
+              ) : (
+                <select
+                  value={horario}
+                  onChange={(e) => setHorario(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                >
+                  {availableSlots.length > 0 ? (
+                    availableSlots.map((slot) => {
+                      const startH = parseInt(slot.split(":")[0], 10);
+                      const tag = startH < 12 ? "Mañana" : "Tarde";
+                      return (
+                        <option key={slot} value={slot}>
+                          {tag}: {slot}
+                        </option>
+                      );
+                    })
+                  ) : (
+                    <option value="">No hay turnos disponibles</option>
+                  )}
+                </select>
+              )}
             </div>
           </div>
 
@@ -314,8 +378,8 @@ export function BookingForm({ servicios }: BookingFormProps) {
 
         <button
           type="submit"
-          disabled={loading || dni.length !== 8 || telefono.length !== 9}
-          className="w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm rounded-2xl shadow-lg shadow-teal-600/30 flex items-center justify-center gap-2 transition disabled:opacity-50"
+          disabled={loading || dni.length !== 8 || telefono.length !== 9 || isDayClosed}
+          className="w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm rounded-2xl shadow-lg shadow-teal-600/30 flex items-center justify-center gap-2 transition disabled:opacity-50 cursor-pointer"
         >
           {loading ? (
             "Procesando Solicitud..."

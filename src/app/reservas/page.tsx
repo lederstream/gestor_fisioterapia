@@ -5,6 +5,7 @@ import { ShieldCheck, MapPin, Phone, Clock, Sparkles } from "lucide-react";
 
 export default function ReservasPage() {
   const servicios = dbStore.getServicios();
+  const configuracion = dbStore.getConfiguracion();
 
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
@@ -16,10 +17,10 @@ export default function ReservasPage() {
           </div>
           <div>
             <span className="font-extrabold text-slate-800 text-lg block leading-none">
-              AJ Fisioterapia
+              {configuracion.nombreComercial || "AJ Fisioterapia"}
             </span>
             <span className="text-xs text-teal-600 font-semibold tracking-wide">
-              Sede San Borja • Gestor Fisioterapia
+              {configuracion.sedeNombre || "Sede San Borja"} • Gestor Fisioterapia
             </span>
           </div>
         </div>
@@ -34,21 +35,21 @@ export default function ReservasPage() {
 
       {/* Booking Component */}
       <main className="max-w-2xl mx-auto">
-        <BookingForm servicios={servicios} />
+        <BookingForm servicios={servicios} configuracion={configuracion} />
 
         {/* Informative Footer */}
         <div className="mt-8 bg-white p-6 rounded-2xl border border-slate-200 text-xs text-slate-500 space-y-3">
           <div className="flex items-center gap-2 font-bold text-slate-700">
             <MapPin className="w-4 h-4 text-teal-600" />
-            <span>Centro Clínico AJ Fisioterapia — Sede San Borja</span>
+            <span>Centro Clínico {configuracion.nombreComercial} — {configuracion.sedeNombre || "Sede San Borja"}</span>
           </div>
           <p className="leading-relaxed">
-            Av. Guardia Civil 520, San Borja, Lima. Contamos con 6 salas físicas equipadas para terapia traumatológica, deportiva, ortopédica y neurorehabilitación.
+            {configuracion.direccion || "Av. Guardia Civil 520, San Borja, Lima"}. Contamos con {configuracion.totalSalasFisicas || 6} salas físicas equipadas para terapia traumatológica, deportiva, ortopédica y neurorehabilitación.
           </p>
           <div className="flex flex-wrap gap-4 pt-2 border-t border-slate-100 text-[11px]">
-            <span>📞 Central Telefónica: (01) 475-2010</span>
-            <span>📱 WhatsApp Recepción: 987 654 321</span>
-            <span>⏰ Lunes a Sábado: 08:00 AM - 08:00 PM</span>
+            <span>📞 Central Telefónica: {configuracion.telefono}</span>
+            <span>📱 WhatsApp Recepción: {configuracion.whatsapp}</span>
+            <span>⏰ Atención: {configuracion.horaApertura} - {configuracion.horaCierre}</span>
           </div>
         </div>
       </main>

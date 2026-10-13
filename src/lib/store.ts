@@ -109,6 +109,27 @@ export interface AuditLogItem {
   createdAt: string;
 }
 
+export interface HorarioDiaConfig {
+  activo: boolean;
+  apertura: string;
+  cierre: string;
+  tienePausa: boolean;
+  pausaInicio?: string;
+  pausaFin?: string;
+}
+
+export type DiaSemanaClave = "lunes" | "martes" | "miercoles" | "jueves" | "viernes" | "sabado" | "domingo";
+
+export interface HorariosSemanaConfig {
+  lunes: HorarioDiaConfig;
+  martes: HorarioDiaConfig;
+  miercoles: HorarioDiaConfig;
+  jueves: HorarioDiaConfig;
+  viernes: HorarioDiaConfig;
+  sabado: HorarioDiaConfig;
+  domingo: HorarioDiaConfig;
+}
+
 // Configuración Maestra del Centro Clínico
 export interface ConfiguracionClinicaItem {
   id: string;
@@ -127,6 +148,7 @@ export interface ConfiguracionClinicaItem {
   horaApertura: string;
   horaCierre: string;
   intervaloMinutos: number;
+  horariosSemana?: HorariosSemanaConfig;
   frecuenciaReevaluacion: number;
   bloqueoAltaReevaluacion: boolean;
   totalSalasFisicas: number;
@@ -243,6 +265,15 @@ const initialConfiguracion: ConfiguracionClinicaItem = {
   horaApertura: "08:00",
   horaCierre: "20:00",
   intervaloMinutos: 45,
+  horariosSemana: {
+    lunes: { activo: true, apertura: "08:00", cierre: "20:00", tienePausa: true, pausaInicio: "13:00", pausaFin: "14:00" },
+    martes: { activo: true, apertura: "08:00", cierre: "20:00", tienePausa: true, pausaInicio: "13:00", pausaFin: "14:00" },
+    miercoles: { activo: true, apertura: "08:00", cierre: "20:00", tienePausa: true, pausaInicio: "13:00", pausaFin: "14:00" },
+    jueves: { activo: true, apertura: "08:00", cierre: "20:00", tienePausa: true, pausaInicio: "13:00", pausaFin: "14:00" },
+    viernes: { activo: true, apertura: "08:00", cierre: "20:00", tienePausa: true, pausaInicio: "13:00", pausaFin: "14:00" },
+    sabado: { activo: true, apertura: "08:00", cierre: "14:00", tienePausa: false, pausaInicio: "12:00", pausaFin: "13:00" },
+    domingo: { activo: false, apertura: "09:00", cierre: "13:00", tienePausa: false, pausaInicio: "12:00", pausaFin: "13:00" },
+  },
   frecuenciaReevaluacion: 5, // Cada 5 sesiones asistidas
   bloqueoAltaReevaluacion: true,
   totalSalasFisicas: 6,
@@ -399,6 +430,9 @@ class GestorFisioStore {
     this.configuracion = {
       ...this.configuracion,
       ...data,
+      horariosSemana: data.horariosSemana 
+        ? { ...(this.configuracion.horariosSemana || initialConfiguracion.horariosSemana!), ...data.horariosSemana }
+        : (this.configuracion.horariosSemana || initialConfiguracion.horariosSemana),
       updatedAt: new Date().toISOString(),
     };
 
