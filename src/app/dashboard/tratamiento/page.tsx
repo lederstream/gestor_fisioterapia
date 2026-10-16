@@ -6,11 +6,18 @@ export default function TratamientoPage() {
   const paquetes = dbStore.getPaquetes().filter((paq) => paq.pacienteId === pacienteAlexander?.id);
   const citas = dbStore.getCitas().filter((c) => c.pacienteId === pacienteAlexander?.id);
   const historias = dbStore.getHistorias().filter((h) => citas.some((c) => c.id === h.citaId) || h.citaId.includes("prev"));
+  const salas = dbStore.getSalas();
+  const terapeutas = dbStore.getTerapeutas();
+  const servicios = dbStore.getServicios();
 
   return (
     <PatientTratamientoView
       paquetes={paquetes}
       historias={historias}
+      paciente={pacienteAlexander}
+      salas={salas}
+      terapeutas={terapeutas}
+      servicios={servicios}
     />
   );
 }

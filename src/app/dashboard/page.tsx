@@ -9,6 +9,8 @@ export default function DashboardPage() {
   const pagos = dbStore.getPagos();
   const auditLogs = dbStore.getAuditLogs().slice(0, 5);
   const historias = dbStore.getHistorias();
+  const terapeutas = dbStore.getTerapeutas();
+  const servicios = dbStore.getServicios();
 
   return (
     <DashboardPageClient
@@ -19,6 +21,8 @@ export default function DashboardPage() {
       pagos={pagos}
       auditLogs={auditLogs}
       historias={historias}
+      terapeutas={terapeutas}
+      servicios={servicios}
     />
   );
 }

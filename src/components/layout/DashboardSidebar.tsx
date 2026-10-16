@@ -55,7 +55,6 @@ const patientNavigation: NavItem[] = [
   { name: "Mis Citas", href: "/dashboard/mis-citas", icon: Calendar },
   { name: "Mi Tratamiento & EVA", href: "/dashboard/tratamiento", icon: Activity },
   { name: "Mis Pagos", href: "/dashboard/mis-pagos", icon: CreditCard },
-  { name: "Reservar Cita", href: "/reservas", icon: Sparkles },
 ];
 
 export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: DashboardSidebarProps) {
@@ -189,6 +188,32 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: Dashbo
             </span>
           </div>
 
+          {/* Botón de Acción Principal para el Paciente: Reservar Cita In-App */}
+          {isPatient && (
+            <div className="pt-2 pb-2 px-1">
+              <button
+                type="button"
+                onClick={() => {
+                  if (onCloseMobile) onCloseMobile();
+                  if (typeof window !== "undefined") {
+                    window.dispatchEvent(new CustomEvent("open-patient-booking"));
+                    if (
+                      pathname !== "/dashboard" &&
+                      !pathname.startsWith("/dashboard/mis-citas") &&
+                      !pathname.startsWith("/dashboard/tratamiento")
+                    ) {
+                      window.location.href = "/dashboard/mis-citas?reservar=1";
+                    }
+                  }
+                }}
+                className="w-full flex items-center justify-center gap-2 px-3.5 py-3 rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-400 hover:from-emerald-300 hover:to-teal-200 text-teal-950 font-black text-xs shadow-lg shadow-emerald-950/40 border border-emerald-200/50 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4 text-teal-950 shrink-0" />
+                <span>+ Reservar Sesión</span>
+              </button>
+            </div>
+          )}
+
           {filteredNavigation.map((item) => {
             const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
             const Icon = item.icon;
@@ -220,19 +245,23 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: Dashbo
             );
           })}
 
-          {/* Único enlace limpio al portal público */}
-          <div className="pt-5 px-3 pb-2 text-[10px] font-bold text-teal-300/70 uppercase tracking-wider">
-            Página Web
-          </div>
-          <Link
-            href="/"
-            target="_blank"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-teal-100/80 hover:text-white hover:bg-white/10 transition-colors"
-          >
-            <Globe className="w-4 h-4 text-teal-300" />
-            <span className="flex-1">Ir al Sitio Web</span>
-            <ExternalLink className="w-3.5 h-3.5 text-teal-400/60" />
-          </Link>
+          {/* Único enlace limpio al portal público (Solo para personal clínico) */}
+          {!isPatient && (
+            <>
+              <div className="pt-5 px-3 pb-2 text-[10px] font-bold text-teal-300/70 uppercase tracking-wider">
+                Página Web
+              </div>
+              <Link
+                href="/"
+                target="_blank"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-teal-100/80 hover:text-white hover:bg-white/10 transition-colors"
+              >
+                <Globe className="w-4 h-4 text-teal-300" />
+                <span className="flex-1">Ir al Sitio Web</span>
+                <ExternalLink className="w-3.5 h-3.5 text-teal-400/60" />
+              </Link>
+            </>
+          )}
         </nav>
 
         {/* Footer Card: Personalizado según si es Paciente o Personal */}

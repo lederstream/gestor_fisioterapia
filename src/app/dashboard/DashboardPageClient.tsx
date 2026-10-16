@@ -30,6 +30,8 @@ interface DashboardPageClientProps {
   pagos: any[];
   auditLogs: any[];
   historias: any[];
+  terapeutas?: any[];
+  servicios?: any[];
 }
 
 export function DashboardPageClient({
@@ -40,6 +42,8 @@ export function DashboardPageClient({
   pagos,
   auditLogs,
   historias,
+  terapeutas = [],
+  servicios = [],
 }: DashboardPageClientProps) {
   const { currentRole, hasPermission, roleDetails } = useAuth();
 
@@ -58,6 +62,9 @@ export function DashboardPageClient({
         paquetes={paquetesActivos}
         historias={historiasActivas}
         pagos={pagosActivos}
+        salas={salas}
+        terapeutas={terapeutas}
+        servicios={servicios}
       />
     );
   }

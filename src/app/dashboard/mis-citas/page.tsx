@@ -6,12 +6,17 @@ export default function MisCitasPage() {
   const citas = dbStore.getCitas().filter((c) => c.pacienteId === pacienteAlexander?.id);
   const salas = dbStore.getSalas();
   const personal = dbStore.getUsers();
+  const paquetes = dbStore.getPaquetes().filter((paq) => paq.pacienteId === pacienteAlexander?.id);
+  const servicios = dbStore.getServicios();
 
   return (
     <PatientCitasView
       citas={citas}
       salas={salas}
       personal={personal}
+      paciente={pacienteAlexander}
+      paquetes={paquetes}
+      servicios={servicios}
     />
   );
 }

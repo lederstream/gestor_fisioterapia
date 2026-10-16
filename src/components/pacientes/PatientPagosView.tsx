@@ -53,13 +53,15 @@ export function PatientPagosView({
           </p>
         </div>
 
-        <Link
-          href="/reservas"
+        <a
+          href="https://wa.me/51987654321?text=Hola,%20soy%20el%20paciente%20Alexander%20Saavedra%20y%20deseo%20consultar%20sobre%20la%20renovaci%C3%B3n%20o%20adquisici%C3%B3n%20de%20un%20nuevo%20paquete%20de%20fisioterapia."
+          target="_blank"
+          rel="noopener noreferrer"
           className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white font-bold text-xs rounded-xl shadow-sm transition"
         >
           <Sparkles className="w-4 h-4" />
-          <span>Adquirir Nuevo Paquete</span>
-        </Link>
+          <span>Consultar Renovación de Paquete</span>
+        </a>
       </div>
 
       {/* Resumen Financiero del Paciente */}
