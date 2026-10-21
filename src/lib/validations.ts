@@ -7,8 +7,8 @@ export const agendarCitaSchema = z.object({
   terapeutaId: z.string().min(1, "Debe asignar un terapeuta"),
   salaId: z.string().min(1, "Debe seleccionar una sala física"),
   fechaHoraInicio: z.string().or(z.date()).transform((val) => new Date(val)),
-  duracionMinutos: z.number().int().min(30).max(120).default(45),
-  esReevaluacion: z.boolean().default(false),
+  duracionMinutos: z.number().int().min(30).max(120).optional().default(45),
+  esReevaluacion: z.boolean().optional().default(false),
 });
 
 export type AgendarCitaInput = z.infer<typeof agendarCitaSchema>;

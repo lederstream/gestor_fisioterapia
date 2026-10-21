@@ -1127,12 +1127,25 @@ class GestorFisioStore {
 
     const estadoPagoVerif = params.estado || "VERIFICADO";
 
+    // Validar unicidad estricta del número de operación (anti-duplicidad en Yape/Plin/POS)
+    const numOpFinal = params.numeroOperacion?.trim() || null;
+    if (numOpFinal) {
+      const existeOp = this.pagos.find(
+        (p) => p.numeroOperacion && p.numeroOperacion.trim().toLowerCase() === numOpFinal.toLowerCase()
+      );
+      if (existeOp) {
+        throw new Error(
+          `Duplicidad de comprobante: El número de operación "${numOpFinal}" ya fue registrado previamente en una cobranza el ${new Date(existeOp.fechaPago).toLocaleDateString("es-PE")}.`
+        );
+      }
+    }
+
     const nuevoPago: PagoItem = {
       id: `pago-${Date.now()}`,
       paqueteId: params.paqueteId,
       monto: params.monto,
       metodoPago: params.metodoPago,
-      numeroOperacion: params.numeroOperacion || `${params.metodoPago}-${Date.now().toString().slice(-6)}`,
+      numeroOperacion: numOpFinal || `${params.metodoPago}-${Date.now().toString().slice(-6)}`,
       comprobanteUrl: params.comprobanteUrl || null,
       estado: estadoPagoVerif,
       fechaPago: new Date().toISOString(),

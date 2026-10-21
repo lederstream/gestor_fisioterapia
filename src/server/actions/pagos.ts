@@ -6,12 +6,16 @@ import { dbStore, PagoItem, TratamientoPaqueteItem } from "@/lib/store";
 import { ServerActionResult } from "./citas";
 import { obtenerIpCliente } from "./auditoria";
 
+import { prisma } from "@/lib/prisma";
+
 /**
  * Server Action: registrarPago()
  * Regla de Caja y Cobranzas:
  * 1. Registra el pago en la entidad 'pagos'.
- * 2. Actualiza el acumulado 'monto_pagado' en el paquete.
- * 3. Calcula automáticamente si el estado pasa a 'PARCIAL' o 'PAGADO'.
+ * 2. Valida unicidad estricta para evitar comprobantes duplicados (Yape/Plin/POS).
+ * 3. Actualiza el acumulado 'monto_pagado' en el paquete.
+ * 4. Calcula automáticamente si el estado pasa a 'PARCIAL' o 'PAGADO'.
+ * 5. Ejecuta transacción atómica si PostgreSQL está conectado.
  */
 export async function registrarPago(
   input: RegistrarPagoInput,
@@ -20,6 +24,96 @@ export async function registrarPago(
   try {
     const validated = registrarPagoSchema.parse(input);
     const clientIp = await obtenerIpCliente();
+    const numOp = validated.numeroOperacion?.trim() || null;
+
+    // Si hay base de datos real conectada (Supabase / Neon), ejecutar en transacción atómica
+    if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+      try {
+        const txResult = await prisma.$transaction(async (tx: any) => {
+          // Validar duplicidad de comprobante en DB
+          if (numOp) {
+            const opExiste = await tx.pago.findFirst({
+              where: { numeroOperacion: numOp },
+            });
+            if (opExiste) {
+              throw new Error(`El número de operación "${numOp}" ya fue registrado previamente en otra cobranza.`);
+            }
+          }
+
+          const paquete = await tx.tratamientoPaquete.findUnique({
+            where: { id: validated.paqueteId },
+          });
+          if (!paquete) throw new Error("El paquete de sesiones no existe.");
+
+          const nuevoPago = await tx.pago.create({
+            data: {
+              paqueteId: validated.paqueteId,
+              monto: validated.monto,
+              metodoPago: validated.metodoPago,
+              numeroOperacion: numOp || `${validated.metodoPago}-${Date.now().toString().slice(-6)}`,
+              comprobanteUrl: validated.comprobanteUrl,
+              estado: validated.estado || "VERIFICADO",
+            },
+          });
+
+          const nuevoMontoPagado = Number(paquete.montoPagado) + validated.monto;
+          let nuevoEstadoPago: "PENDIENTE" | "PARCIAL" | "PAGADO" = "PENDIENTE";
+          if (nuevoMontoPagado >= Number(paquete.montoTotal)) {
+            nuevoEstadoPago = "PAGADO";
+          } else if (nuevoMontoPagado > 0) {
+            nuevoEstadoPago = "PARCIAL";
+          }
+
+          const paqueteActualizado = await tx.tratamientoPaquete.update({
+            where: { id: validated.paqueteId },
+            data: {
+              montoPagado: nuevoMontoPagado,
+              estadoPago: nuevoEstadoPago,
+            },
+          });
+
+          await tx.auditLog.create({
+            data: {
+              usuarioId: usuarioAuditoria?.id,
+              usuarioNombre: usuarioAuditoria?.nombre || "Caja AJ Fisioterapia",
+              usuarioRol: usuarioAuditoria?.rol || "RECEPCION",
+              accion: "PAGO_REGISTRADO",
+              modulo: "CAJA",
+              entidadId: nuevoPago.id,
+              detalles: `Cobranza de S/. ${validated.monto.toFixed(2)} (${validated.metodoPago}, Op: ${nuevoPago.numeroOperacion}). Estado: ${nuevoEstadoPago}.`,
+              ipAddress: clientIp,
+            },
+          });
+
+          return {
+            pago: nuevoPago as unknown as PagoItem,
+            paquete: paqueteActualizado as unknown as TratamientoPaqueteItem,
+          };
+        });
+
+        // Sincronizar en memoria
+        dbStore.registrarPago({
+          paqueteId: validated.paqueteId,
+          monto: validated.monto,
+          metodoPago: validated.metodoPago,
+          numeroOperacion: validated.numeroOperacion,
+          comprobanteUrl: validated.comprobanteUrl,
+          estado: validated.estado,
+          usuarioAuditoria,
+          ipAddress: clientIp,
+        });
+
+        revalidatePath("/dashboard/caja");
+        revalidatePath(`/dashboard/pacientes/${txResult.paquete.pacienteId}`);
+        revalidatePath("/dashboard");
+
+        return { success: true, data: txResult };
+      } catch (dbErr: any) {
+        if (dbErr.message && !dbErr.message.includes("connect") && !dbErr.message.includes("Can't reach database")) {
+          return { success: false, error: dbErr.message };
+        }
+      }
+    }
 
     const resultado = dbStore.registrarPago({
       paqueteId: validated.paqueteId,

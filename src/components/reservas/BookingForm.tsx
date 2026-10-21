@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
+import { solicitarReservaPublica } from "@/server/actions/reservas";
+
 interface BookingFormProps {
   servicios: any[];
   configuracion?: any;
@@ -35,6 +37,8 @@ export function BookingForm({ servicios, configuracion }: BookingFormProps) {
   const [motivo, setMotivo] = useState("");
   const [loading, setLoading] = useState(false);
   const [confirmado, setConfirmado] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [citaCreada, setCitaCreada] = useState<any | null>(null);
 
   // Calcular dinámicamente slots del día según la configuración institucional
   const { diaSemanaNombre, isDayClosed, availableSlots } = useMemo(() => {
@@ -91,13 +95,39 @@ export function BookingForm({ servicios, configuracion }: BookingFormProps) {
 
   const selectedServicio = servicios.find((s) => s.id === servicioId) || servicios[0];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    setErrorMsg(null);
+
+    try {
+      const res = await solicitarReservaPublica({
+        dni,
+        primerNombre,
+        segundoNombre: segundoNombre || undefined,
+        apellidoPaterno,
+        apellidoMaterno: apellidoMaterno || undefined,
+        telefono,
+        email: email || undefined,
+        servicioId,
+        fecha,
+        horario,
+        motivoConsulta: motivo || undefined,
+      });
+
+      if (!res.success) {
+        setErrorMsg(res.error || "No se pudo agendar la cita. Por favor intente con otro horario.");
+        setLoading(false);
+        return;
+      }
+
+      setCitaCreada(res.data?.cita);
       setConfirmado(true);
-    }, 800);
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Error inesperado al solicitar cita.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (confirmado) {
@@ -109,10 +139,10 @@ export function BookingForm({ servicios, configuracion }: BookingFormProps) {
 
         <div>
           <h2 className="text-2xl font-extrabold text-slate-800">
-            ¡Solicitud de Cita Recibida!
+            ¡Cita Reservada con Éxito!
           </h2>
           <p className="text-sm text-slate-500 mt-2">
-            Estimado(a) <strong className="text-slate-800">{nombres} {apellidos}</strong>, nuestro equipo de recepción en San Borja ha registrado su solicitud de cita inicial.
+            Estimado(a) <strong className="text-slate-800">{nombres} {apellidos}</strong>, su cita ha sido registrada formalmente en nuestro sistema clínico.
           </p>
         </div>
 
@@ -122,26 +152,43 @@ export function BookingForm({ servicios, configuracion }: BookingFormProps) {
             <span className="font-bold text-slate-800">{selectedServicio.nombre}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-500">Fecha Estimada:</span>
+            <span className="text-slate-500">Fecha y Horario:</span>
             <span className="font-bold text-slate-800">{new Date(fecha).toLocaleDateString("es-PE")} ({horario})</span>
           </div>
+          {citaCreada?.salaNombre && (
+            <div className="flex justify-between">
+              <span className="text-slate-500">Sala Asignada:</span>
+              <span className="font-bold text-teal-700">{citaCreada.salaNombre} (San Borja)</span>
+            </div>
+          )}
+          {citaCreada?.terapeutaNombre && (
+            <div className="flex justify-between">
+              <span className="text-slate-500">Profesional Terapeuta:</span>
+              <span className="font-bold text-slate-800">{citaCreada.terapeutaNombre}</span>
+            </div>
+          )}
           <div className="flex justify-between">
-            <span className="text-slate-500">Dirección:</span>
-            <span className="font-bold text-teal-700">Av. Guardia Civil 520, San Borja</span>
+            <span className="text-slate-500">Sede:</span>
+            <span className="font-bold text-slate-800">Av. Guardia Civil 520, San Borja</span>
           </div>
-          <div className="flex justify-between">
+          <div className="flex justify-between border-t border-slate-200/60 pt-2">
             <span className="text-slate-500">Tarifa Consulta Inicial:</span>
-            <span className="font-bold text-slate-900">{formatCurrency(selectedServicio.precioBase)}</span>
+            <span className="font-bold text-emerald-700">{formatCurrency(selectedServicio.precioBase)}</span>
           </div>
         </div>
 
-        <p className="text-xs text-slate-400">
-          En los próximos 15 minutos un recepcionista se comunicará a su celular <strong>{telefono}</strong> vía WhatsApp para confirmar la sala y profesional asignado.
-        </p>
+        <div className="p-3 bg-teal-50 border border-teal-200 rounded-xl text-teal-900 text-xs text-left flex items-start gap-2">
+          <ShieldCheck className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
+          <span>
+            Hemos enviado una notificación al equipo de recepción de <strong>AJ Fisioterapia</strong>. Para cancelar o reprogramar, comuníquese al WhatsApp de atención.
+          </span>
+        </div>
 
         <button
           onClick={() => {
             setConfirmado(false);
+            setCitaCreada(null);
+            setErrorMsg(null);
             setDni("");
             setPrimerNombre("");
             setSegundoNombre("");
@@ -150,7 +197,7 @@ export function BookingForm({ servicios, configuracion }: BookingFormProps) {
             setTelefono("");
             setMotivo("");
           }}
-          className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-md shadow-teal-600/25 transition"
+          className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-md shadow-teal-600/25 transition cursor-pointer"
         >
           Solicitar otra cita
         </button>
@@ -375,6 +422,13 @@ export function BookingForm({ servicios, configuracion }: BookingFormProps) {
             Sus datos clínicos están protegidos bajo estricto secreto profesional y la ley de protección de datos en salud. No se realizan grabaciones ni contenido multimedia.
           </span>
         </div>
+
+        {errorMsg && (
+          <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-xs flex items-center gap-2.5 animate-in fade-in">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span className="font-medium">{errorMsg}</span>
+          </div>
+        )}
 
         <button
           type="submit"

@@ -5,6 +5,8 @@ import { agendarCitaSchema, type AgendarCitaInput } from "@/lib/validations";
 import { dbStore } from "@/lib/store";
 import { obtenerIpCliente } from "./auditoria";
 
+import { prisma } from "@/lib/prisma";
+
 export interface ServerActionResult<T = unknown> {
   success: boolean;
   data?: T;
@@ -18,6 +20,7 @@ export interface ServerActionResult<T = unknown> {
  * 2. Valida terapeuta disponible sin solapamiento horario.
  * 3. Valida saldo de sesiones disponibles del paquete del paciente.
  * 4. Aplica regla clínica: Si la sesión es múltiplo de 5, activa la bandera 'esReevaluacion'.
+ * 5. Soporte transaccional atómico ACID con prisma.$transaction cuando hay base de datos conectada.
  */
 export async function agendarCita(
   input: AgendarCitaInput,
@@ -26,8 +29,126 @@ export async function agendarCita(
   try {
     const validated = agendarCitaSchema.parse(input);
     const clientIp = await obtenerIpCliente();
+    const duracionMinutos = validated.duracionMinutos || 45;
+    const inicio = new Date(validated.fechaHoraInicio);
+    const fin = new Date(inicio.getTime() + duracionMinutos * 60000);
 
-    // Ejecución de la transacción en el motor de negocio con trazabilidad real
+    // Si existe conexión real configurada a PostgreSQL en la nube (Supabase / Neon), ejecutar en transacción atómica
+    if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+      try {
+        const resultadoTx = await prisma.$transaction(async (tx: any) => {
+          const sala = await tx.sala.findUnique({ where: { id: validated.salaId } });
+          if (!sala) throw new Error("La sala física seleccionada no existe.");
+          if (sala.estado === "MANTENIMIENTO") {
+            throw new Error(`La ${sala.nombre} se encuentra temporalmente en MANTENIMIENTO.`);
+          }
+
+          // Validar solapamiento de sala en DB
+          const solapamientoSala = await tx.cita.findFirst({
+            where: {
+              salaId: validated.salaId,
+              estado: { not: "CANCELADA" },
+              AND: [
+                { fechaHoraInicio: { lt: fin } },
+                { fechaHoraFin: { gt: inicio } },
+              ],
+            },
+          });
+          if (solapamientoSala) {
+            throw new Error(`Conflicto de Horario en Sala: La ${sala.nombre} ya tiene una cita reservada en ese bloque horario.`);
+          }
+
+          // Validar solapamiento de terapeuta en DB
+          const solapamientoTerapeuta = await tx.cita.findFirst({
+            where: {
+              terapeutaId: validated.terapeutaId,
+              estado: { not: "CANCELADA" },
+              AND: [
+                { fechaHoraInicio: { lt: fin } },
+                { fechaHoraFin: { gt: inicio } },
+              ],
+            },
+          });
+          if (solapamientoTerapeuta) {
+            throw new Error("Conflicto de Terapeuta: El profesional ya cuenta con otra atención asignada en ese bloque horario.");
+          }
+
+          // Validar saldo de paquete
+          let esReevaluacion = validated.esReevaluacion || false;
+          if (validated.paqueteId) {
+            const paquete = await tx.tratamientoPaquete.findUnique({
+              where: { id: validated.paqueteId },
+              include: { citas: true },
+            });
+            if (!paquete) throw new Error("El paquete de sesiones especificado no existe.");
+            const citasActivas = paquete.citas.filter((c: any) => c.estado !== "CANCELADA");
+            if (citasActivas.length >= paquete.totalSesiones) {
+              throw new Error(`Saldo de sesiones agotado: El paquete cuenta con ${paquete.totalSesiones} sesiones y ya están cubiertas.`);
+            }
+            if ((citasActivas.length + 1) % 5 === 0) {
+              esReevaluacion = true;
+            }
+          }
+
+          // Inserción atómica
+          const nuevaCitaDb = await tx.cita.create({
+            data: {
+              pacienteId: validated.pacienteId,
+              paqueteId: validated.paqueteId || null,
+              terapeutaId: validated.terapeutaId,
+              salaId: validated.salaId,
+              fechaHoraInicio: inicio,
+              fechaHoraFin: fin,
+              estado: "PROGRAMADA",
+              esReevaluacion,
+            },
+          });
+
+          // Trazabilidad y auditoría
+          await tx.auditLog.create({
+            data: {
+              usuarioId: usuarioAuditoria?.id,
+              usuarioNombre: usuarioAuditoria?.nombre || "Recepción AJ Fisioterapia",
+              usuarioRol: usuarioAuditoria?.rol || "RECEPCION",
+              accion: "CITA_CREADA",
+              modulo: "AGENDA",
+              entidadId: nuevaCitaDb.id,
+              detalles: `Cita agendada para el paciente ${validated.pacienteId} en ${sala.nombre}. ${esReevaluacion ? "[HITO REEVALUACIÓN OBLIGATORIA]" : ""}`,
+              ipAddress: clientIp,
+            },
+          });
+
+          return nuevaCitaDb;
+        });
+
+        // Sincronizar en el motor de memoria
+        dbStore.agendarCita({
+          pacienteId: validated.pacienteId,
+          paqueteId: validated.paqueteId,
+          terapeutaId: validated.terapeutaId,
+          salaId: validated.salaId,
+          fechaHoraInicio: validated.fechaHoraInicio,
+          duracionMinutos: validated.duracionMinutos,
+          esReevaluacion: validated.esReevaluacion,
+          usuarioAuditoria,
+          ipAddress: clientIp,
+        });
+
+        revalidatePath("/dashboard/agenda");
+        revalidatePath(`/dashboard/pacientes/${validated.pacienteId}`);
+        revalidatePath("/dashboard/auditoria");
+        revalidatePath("/dashboard");
+
+        return { success: true, data: resultadoTx };
+      } catch (dbErr: any) {
+        // Si la base de datos arrojó un error de validación de negocio, propagarlo
+        if (dbErr.message && !dbErr.message.includes("connect") && !dbErr.message.includes("Can't reach database")) {
+          return { success: false, error: dbErr.message };
+        }
+      }
+    }
+
+    // Ejecución en el motor de negocio en memoria con control estricto de concurrencia y auditoría
     const nuevaCita = dbStore.agendarCita({
       pacienteId: validated.pacienteId,
       paqueteId: validated.paqueteId,
