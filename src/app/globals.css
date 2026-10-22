@@ -15,6 +15,9 @@
   --accent-foreground: #0369a1;
   --destructive: #ef4444;
   --border: #e2e8f0;
+  --brand-primary: #0C3E37;
+  --brand-secondary: #E07052;
+  --brand-accent: #0D9488;
 }
 
 body {

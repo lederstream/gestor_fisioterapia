@@ -25,7 +25,11 @@ function createPrismaClient(): PrismaClient {
   }
 
   try {
-    const pool = new Pool({ connectionString });
+    const isLocal = connectionString.includes("localhost") || connectionString.includes("127.0.0.1");
+    const pool = new Pool({
+      connectionString,
+      ssl: isLocal ? false : { rejectUnauthorized: false },
+    });
     const adapter = new PrismaPg(pool);
     return new PrismaClient({ adapter } as any);
   } catch (error) {

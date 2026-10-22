@@ -35,7 +35,8 @@ import {
   Phone,
   FileText,
   Star,
-  Quote
+  Quote,
+  Palette
 } from "lucide-react";
 import { HorariosManager } from "./HorariosManager";
 import { Switch } from "./Switch";
@@ -160,7 +161,11 @@ export function ConfigurationManager({
       telefono: config.telefono,
       whatsapp: config.whatsapp,
       logoUrl: config.logoUrl || "/images/logo-clinica.svg",
+      faviconUrl: config.faviconUrl || "/favicon.ico",
       heroImageUrl: config.heroImageUrl || "/images/hero-physio.jpg",
+      colorPrimario: config.colorPrimario || "#0C3E37",
+      colorSecundario: config.colorSecundario || "#E07052",
+      colorAcento: config.colorAcento || "#0D9488",
       testimonios: testimonios,
     };
 
@@ -172,6 +177,9 @@ export function ConfigurationManager({
       if (typeof window !== "undefined") {
         localStorage.setItem("clinic_logo", res.data.logoUrl || "/images/logo-clinica.svg");
         localStorage.setItem("clinic_config", JSON.stringify(res.data));
+        document.documentElement.style.setProperty("--brand-primary", res.data.colorPrimario || "#0C3E37");
+        document.documentElement.style.setProperty("--brand-secondary", res.data.colorSecundario || "#E07052");
+        document.documentElement.style.setProperty("--brand-accent", res.data.colorAcento || "#0D9488");
         window.dispatchEvent(new Event("clinic-logo-change"));
         window.dispatchEvent(new Event("clinic-config-change"));
       }
@@ -529,6 +537,226 @@ export function ConfigurationManager({
                 >
                   <RotateCcw className="w-4 h-4" />
                 </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Tarjeta de Marca Blanca: Paleta de Colores y Personalización Dinámica */}
+          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                  <Palette className="w-4 h-4 text-teal-600" />
+                  Paleta de Colores y Marca Blanca
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  Modifica los colores corporativos de la clínica. El portal web público, botones, menús y portales de pacientes se adaptarán en tiempo real sin modificar código.
+                </p>
+              </div>
+              <span className="px-2.5 py-1 bg-purple-50 text-purple-700 border border-purple-200 rounded-lg text-[10px] font-bold shrink-0">
+                Marca Blanca Multiclínica
+              </span>
+            </div>
+
+            {/* Paletas Predefinidas para Clínicas (1 Clic) */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-2">
+                Paletas Recomendadas de Clínicas (Aplica en 1 Clic):
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                {[
+                  { name: "Esmeralda & Coral (AJ)", p: "#0C3E37", s: "#E07052", a: "#0D9488" },
+                  { name: "Azul Médico & Cyan", p: "#0F2D59", s: "#2563EB", a: "#06B6D4" },
+                  { name: "Verde Salud & Menta", p: "#064E3B", s: "#059669", a: "#10B981" },
+                  { name: "Púrpura & Oro Clínico", p: "#3B1D54", s: "#8B5CF6", a: "#F59E0B" },
+                  { name: "Grafito & Azul Royal", p: "#1E293B", s: "#3B82F6", a: "#6366F1" },
+                ].map((palette) => (
+                  <button
+                    key={palette.name}
+                    type="button"
+                    onClick={() => {
+                      setConfig((prev: any) => ({
+                        ...prev,
+                        colorPrimario: palette.p,
+                        colorSecundario: palette.s,
+                        colorAcento: palette.a,
+                      }));
+                      if (typeof window !== "undefined") {
+                        document.documentElement.style.setProperty("--brand-primary", palette.p);
+                        document.documentElement.style.setProperty("--brand-secondary", palette.s);
+                        document.documentElement.style.setProperty("--brand-accent", palette.a);
+                      }
+                      showToast(`Paleta "${palette.name}" aplicada provisionalmente. Haz clic en Guardar para confirmar.`);
+                    }}
+                    className="p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300 text-left transition cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <span className="w-3.5 h-3.5 rounded-full shadow-2xs border border-white" style={{ backgroundColor: palette.p }} />
+                      <span className="w-3.5 h-3.5 rounded-full shadow-2xs border border-white" style={{ backgroundColor: palette.s }} />
+                      <span className="w-3.5 h-3.5 rounded-full shadow-2xs border border-white" style={{ backgroundColor: palette.a }} />
+                    </div>
+                    <span className="text-[11px] font-bold text-slate-700 block truncate group-hover:text-slate-900">
+                      {palette.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Selectores de Color Personalizados */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-4 text-xs pt-1">
+              {/* Color Primario */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <label className="block font-bold text-slate-800">Color Primario</label>
+                <p className="text-[10px] text-slate-500">Navbar, botones principales y títulos clave.</p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={config.colorPrimario || "#0C3E37"}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setConfig({ ...config, colorPrimario: val });
+                      if (typeof window !== "undefined") {
+                        document.documentElement.style.setProperty("--brand-primary", val);
+                      }
+                    }}
+                    className="w-9 h-9 rounded-lg border border-slate-300 cursor-pointer p-0.5 bg-white"
+                  />
+                  <input
+                    type="text"
+                    value={config.colorPrimario || "#0C3E37"}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setConfig({ ...config, colorPrimario: val });
+                      if (typeof window !== "undefined") {
+                        document.documentElement.style.setProperty("--brand-primary", val);
+                      }
+                    }}
+                    className="flex-1 px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-mono font-bold text-xs uppercase"
+                  />
+                </div>
+              </div>
+
+              {/* Color Secundario */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <label className="block font-bold text-slate-800">Color Secundario</label>
+                <p className="text-[10px] text-slate-500">Etiquetas de descuento, promociones y acentos.</p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={config.colorSecundario || "#E07052"}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setConfig({ ...config, colorSecundario: val });
+                      if (typeof window !== "undefined") {
+                        document.documentElement.style.setProperty("--brand-secondary", val);
+                      }
+                    }}
+                    className="w-9 h-9 rounded-lg border border-slate-300 cursor-pointer p-0.5 bg-white"
+                  />
+                  <input
+                    type="text"
+                    value={config.colorSecundario || "#E07052"}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setConfig({ ...config, colorSecundario: val });
+                      if (typeof window !== "undefined") {
+                        document.documentElement.style.setProperty("--brand-secondary", val);
+                      }
+                    }}
+                    className="flex-1 px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-mono font-bold text-xs uppercase"
+                  />
+                </div>
+              </div>
+
+              {/* Color de Acento */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <label className="block font-bold text-slate-800">Color de Acento</label>
+                <p className="text-[10px] text-slate-500">Insignias secundarias, estados y elementos activos.</p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={config.colorAcento || "#0D9488"}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setConfig({ ...config, colorAcento: val });
+                      if (typeof window !== "undefined") {
+                        document.documentElement.style.setProperty("--brand-accent", val);
+                      }
+                    }}
+                    className="w-9 h-9 rounded-lg border border-slate-300 cursor-pointer p-0.5 bg-white"
+                  />
+                  <input
+                    type="text"
+                    value={config.colorAcento || "#0D9488"}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setConfig({ ...config, colorAcento: val });
+                      if (typeof window !== "undefined") {
+                        document.documentElement.style.setProperty("--brand-accent", val);
+                      }
+                    }}
+                    className="flex-1 px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-mono font-bold text-xs uppercase"
+                  />
+                </div>
+              </div>
+
+              {/* Favicon URL */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <label className="block font-bold text-slate-800">Favicon Web (URL)</label>
+                <p className="text-[10px] text-slate-500">Ícono en la pestaña del navegador (.ico o .png).</p>
+                <input
+                  type="text"
+                  placeholder="/favicon.ico"
+                  value={config.faviconUrl || "/favicon.ico"}
+                  onChange={(e) => setConfig({ ...config, faviconUrl: e.target.value })}
+                  className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg text-xs"
+                />
+              </div>
+            </div>
+
+            {/* Vista Previa Interactiva en Vivo */}
+            <div className="p-4 rounded-2xl border border-slate-200 bg-slate-900 text-white space-y-3">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-400">
+                <span>VISTA PREVIA DE LA MARCA EN VIVO:</span>
+                <span className="text-[10px] text-emerald-400 font-normal">Reactivo e instantáneo</span>
+              </div>
+              <div className="p-4 rounded-xl bg-white text-stone-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-xs"
+                    style={{ backgroundColor: config.colorPrimario || "#0C3E37" }}
+                  >
+                    {(config.nombreComercial || "AJ").substring(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <span className="font-extrabold text-sm block leading-tight text-slate-900">
+                      {config.nombreComercial || "Tu Clínica de Fisioterapia"}
+                    </span>
+                    <span
+                      className="text-[10px] font-bold uppercase tracking-wider block"
+                      style={{ color: config.colorSecundario || "#E07052" }}
+                    >
+                      {config.slogan || "REHABILITACIÓN & BIENESTAR"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span
+                    className="px-2.5 py-1 rounded-full text-[10px] font-bold text-white shadow-2xs"
+                    style={{ backgroundColor: config.colorAcento || "#0D9488" }}
+                  >
+                    Atención Activa
+                  </span>
+                  <button
+                    type="button"
+                    className="px-4 py-2 rounded-full text-xs font-bold text-white shadow-xs transition"
+                    style={{ backgroundColor: config.colorPrimario || "#0C3E37" }}
+                  >
+                    Reservar Cita
+                  </button>
+                </div>
               </div>
             </div>
           </div>

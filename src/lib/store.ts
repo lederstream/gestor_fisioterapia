@@ -178,6 +178,9 @@ export interface ConfiguracionClinicaItem {
   logoUrl?: string;
   faviconUrl?: string;
   heroImageUrl?: string;
+  colorPrimario?: string;
+  colorSecundario?: string;
+  colorAcento?: string;
   updatedAt: string;
 }
 
@@ -353,7 +356,11 @@ const initialConfiguracion: ConfiguracionClinicaItem = {
   ratingPromedio: 4.9,
   totalPacientesMes: "+1,100",
   logoUrl: "/images/logo-clinica.svg",
+  faviconUrl: "/favicon.ico",
   heroImageUrl: "/images/hero-physio.jpg",
+  colorPrimario: "#0C3E37",
+  colorSecundario: "#E07052",
+  colorAcento: "#0D9488",
   testimonios: [
     {
       id: "test-1",

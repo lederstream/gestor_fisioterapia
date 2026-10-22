@@ -44,6 +44,11 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [testimonialIndex, setTestimonialIndex] = useState(0);
 
+  // Paleta de Marca Blanca Dinámica
+  const brandPrimary = config?.colorPrimario || "#0C3E37";
+  const brandSecondary = config?.colorSecundario || "#E07052";
+  const brandAccent = config?.colorAcento || "#0D9488";
+
   // Filtrar servicios visibles en web (por defecto activos)
   const serviciosWeb = servicios.filter((s) => s.mostrarEnWeb !== false);
 
@@ -148,7 +153,10 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           {/* Logo Brand */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-11 h-11 rounded-2xl bg-[#0C3E37] text-white flex items-center justify-center font-bold text-base shadow-sm group-hover:scale-105 transition-transform overflow-hidden p-1.5">
+            <div
+              className="w-11 h-11 rounded-2xl text-white flex items-center justify-center font-bold text-base shadow-sm group-hover:scale-105 transition-transform overflow-hidden p-1.5"
+              style={{ backgroundColor: brandPrimary }}
+            >
               {config.logoUrl && config.logoUrl !== "/images/logo-clinica.svg" ? (
                 <img
                   src={config.logoUrl}
@@ -173,19 +181,19 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
 
           {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-stone-600">
-            <a href="#servicios" className="hover:text-[#0C3E37] transition-colors">
+            <a href="#servicios" className="hover:text-stone-900 transition-colors">
               Servicios
             </a>
-            <a href="#nosotros" className="hover:text-[#0C3E37] transition-colors">
+            <a href="#nosotros" className="hover:text-stone-900 transition-colors">
               Nosotros
             </a>
-            <a href="#historias" className="hover:text-[#0C3E37] transition-colors">
+            <a href="#historias" className="hover:text-stone-900 transition-colors">
               Historias
             </a>
-            <a href="#como-funciona" className="hover:text-[#0C3E37] transition-colors">
+            <a href="#como-funciona" className="hover:text-stone-900 transition-colors">
               Cómo funciona
             </a>
-            <a href="#contacto" className="hover:text-[#0C3E37] transition-colors">
+            <a href="#contacto" className="hover:text-stone-900 transition-colors">
               Contacto
             </a>
           </nav>
@@ -195,9 +203,10 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
             <button
               type="button"
               onClick={handleMiPortalClick}
-              className="text-sm font-semibold text-[#0C3E37] hover:text-[#072B26] flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="text-sm font-semibold flex items-center gap-1.5 transition-colors cursor-pointer hover:opacity-85"
+              style={{ color: brandPrimary }}
             >
-              <User className="w-4 h-4 text-[#0C3E37]" />
+              <User className="w-4 h-4" style={{ color: brandPrimary }} />
               <span>
                 {isAuthenticated && currentUser?.nombre
                   ? `Mi portal (${currentUser.nombre.split(" ")[0]})`
@@ -210,7 +219,8 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
 
             <Link
               href="/reservas"
-              className="rounded-full bg-[#0C3E37] hover:bg-[#072B26] text-white px-5 py-2.5 text-sm font-semibold flex items-center gap-2 shadow-xs transition-all hover:gap-2.5"
+              className="rounded-full text-white px-5 py-2.5 text-sm font-semibold flex items-center gap-2 shadow-xs transition-all hover:gap-2.5 hover:opacity-95"
+              style={{ backgroundColor: brandPrimary }}
             >
               <span>Reservar cita</span>
               <ArrowRight className="w-4 h-4" />
@@ -272,9 +282,10 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
                   setMobileMenuOpen(false);
                   handleMiPortalClick(e);
                 }}
-                className="text-base font-semibold text-[#0C3E37] flex items-center gap-2 text-left py-1 cursor-pointer"
+                className="text-base font-semibold flex items-center gap-2 text-left py-1 cursor-pointer"
+                style={{ color: brandPrimary }}
               >
-                <User className="w-4 h-4" />
+                <User className="w-4 h-4" style={{ color: brandPrimary }} />
                 <span>
                   {isAuthenticated && currentUser?.nombre
                     ? `Mi portal (${currentUser.nombre.split(" ")[0]})`
@@ -287,7 +298,8 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
               <Link
                 href="/reservas"
                 onClick={() => setMobileMenuOpen(false)}
-                className="rounded-full bg-[#0C3E37] text-white text-center py-3 font-semibold text-sm flex items-center justify-center gap-2"
+                className="rounded-full text-white text-center py-3 font-semibold text-sm flex items-center justify-center gap-2 shadow-xs"
+                style={{ backgroundColor: brandPrimary }}
               >
                 <span>Reservar cita</span>
                 <ArrowRight className="w-4 h-4" />
@@ -329,7 +341,8 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-3">
                 <Link
                   href="/reservas"
-                  className="rounded-full bg-[#0C3E37] hover:bg-[#072B26] text-white font-semibold text-base px-7 py-3.5 shadow-md hover:shadow-lg flex items-center justify-center gap-2 transition-all hover:gap-3"
+                  className="rounded-full text-white font-semibold text-base px-7 py-3.5 shadow-md hover:shadow-lg flex items-center justify-center gap-2 transition-all hover:gap-3 hover:opacity-95"
+                  style={{ backgroundColor: brandPrimary }}
                 >
                   <span>Reservar evaluación</span>
                   <ArrowRight className="w-4 h-4" />
@@ -339,9 +352,10 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
                   href={whatsappHref}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2.5 text-[#0C3E37] font-semibold text-base hover:opacity-80 py-3.5 px-4 transition"
+                  className="inline-flex items-center justify-center gap-2.5 font-semibold text-base hover:opacity-80 py-3.5 px-4 transition"
+                  style={{ color: brandPrimary }}
                 >
-                  <Phone className="w-4 h-4 text-[#0C3E37]" />
+                  <Phone className="w-4 h-4" style={{ color: brandPrimary }} />
                   <span>Hablar con recepción</span>
                 </a>
               </div>
@@ -911,18 +925,22 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
                 type="button"
                 onClick={() => setTestimonialIndex(idx)}
                 className={`h-2 rounded-full transition-all cursor-pointer ${
-                  testimonialIndex === idx ? "w-6 bg-[#0D9488]" : "w-2 bg-stone-300 hover:bg-stone-400"
+                  testimonialIndex === idx ? "w-6" : "w-2 bg-stone-300 hover:bg-stone-400"
                 }`}
+                style={testimonialIndex === idx ? { backgroundColor: brandAccent } : {}}
                 aria-label={`Ir a testimonio ${idx + 1}`}
               />
             ))}
           </div>
 
           {/* ── BANNER CTA FINAL: LISTO PARA INICIAR TU RECUPERACIÓN (100% Español) ── */}
-          <div className="mt-16 relative rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#0C3E37] via-[#0D4B42] to-[#0A332C] text-white p-7 sm:p-10 lg:p-12 shadow-2xl border border-teal-800/40 overflow-hidden">
+          <div
+            className="mt-16 relative rounded-2xl sm:rounded-3xl text-white p-7 sm:p-10 lg:p-12 shadow-2xl border border-teal-800/40 overflow-hidden"
+            style={{ background: `linear-gradient(135deg, ${brandPrimary} 0%, #07241F 100%)` }}
+          >
             {/* Efectos de luz sutil */}
-            <div className="absolute -right-16 -top-16 w-72 h-72 rounded-full bg-emerald-400/10 blur-2xl pointer-events-none" />
-            <div className="absolute -left-16 -bottom-16 w-72 h-72 rounded-full bg-teal-500/10 blur-2xl pointer-events-none" />
+            <div className="absolute -right-16 -top-16 w-72 h-72 rounded-full bg-white/5 blur-2xl pointer-events-none" />
+            <div className="absolute -left-16 -bottom-16 w-72 h-72 rounded-full bg-white/5 blur-2xl pointer-events-none" />
 
             <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-6 sm:gap-8">
               
@@ -948,11 +966,12 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
               <div className="flex flex-col items-center lg:items-end gap-3 shrink-0 w-full sm:w-auto">
                 <Link
                   href="/reservas"
-                  className="rounded-full bg-white hover:bg-stone-50 text-[#0C3E37] font-bold text-sm sm:text-base px-8 py-4 shadow-lg hover:shadow-xl flex items-center justify-center gap-2.5 transition-all hover:gap-3.5 shrink-0 w-full sm:w-auto active:scale-95"
+                  className="rounded-full bg-white hover:bg-stone-50 font-bold text-sm sm:text-base px-8 py-4 shadow-lg hover:shadow-xl flex items-center justify-center gap-2.5 transition-all hover:gap-3.5 shrink-0 w-full sm:w-auto active:scale-95"
+                  style={{ color: brandPrimary }}
                 >
-                  <Calendar className="w-5 h-5 text-[#0C3E37]" />
+                  <Calendar className="w-5 h-5" style={{ color: brandPrimary }} />
                   <span>Reservar mi evaluación</span>
-                  <ArrowRight className="w-5 h-5 text-[#0C3E37]" />
+                  <ArrowRight className="w-5 h-5" style={{ color: brandPrimary }} />
                 </Link>
 
                 <div className="flex items-center gap-2 text-xs text-[#A8D3C4]">
@@ -975,7 +994,10 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
             {/* Col 1: Brand */}
             <div className="lg:col-span-5 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-[#E07052] text-white flex items-center justify-center font-bold text-sm shadow-sm overflow-hidden p-1.5">
+                <div
+                  className="w-10 h-10 rounded-2xl text-white flex items-center justify-center font-bold text-sm shadow-sm overflow-hidden p-1.5"
+                  style={{ backgroundColor: brandSecondary }}
+                >
                   {config.logoUrl && config.logoUrl !== "/images/logo-clinica.svg" ? (
                     <img
                       src={config.logoUrl}

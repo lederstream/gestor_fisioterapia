@@ -3,16 +3,112 @@
 import { revalidatePath } from "next/cache";
 import { dbStore, ConfiguracionClinicaItem } from "@/lib/store";
 import { ServerActionResult } from "./citas";
+import { prisma } from "@/lib/prisma";
 
 export async function obtenerConfiguracionClinica(): Promise<ConfiguracionClinicaItem> {
+  try {
+    if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+      const configDb = await prisma.configuracionClinica.findFirst();
+      if (configDb) {
+        const item: ConfiguracionClinicaItem = {
+          id: configDb.id,
+          razonSocial: configDb.razonSocial,
+          nombreComercial: configDb.nombreComercial,
+          slogan: configDb.slogan || "REHABILITACIÓN & BIENESTAR",
+          tituloHero: configDb.tituloHero || "Vuelve a moverte.",
+          subtituloHero: configDb.subtituloHero || "Vuelve a sentirte tú.",
+          descripcionHero: configDb.descripcionHero || "Fisioterapia especializada y humana para recuperar tu bienestar, paso a paso.",
+          ruc: configDb.ruc,
+          direccionAvenidaCalle: configDb.direccionAvenidaCalle || undefined,
+          direccionNumero: configDb.direccionNumero || undefined,
+          direccionDistrito: configDb.direccionDistrito || undefined,
+          direccionCiudad: configDb.direccionCiudad || undefined,
+          direccionReferencia: configDb.direccionReferencia || undefined,
+          direccion: configDb.direccion,
+          telefono: configDb.telefono,
+          whatsapp: configDb.whatsapp,
+          googleMapsUrl: configDb.googleMapsUrl || undefined,
+          horaApertura: configDb.horaApertura,
+          horaCierre: configDb.horaCierre,
+          intervaloMinutos: configDb.intervaloMinutos,
+          horariosSemana: (configDb.horariosSemana as any) || undefined,
+          frecuenciaReevaluacion: configDb.frecuenciaReevaluacion,
+          bloqueoAltaReevaluacion: configDb.bloqueoAltaReevaluacion,
+          totalSalasFisicas: configDb.totalSalasFisicas,
+          ratingPromedio: configDb.ratingPromedio ? Number(configDb.ratingPromedio) : 4.9,
+          totalPacientesMes: configDb.totalPacientesMes || "+1,100",
+          testimonios: (configDb.testimonios as any) || undefined,
+          logoUrl: configDb.logoUrl || undefined,
+          faviconUrl: configDb.faviconUrl || undefined,
+          heroImageUrl: configDb.heroImageUrl || undefined,
+          colorPrimario: configDb.colorPrimario || "#0C3E37",
+          colorSecundario: configDb.colorSecundario || "#E07052",
+          colorAcento: configDb.colorAcento || "#0D9488",
+          updatedAt: configDb.updatedAt ? configDb.updatedAt.toISOString() : new Date().toISOString(),
+        };
+        dbStore.actualizarConfiguracion(item);
+        return item;
+      }
+    }
+  } catch (err) {
+    console.warn("Configuracion: No se pudo leer de Prisma/Supabase, usando dbStore:", err);
+  }
   return dbStore.getConfiguracion();
 }
 
 export async function obtenerConfiguracionCompleta() {
-  const configuracion = dbStore.getConfiguracion();
-  const salas = dbStore.getSalas();
-  const servicios = dbStore.getServicios();
-  const personal = dbStore.getUsers();
+  const configuracion = await obtenerConfiguracionClinica();
+  let salas = dbStore.getSalas();
+  let servicios = dbStore.getServicios();
+  let personal = dbStore.getUsers();
+
+  try {
+    if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+      const [salasDb, serviciosDb, personalDb] = await Promise.all([
+        prisma.sala.findMany(),
+        prisma.servicio.findMany({ orderBy: { orden: "asc" } }),
+        prisma.user.findMany(),
+      ]);
+
+      if (salasDb && salasDb.length > 0) {
+        salas = salasDb.map((s) => ({
+          id: s.id,
+          nombre: s.nombre,
+          estado: s.estado as "DISPONIBLE" | "MANTENIMIENTO",
+          capacidadSimultanea: 1,
+        }));
+      }
+
+      if (serviciosDb && serviciosDb.length > 0) {
+        servicios = serviciosDb.map((s) => ({
+          id: s.id,
+          nombre: s.nombre,
+          categoriaTag: s.categoriaTag || "DOLOR & MOVILIDAD",
+          descripcion: s.descripcion || "",
+          duracionMinutos: s.duracionMinutos,
+          precioBase: Number(s.precioBase),
+          precioPromocional: s.precioPromocional ? Number(s.precioPromocional) : undefined,
+          textoPromocion: s.textoPromocion || undefined,
+          imagenUrl: s.imagenUrl || undefined,
+          mostrarEnWeb: s.mostrarEnWeb !== false,
+          orden: s.orden ?? 1,
+        }));
+      }
+
+      if (personalDb && personalDb.length > 0) {
+        personal = personalDb.map((u) => ({
+          id: u.id,
+          nombre: u.nombre,
+          email: u.email,
+          rol: u.rol as any,
+          especialidad: u.especialidad || undefined,
+          estado: u.estado as any,
+        }));
+      }
+    }
+  } catch (err) {
+    console.warn("ConfiguracionCompleta: Error consultando Supabase vía Prisma, fallback a dbStore:", err);
+  }
 
   return {
     configuracion,
@@ -31,6 +127,66 @@ export async function guardarConfiguracionClinica(
       nombre: "Marco Yana (Administrador)",
       rol: "ADMIN",
     });
+
+    if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+      try {
+        await prisma.configuracionClinica.upsert({
+          where: { id: "config-principal" },
+          update: {
+            ...(data.razonSocial !== undefined ? { razonSocial: data.razonSocial } : {}),
+            ...(data.nombreComercial !== undefined ? { nombreComercial: data.nombreComercial } : {}),
+            ...(data.slogan !== undefined ? { slogan: data.slogan } : {}),
+            ...(data.tituloHero !== undefined ? { tituloHero: data.tituloHero } : {}),
+            ...(data.subtituloHero !== undefined ? { subtituloHero: data.subtituloHero } : {}),
+            ...(data.descripcionHero !== undefined ? { descripcionHero: data.descripcionHero } : {}),
+            ...(data.ruc !== undefined ? { ruc: data.ruc } : {}),
+            ...(data.direccion !== undefined ? { direccion: data.direccion } : {}),
+            ...(data.direccionAvenidaCalle !== undefined ? { direccionAvenidaCalle: data.direccionAvenidaCalle } : {}),
+            ...(data.direccionNumero !== undefined ? { direccionNumero: data.direccionNumero } : {}),
+            ...(data.direccionDistrito !== undefined ? { direccionDistrito: data.direccionDistrito } : {}),
+            ...(data.direccionCiudad !== undefined ? { direccionCiudad: data.direccionCiudad } : {}),
+            ...(data.direccionReferencia !== undefined ? { direccionReferencia: data.direccionReferencia } : {}),
+            ...(data.telefono !== undefined ? { telefono: data.telefono } : {}),
+            ...(data.whatsapp !== undefined ? { whatsapp: data.whatsapp } : {}),
+            ...(data.googleMapsUrl !== undefined ? { googleMapsUrl: data.googleMapsUrl } : {}),
+            ...(data.horaApertura !== undefined ? { horaApertura: data.horaApertura } : {}),
+            ...(data.horaCierre !== undefined ? { horaCierre: data.horaCierre } : {}),
+            ...(data.intervaloMinutos !== undefined ? { intervaloMinutos: data.intervaloMinutos } : {}),
+            ...(data.horariosSemana !== undefined ? { horariosSemana: data.horariosSemana as any } : {}),
+            ...(data.frecuenciaReevaluacion !== undefined ? { frecuenciaReevaluacion: data.frecuenciaReevaluacion } : {}),
+            ...(data.bloqueoAltaReevaluacion !== undefined ? { bloqueoAltaReevaluacion: data.bloqueoAltaReevaluacion } : {}),
+            ...(data.totalSalasFisicas !== undefined ? { totalSalasFisicas: data.totalSalasFisicas } : {}),
+            ...(data.ratingPromedio !== undefined ? { ratingPromedio: data.ratingPromedio } : {}),
+            ...(data.totalPacientesMes !== undefined ? { totalPacientesMes: data.totalPacientesMes } : {}),
+            ...(data.testimonios !== undefined ? { testimonios: data.testimonios as any } : {}),
+            ...(data.logoUrl !== undefined ? { logoUrl: data.logoUrl } : {}),
+            ...(data.faviconUrl !== undefined ? { faviconUrl: data.faviconUrl } : {}),
+            ...(data.heroImageUrl !== undefined ? { heroImageUrl: data.heroImageUrl } : {}),
+            ...(data.colorPrimario !== undefined ? { colorPrimario: data.colorPrimario } : {}),
+            ...(data.colorSecundario !== undefined ? { colorSecundario: data.colorSecundario } : {}),
+            ...(data.colorAcento !== undefined ? { colorAcento: data.colorAcento } : {}),
+          },
+          create: {
+            id: "config-principal",
+            razonSocial: data.razonSocial || "AJ Fisioterapia S.A.C.",
+            nombreComercial: data.nombreComercial || "AJ Fisioterapia",
+            slogan: data.slogan || "REHABILITACIÓN & BIENESTAR",
+            tituloHero: data.tituloHero || "Vuelve a moverte.",
+            subtituloHero: data.subtituloHero || "Vuelve a sentirte tú.",
+            descripcionHero: data.descripcionHero || "Fisioterapia especializada y humana para recuperar tu bienestar, paso a paso.",
+            ruc: data.ruc || "20608912345",
+            direccion: data.direccion || "Av. Guardia Civil 520, San Borja, Lima",
+            telefono: data.telefono || "(01) 475-2010",
+            whatsapp: data.whatsapp || "+51 987 654 321",
+            colorPrimario: data.colorPrimario || "#0C3E37",
+            colorSecundario: data.colorSecundario || "#E07052",
+            colorAcento: data.colorAcento || "#0D9488",
+          },
+        });
+      } catch (dbErr) {
+        console.warn("No se pudo persistir en Supabase Prisma, manteniendo en dbStore:", dbErr);
+      }
+    }
 
     revalidatePath("/");
     revalidatePath("/dashboard/configuracion");
@@ -52,6 +208,18 @@ export async function cambiarEstadoSala(
 ): Promise<ServerActionResult> {
   try {
     const sala = dbStore.actualizarEstadoSala(salaId, nuevoEstado, motivo);
+
+    if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+      try {
+        await prisma.sala.update({
+          where: { id: salaId },
+          data: { estado: nuevoEstado as any },
+        });
+      } catch (dbErr) {
+        console.warn("Error actualizando sala en Prisma:", dbErr);
+      }
+    }
+
     revalidatePath("/dashboard/agenda");
     revalidatePath("/dashboard/configuracion");
     revalidatePath("/dashboard");
@@ -84,6 +252,29 @@ export async function modificarServicio(
       duracionMinutos, 
       dataExtra
     );
+
+    if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+      try {
+        await prisma.servicio.update({
+          where: { id: servicioId },
+          data: {
+            ...(dataExtra?.nombre ? { nombre: dataExtra.nombre } : {}),
+            precioBase,
+            duracionMinutos,
+            ...(dataExtra?.categoriaTag !== undefined ? { categoriaTag: dataExtra.categoriaTag } : {}),
+            ...(dataExtra?.descripcion !== undefined ? { descripcion: dataExtra.descripcion } : {}),
+            ...(dataExtra?.precioPromocional !== undefined ? { precioPromocional: dataExtra.precioPromocional } : {}),
+            ...(dataExtra?.textoPromocion !== undefined ? { textoPromocion: dataExtra.textoPromocion } : {}),
+            ...(dataExtra?.imagenUrl !== undefined ? { imagenUrl: dataExtra.imagenUrl } : {}),
+            ...(dataExtra?.mostrarEnWeb !== undefined ? { mostrarEnWeb: dataExtra.mostrarEnWeb } : {}),
+            ...(dataExtra?.orden !== undefined ? { orden: dataExtra.orden } : {}),
+          },
+        });
+      } catch (dbErr) {
+        console.warn("Error actualizando servicio en Prisma:", dbErr);
+      }
+    }
+
     revalidatePath("/");
     revalidatePath("/dashboard/configuracion");
     revalidatePath("/reservas");
@@ -101,6 +292,21 @@ export async function cambiarEstadoPersonal(
 ): Promise<ServerActionResult> {
   try {
     const usuario = dbStore.actualizarUsuario(usuarioId, estado, especialidad);
+
+    if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+      try {
+        await prisma.user.update({
+          where: { id: usuarioId },
+          data: {
+            estado: estado as any,
+            ...(especialidad ? { especialidad } : {}),
+          },
+        });
+      } catch (dbErr) {
+        console.warn("Error actualizando usuario en Prisma:", dbErr);
+      }
+    }
+
     revalidatePath("/dashboard/configuracion");
     return { success: true, data: usuario };
   } catch (err: unknown) {
@@ -115,6 +321,21 @@ export async function crearNuevaSala(
 ): Promise<ServerActionResult> {
   try {
     const sala = dbStore.crearSala(nombre, equipamiento);
+
+    if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+      try {
+        await prisma.sala.create({
+          data: {
+            id: sala.id,
+            nombre: sala.nombre,
+            estado: "DISPONIBLE",
+          },
+        });
+      } catch (dbErr) {
+        console.warn("Error creando sala en Prisma:", dbErr);
+      }
+    }
+
     revalidatePath("/dashboard/agenda");
     revalidatePath("/dashboard/configuracion");
     revalidatePath("/dashboard");
@@ -132,6 +353,18 @@ export async function editarDatosSala(
 ): Promise<ServerActionResult> {
   try {
     const sala = dbStore.editarSala(salaId, nombre, equipamiento);
+
+    if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+      try {
+        await prisma.sala.update({
+          where: { id: salaId },
+          data: { nombre },
+        });
+      } catch (dbErr) {
+        console.warn("Error editando sala en Prisma:", dbErr);
+      }
+    }
+
     revalidatePath("/dashboard/agenda");
     revalidatePath("/dashboard/configuracion");
     return { success: true, data: sala };
@@ -144,6 +377,17 @@ export async function editarDatosSala(
 export async function eliminarSala(salaId: string): Promise<ServerActionResult> {
   try {
     const eliminada = dbStore.eliminarSala(salaId);
+
+    if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+      try {
+        await prisma.sala.delete({
+          where: { id: salaId },
+        });
+      } catch (dbErr) {
+        console.warn("Error eliminando sala en Prisma:", dbErr);
+      }
+    }
+
     revalidatePath("/dashboard/agenda");
     revalidatePath("/dashboard/configuracion");
     revalidatePath("/dashboard");
@@ -175,6 +419,29 @@ export async function crearNuevoServicio(
       duracionMinutos, 
       dataExtra
     );
+
+    if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+      try {
+        await prisma.servicio.create({
+          data: {
+            id: servicio.id,
+            nombre,
+            duracionMinutos,
+            precioBase,
+            categoriaTag: dataExtra?.categoriaTag || "DOLOR & MOVILIDAD",
+            descripcion: dataExtra?.descripcion || null,
+            precioPromocional: dataExtra?.precioPromocional !== undefined ? dataExtra.precioPromocional : null,
+            textoPromocion: dataExtra?.textoPromocion || null,
+            imagenUrl: dataExtra?.imagenUrl || null,
+            mostrarEnWeb: dataExtra?.mostrarEnWeb !== false,
+            orden: dataExtra?.orden ?? 1,
+          },
+        });
+      } catch (dbErr) {
+        console.warn("Error creando servicio en Prisma:", dbErr);
+      }
+    }
+
     revalidatePath("/");
     revalidatePath("/dashboard/configuracion");
     revalidatePath("/reservas");
@@ -188,6 +455,17 @@ export async function crearNuevoServicio(
 export async function eliminarServicio(servicioId: string): Promise<ServerActionResult> {
   try {
     const eliminado = dbStore.eliminarServicio(servicioId);
+
+    if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+      try {
+        await prisma.servicio.delete({
+          where: { id: servicioId },
+        });
+      } catch (dbErr) {
+        console.warn("Error eliminando servicio en Prisma:", dbErr);
+      }
+    }
+
     revalidatePath("/");
     revalidatePath("/dashboard/configuracion");
     revalidatePath("/reservas");

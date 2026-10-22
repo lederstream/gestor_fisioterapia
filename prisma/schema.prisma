@@ -288,6 +288,9 @@ model ConfiguracionClinica {
   logoUrl                String?  @map("logo_url")
   faviconUrl             String?  @map("favicon_url")
   heroImageUrl           String?  @default("/images/hero-physio.jpg") @map("hero_image_url")
+  colorPrimario          String?  @default("#0C3E37") @map("color_primario")
+  colorSecundario        String?  @default("#E07052") @map("color_secundario")
+  colorAcento            String?  @default("#0D9488") @map("color_acento")
   updatedAt              DateTime @updatedAt @map("updated_at")
 
   @@map("configuracion_clinica")

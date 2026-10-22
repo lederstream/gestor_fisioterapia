@@ -96,6 +96,19 @@ export function LoginPortalModal({ isOpen, onClose }: LoginPortalModalProps) {
   const [passwordInput, setPasswordInput] = useState("");
   const [loadingRole, setLoadingRole] = useState<UserRole | null>(null);
   const [redirectMessage, setRedirectMessage] = useState<string | null>(null);
+  const [clinicName, setClinicName] = useState("AJ Fisioterapia");
+
+  useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("clinic_config");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.nombreComercial) setClinicName(parsed.nombreComercial);
+        }
+      } catch (_) {}
+    }
+  });
 
   if (!isOpen) return null;
 
@@ -138,7 +151,10 @@ export function LoginPortalModal({ isOpen, onClose }: LoginPortalModalProps) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header Modal */}
-        <div className="bg-[#0C3E37] text-white p-6 sm:p-7 relative">
+        <div
+          className="text-white p-6 sm:p-7 relative"
+          style={{ backgroundColor: "var(--brand-primary, #0C3E37)" }}
+        >
           <button
             onClick={onClose}
             className="absolute top-5 right-5 p-2 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition"
@@ -148,12 +164,15 @@ export function LoginPortalModal({ isOpen, onClose }: LoginPortalModalProps) {
           </button>
 
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-full bg-white text-[#0C3E37] flex items-center justify-center font-bold text-sm shadow-sm">
-              AJ
+            <div
+              className="w-10 h-10 rounded-full bg-white flex items-center justify-center font-bold text-sm shadow-sm"
+              style={{ color: "var(--brand-primary, #0C3E37)" }}
+            >
+              {clinicName.substring(0, 2).toUpperCase()}
             </div>
             <div>
               <span className="font-bold text-white text-base block leading-tight">
-                AJ Fisioterapia
+                {clinicName}
               </span>
               <span className="text-[10px] tracking-wider uppercase text-emerald-200 font-semibold block">
                 PORTAL CLÍNICO Y DE PACIENTES
@@ -229,7 +248,8 @@ export function LoginPortalModal({ isOpen, onClose }: LoginPortalModalProps) {
                   </label>
                   <button
                     type="submit"
-                    className="rounded-xl bg-[#0C3E37] hover:bg-[#072B26] text-white text-xs sm:text-sm font-bold px-6 py-2.5 flex items-center gap-2 shadow-sm transition"
+                    className="rounded-xl text-white text-xs sm:text-sm font-bold px-6 py-2.5 flex items-center gap-2 shadow-sm transition hover:opacity-90"
+                    style={{ backgroundColor: "var(--brand-primary, #0C3E37)" }}
                   >
                     <span>Ingresar</span>
                     <ArrowRight className="w-4 h-4" />
