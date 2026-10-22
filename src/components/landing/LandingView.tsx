@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { LoginPortalModal } from "@/components/auth/LoginPortalModal";
+import { QuickPreBookingModal } from "@/components/reservas/QuickPreBookingModal";
 import { formatCurrency } from "@/lib/utils";
 import { ConfiguracionClinicaItem, ServicioItem, SalaItem } from "@/lib/store";
 
@@ -42,7 +43,14 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
   const { isAuthenticated, currentRole, currentUser } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isPreBookingOpen, setIsPreBookingOpen] = useState(false);
+  const [preBookingServiceId, setPreBookingServiceId] = useState<string | undefined>(undefined);
   const [testimonialIndex, setTestimonialIndex] = useState(0);
+
+  const handleOpenQuickBooking = (servicioId?: string) => {
+    setPreBookingServiceId(servicioId);
+    setIsPreBookingOpen(true);
+  };
 
   // Paleta de Marca Blanca Dinámica
   const brandPrimary = config?.colorPrimario || "#0C3E37";
@@ -199,14 +207,22 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
           </nav>
 
           {/* Right Action Buttons */}
-          <div className="hidden md:flex items-center gap-6">
+          <div className="hidden md:flex items-center gap-4">
+            <Link
+              href="/login"
+              className="text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition-colors cursor-pointer hover:text-stone-900 text-stone-600 px-3 py-2 rounded-xl hover:bg-stone-100/80"
+              title="Acceso al portal clínico con DNI o credenciales"
+            >
+              <User className="w-4 h-4 text-stone-500" />
+              <span>Iniciar Sesión</span>
+            </Link>
+
             <button
               type="button"
               onClick={handleMiPortalClick}
-              className="text-sm font-semibold flex items-center gap-1.5 transition-colors cursor-pointer hover:opacity-85"
+              className="text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition-colors cursor-pointer hover:opacity-85"
               style={{ color: brandPrimary }}
             >
-              <User className="w-4 h-4" style={{ color: brandPrimary }} />
               <span>
                 {isAuthenticated && currentUser?.nombre
                   ? `Mi portal (${currentUser.nombre.split(" ")[0]})`
@@ -275,6 +291,17 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
             >
               Contacto
             </a>
+
+            <div className="pt-2 border-t border-stone-100 flex flex-col gap-2">
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 text-sm font-bold text-stone-800 hover:text-[#0C3E37] py-2"
+              >
+                <User className="w-4 h-4 text-[#0C3E37]" />
+                <span>Iniciar Sesión / Portal (/login)</span>
+              </Link>
+            </div>
             <div className="pt-3 border-t border-stone-100 flex flex-col gap-3">
               <button
                 type="button"
@@ -575,7 +602,7 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
                     </p>
                   </div>
 
-                  <div className="pt-4 border-t border-stone-100 space-y-2">
+                  <div className="pt-4 border-t border-stone-100 space-y-3">
                     <div className="flex items-baseline justify-between">
                       <div className="flex items-baseline">
                         <span className="font-bold text-sm text-[#0B2E28]">
@@ -583,6 +610,10 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
                         </span>
                         <span className="text-xs text-stone-400 ml-1.5">por sesión</span>
                       </div>
+
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-stone-500 bg-stone-100 px-2 py-0.5 rounded-md">
+                        <Clock className="w-3 h-3 text-stone-400" /> {servicio.duracionMinutos || 45} min
+                      </span>
                     </div>
 
                     {/* Etiqueta Roja de Promoción (Image 4) */}
@@ -591,6 +622,27 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
                         {servicio.textoPromocion}
                       </div>
                     ) : null}
+
+                    {/* Botón de Reserva Rápida (Modal) + Link */}
+                    <div className="pt-1 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenQuickBooking(servicio.id)}
+                        className="flex-1 py-2 px-3 rounded-xl text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition hover:opacity-95 cursor-pointer"
+                        style={{ backgroundColor: brandPrimary }}
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
+                        <span>Reserva Rápida</span>
+                      </button>
+
+                      <Link
+                        href={`/reservas?servicio=${servicio.id}`}
+                        className="py-2 px-3 rounded-xl border border-stone-200 text-stone-600 hover:bg-stone-50 text-xs font-semibold transition"
+                        title="Ver formulario completo"
+                      >
+                        Ver más
+                      </Link>
+                    </div>
                   </div>
                 </div>
               );
@@ -1048,6 +1100,11 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
                     Cómo funciona
                   </a>
                 </li>
+                <li>
+                  <Link href="/login" className="hover:text-white transition-colors text-emerald-400 font-bold flex items-center gap-1">
+                    <span>Acceso Colaboradores & Pacientes (/login)</span>
+                  </Link>
+                </li>
               </ul>
             </div>
 
@@ -1112,6 +1169,15 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
       <LoginPortalModal
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
+      />
+
+      {/* ── MODAL DE PRE-RESERVA RÁPIDA ─────────────────────────────── */}
+      <QuickPreBookingModal
+        isOpen={isPreBookingOpen}
+        onClose={() => setIsPreBookingOpen(false)}
+        servicios={servicios}
+        selectedServicioId={preBookingServiceId}
+        config={config}
       />
     </div>
   );

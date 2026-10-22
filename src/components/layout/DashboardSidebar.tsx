@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { 
   Calendar, 
   Users, 
@@ -59,7 +59,8 @@ const patientNavigation: NavItem[] = [
 
 export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: DashboardSidebarProps) {
   const pathname = usePathname();
-  const { currentRole, currentUser, hasPermission, roleDetails } = useAuth();
+  const router = useRouter();
+  const { currentRole, currentUser, hasPermission, roleDetails, logout } = useAuth();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string>("/images/logo-clinica.svg");
   const [clinicConfig, setClinicConfig] = useState({
@@ -350,14 +351,18 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: Dashbo
               >
                 Cancelar
               </button>
-              <Link
-                href="/"
-                onClick={() => setShowLogoutModal(false)}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-600/20 transition flex items-center gap-1.5"
+              <button
+                type="button"
+                onClick={() => {
+                  logout();
+                  setShowLogoutModal(false);
+                  router.push("/login");
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-600/20 transition flex items-center gap-1.5 cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span>Sí, Cerrar Sesión</span>
-              </Link>
+              </button>
             </div>
           </div>
         </div>

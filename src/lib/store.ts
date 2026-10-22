@@ -1064,6 +1064,24 @@ class GestorFisioStore {
       confirmadoPorNombre,
     };
 
+    // Actualización automática de sesiones consumidas del paquete (Regla 10)
+    if (cita.paqueteId) {
+      const paqIndex = this.paquetes.findIndex((p) => p.id === cita.paqueteId);
+      if (paqIndex !== -1) {
+        if (nuevoEstado === "ATENDIDA" && estadoAnterior !== "ATENDIDA") {
+          this.paquetes[paqIndex].sesionesConsumidas = Math.min(
+            this.paquetes[paqIndex].totalSesiones,
+            this.paquetes[paqIndex].sesionesConsumidas + 1
+          );
+        } else if (estadoAnterior === "ATENDIDA" && nuevoEstado !== "ATENDIDA") {
+          this.paquetes[paqIndex].sesionesConsumidas = Math.max(
+            0,
+            this.paquetes[paqIndex].sesionesConsumidas - 1
+          );
+        }
+      }
+    }
+
     const paciente = this.pacientes.find((p) => p.id === cita.pacienteId);
     const responsableNombre = usuarioInfo?.nombre || "Karin Palacios (Recepción)";
     const responsableRol = usuarioInfo?.rol || "RECEPCION";

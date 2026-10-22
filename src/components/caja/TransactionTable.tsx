@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
-import { Search, CheckCircle2, Clock, Smartphone, CreditCard, DollarSign, FileSpreadsheet } from "lucide-react";
+import { Search, CheckCircle2, Clock, Smartphone, CreditCard, DollarSign, FileSpreadsheet, Printer } from "lucide-react";
 
 interface TransactionTableProps {
   transacciones: any[];
@@ -100,11 +100,21 @@ export function TransactionTable({ transacciones }: TransactionTableProps) {
           <button
             onClick={exportToCSV}
             disabled={filtered.length === 0}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-lg transition disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-lg transition disabled:opacity-50 cursor-pointer"
             title="Exportar transacciones de caja a Excel / CSV"
           >
             <FileSpreadsheet className="w-3.5 h-3.5 text-teal-600" />
             <span>Exportar CSV</span>
+          </button>
+
+          <button
+            onClick={() => window.print()}
+            disabled={filtered.length === 0}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition disabled:opacity-50 cursor-pointer"
+            title="Imprimir reporte de cobranzas en PDF"
+          >
+            <Printer className="w-3.5 h-3.5 text-slate-500" />
+            <span>PDF</span>
           </button>
         </div>
       </div>

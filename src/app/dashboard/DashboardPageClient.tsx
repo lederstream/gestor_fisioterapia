@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { formatCurrency, formatTime, formatDateTime } from "@/lib/utils";
 import { PatientDashboardView } from "@/components/pacientes/PatientDashboardView";
+import { AusentismoReportModal } from "@/components/agenda/AusentismoReportModal";
 import { 
   Calendar, 
   CreditCard, 
@@ -19,7 +21,8 @@ import {
   Lock, 
   Settings,
   KeyRound,
-  Stethoscope
+  Stethoscope,
+  TrendingDown
 } from "lucide-react";
 
 interface DashboardPageClientProps {
@@ -46,6 +49,7 @@ export function DashboardPageClient({
   servicios = [],
 }: DashboardPageClientProps) {
   const { currentRole, hasPermission, roleDetails } = useAuth();
+  const [isAusentismoOpen, setIsAusentismoOpen] = useState(false);
 
   // Si el usuario activo es PACIENTE, renderizar exclusivamente su portal clínico privado
   if (currentRole === "PACIENTE") {
@@ -103,6 +107,15 @@ export function DashboardPageClient({
             <Calendar className="w-4 h-4 text-teal-700" />
             <span>Ir a Citas</span>
           </Link>
+          <button
+            type="button"
+            onClick={() => setIsAusentismoOpen(true)}
+            className="px-3.5 py-2.5 bg-rose-500/25 hover:bg-rose-500/40 text-white text-xs font-bold rounded-xl border border-rose-300/40 flex items-center gap-1.5 transition backdrop-blur-xs cursor-pointer"
+            title="Ver reporte tabular de ausentismo semanal (no-show)"
+          >
+            <TrendingDown className="w-4 h-4 text-rose-200" />
+            <span>Reporte Ausentismo</span>
+          </button>
           {canManageUsers && (
             <Link
               href="/dashboard/usuarios"
@@ -385,6 +398,16 @@ export function DashboardPageClient({
           </div>
         </div>
       )}
+
+      {/* Modal Reporte Tabular de Ausentismo */}
+      <AusentismoReportModal
+        isOpen={isAusentismoOpen}
+        onClose={() => setIsAusentismoOpen(false)}
+        citas={citas}
+        terapeutas={terapeutas}
+        salas={salas}
+        clinicName="AJ Fisioterapia"
+      />
     </div>
   );
 }

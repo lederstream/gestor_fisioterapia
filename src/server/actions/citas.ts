@@ -241,6 +241,33 @@ export async function actualizarEstadoCita(
       ipAddress: clientIp,
     };
     const actualizada = dbStore.actualizarEstadoCita(citaId, nuevoEstado, infoConIp);
+
+    // Sincronización en Supabase PostgreSQL
+    if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+      try {
+        const citaDb = await prisma.cita.findUnique({ where: { id: citaId } });
+        if (citaDb) {
+          await prisma.cita.update({
+            where: { id: citaId },
+            data: {
+              estado: nuevoEstado as any,
+              confirmadoPorNombre: nuevoEstado === "CONFIRMADA" ? (usuarioInfo?.nombre || "Recepción") : undefined,
+            },
+          });
+          if (nuevoEstado === "ATENDIDA" && citaDb.paqueteId) {
+            await prisma.tratamientoPaquete.update({
+              where: { id: citaDb.paqueteId },
+              data: {
+                sesionesConsumidas: { increment: 1 },
+              },
+            });
+          }
+        }
+      } catch (dbErr) {
+        console.warn("DB sync warning (actualizarEstadoCita):", dbErr);
+      }
+    }
+
     revalidatePath("/dashboard/agenda");
     revalidatePath("/dashboard/auditoria");
     revalidatePath("/dashboard");

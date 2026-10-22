@@ -22,6 +22,7 @@ import {
   ShieldAlert,
   Activity,
   TrendingUp,
+  TrendingDown,
   RefreshCw,
   Sparkles,
   Check,
@@ -29,6 +30,7 @@ import {
   SlidersHorizontal
 } from "lucide-react";
 import { NewAppointmentModal } from "./NewAppointmentModal";
+import { AusentismoReportModal } from "./AusentismoReportModal";
 import { useAuth } from "@/lib/auth-context";
 
 interface MatrixGridProps {
@@ -57,6 +59,7 @@ export function MatrixGrid({
   const [prefilledSalaId, setPrefilledSalaId] = useState<string | undefined>(undefined);
   const [prefilledTime, setPrefilledTime] = useState<string | undefined>(undefined);
   const [selectedCitaDetail, setSelectedCitaDetail] = useState<any | null>(null);
+  const [isAusentismoOpen, setIsAusentismoOpen] = useState(false);
 
   // Modo de Reprogramación dentro del detalle
   const [isRescheduling, setIsRescheduling] = useState(false);
@@ -489,6 +492,16 @@ export function MatrixGrid({
             className="px-2.5 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition cursor-pointer"
           >
             Hoy
+          </button>
+
+          <button
+            onClick={() => setIsAusentismoOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200/90 text-xs font-bold rounded-xl transition cursor-pointer"
+            title="Ver reporte semanal de ausentismo de pacientes y turnos no reasignados"
+          >
+            <TrendingDown className="w-4 h-4 text-rose-600" />
+            <span className="hidden sm:inline">Reporte Ausentismo</span>
+            <span className="sm:hidden">No-Show</span>
           </button>
 
           <button
@@ -1114,6 +1127,16 @@ export function MatrixGrid({
           </div>
         );
       })()}
+
+      {/* Modal de Reporte Tabular de Ausentismo (No-Show) */}
+      <AusentismoReportModal
+        isOpen={isAusentismoOpen}
+        onClose={() => setIsAusentismoOpen(false)}
+        citas={citas}
+        terapeutas={terapeutas}
+        salas={salas}
+        clinicName={configuracion?.nombreComercial}
+      />
     </div>
   );
 }
