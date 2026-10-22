@@ -21,8 +21,15 @@ export interface SalaItem {
 export interface ServicioItem {
   id: string;
   nombre: string;
+  categoriaTag?: string;
+  descripcion?: string;
   duracionMinutos: number;
   precioBase: number;
+  precioPromocional?: number;
+  textoPromocion?: string;
+  imagenUrl?: string;
+  mostrarEnWeb?: boolean;
+  orden?: number;
 }
 
 export interface PacienteItem {
@@ -130,11 +137,24 @@ export interface HorariosSemanaConfig {
   domingo: HorarioDiaConfig;
 }
 
-// Configuración Maestra del Centro Clínico
+export interface TestimonioItem {
+  id: string;
+  nombre: string;
+  calificacion: number;
+  comentario: string;
+  avatarUrl?: string;
+  ocupacion?: string;
+}
+
+// Configuración Maestra del Centro Clínico (Marca Blanca)
 export interface ConfiguracionClinicaItem {
   id: string;
   razonSocial: string;
   nombreComercial: string;
+  slogan?: string;
+  tituloHero?: string;
+  subtituloHero?: string;
+  descripcionHero?: string;
   ruc: string;
   direccionAvenidaCalle?: string;
   direccionNumero?: string;
@@ -144,6 +164,7 @@ export interface ConfiguracionClinicaItem {
   direccion: string;
   telefono: string;
   whatsapp: string;
+  googleMapsUrl?: string;
   horaApertura: string;
   horaCierre: string;
   intervaloMinutos: number;
@@ -151,7 +172,12 @@ export interface ConfiguracionClinicaItem {
   frecuenciaReevaluacion: number;
   bloqueoAltaReevaluacion: boolean;
   totalSalasFisicas: number;
+  ratingPromedio?: number;
+  totalPacientesMes?: string;
+  testimonios?: TestimonioItem[];
   logoUrl?: string;
+  faviconUrl?: string;
+  heroImageUrl?: string;
   updatedAt: string;
 }
 
@@ -179,10 +205,54 @@ const initialSalas: SalaItem[] = [
 ];
 
 const initialServicios: ServicioItem[] = [
-  { id: "serv-1", nombre: "Fisioterapia Traumatológica y Deportiva", duracionMinutos: 45, precioBase: 85.00 },
-  { id: "serv-2", nombre: "Terapia Manual Ortopédica y Columna", duracionMinutos: 45, precioBase: 95.00 },
-  { id: "serv-3", nombre: "Rehabilitación Neurológica Especializada", duracionMinutos: 60, precioBase: 120.00 },
-  { id: "serv-4", nombre: "Descarga Muscular y Readaptación Funcional", duracionMinutos: 45, precioBase: 90.00 },
+  {
+    id: "serv-1",
+    nombre: "Terapia física",
+    categoriaTag: "DOLOR & MOVILIDAD",
+    descripcion: "Tratamientos personalizados para aliviar el dolor, recuperar movilidad y volver a tu rutina.",
+    duracionMinutos: 45,
+    precioBase: 40.00,
+    precioPromocional: 30.00,
+    textoPromocion: "PROMOCION DSCTO S/ 30 por sesión",
+    mostrarEnWeb: true,
+    orden: 1,
+  },
+  {
+    id: "serv-2",
+    nombre: "Rehabilitación deportiva",
+    categoriaTag: "RENDIMIENTO",
+    descripcion: "Recuperación muscular progresiva para regresar a tu deporte con confianza y seguridad.",
+    duracionMinutos: 45,
+    precioBase: 40.00,
+    precioPromocional: 30.00,
+    textoPromocion: "PROMOCION DSCTO S/ 30 por sesión",
+    mostrarEnWeb: true,
+    orden: 2,
+  },
+  {
+    id: "serv-3",
+    nombre: "Terapia neurológica",
+    categoriaTag: "FUNCIONALIDAD",
+    descripcion: "Acompañamiento especializado para mejorar la función, el equilibrio y la independencia.",
+    duracionMinutos: 60,
+    precioBase: 60.00,
+    precioPromocional: 50.00,
+    textoPromocion: "PROMOCION DSCTO S/ 50 por sesión",
+    mostrarEnWeb: true,
+    orden: 3,
+  },
+  {
+    id: "serv-4",
+    nombre: "Masoterapia",
+    categoriaTag: "BIENESTAR",
+    descripcion: "Masajes relajantes, descontracturantes según las necesidades de tu cuerpo.",
+    duracionMinutos: 45,
+    precioBase: 80.00,
+    precioPromocional: 60.00,
+    textoPromocion: "PROMOCION DSCTO S/ 60 por sesión 1 hora",
+    mostrarEnWeb: true,
+    orden: 4,
+  },
 ];
 
 const initialPacientes: PacienteItem[] = [
@@ -251,6 +321,10 @@ const initialConfiguracion: ConfiguracionClinicaItem = {
   id: "config-principal",
   razonSocial: "AJ Fisioterapia S.A.C.",
   nombreComercial: "AJ Fisioterapia",
+  slogan: "REHABILITACIÓN & BIENESTAR",
+  tituloHero: "Vuelve a moverte.",
+  subtituloHero: "Vuelve a sentirte tú.",
+  descripcionHero: "Fisioterapia especializada y humana para recuperar tu bienestar, paso a paso.",
   ruc: "20608912345",
   direccionAvenidaCalle: "Av. Guardia Civil",
   direccionNumero: "520",
@@ -260,6 +334,7 @@ const initialConfiguracion: ConfiguracionClinicaItem = {
   direccion: "Av. Guardia Civil 520, San Borja, Lima (Ref: Cerca al Óvalo Quiñones)",
   telefono: "(01) 475-2010",
   whatsapp: "+51 987 654 321",
+  googleMapsUrl: "https://maps.google.com/?q=Av.+Guardia+Civil+520,+San+Borja",
   horaApertura: "08:00",
   horaCierre: "20:00",
   intervaloMinutos: 45,
@@ -275,7 +350,33 @@ const initialConfiguracion: ConfiguracionClinicaItem = {
   frecuenciaReevaluacion: 5, // Cada 5 sesiones asistidas
   bloqueoAltaReevaluacion: true,
   totalSalasFisicas: 6,
+  ratingPromedio: 4.9,
+  totalPacientesMes: "+1,100",
   logoUrl: "/images/logo-clinica.svg",
+  heroImageUrl: "/images/hero-physio.jpg",
+  testimonios: [
+    {
+      id: "test-1",
+      nombre: "Sarah M.",
+      calificacion: 5,
+      comentario: "The team is amazing! They really listen and create a plan that works. I'm finally pain-free!",
+      avatarUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80",
+    },
+    {
+      id: "test-2",
+      nombre: "James T.",
+      calificacion: 5,
+      comentario: "Professional, knowledgeable, and supportive. My recovery was faster than I expected!",
+      avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80",
+    },
+    {
+      id: "test-3",
+      nombre: "Emily R.",
+      calificacion: 5,
+      comentario: "Great experience from start to finish. I highly recommend their specialized rehabilitation.",
+      avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80",
+    },
+  ],
   updatedAt: new Date().toISOString(),
 };
 
@@ -610,13 +711,22 @@ class GestorFisioStore {
   }
 
   // Control de Servicios Dinámicos
-  actualizarServicio(servicioId: string, precioBase: number, duracionMinutos: number) {
+  actualizarServicio(
+    servicioId: string, 
+    precioBase: number, 
+    duracionMinutos: number,
+    dataExtra?: Partial<Omit<ServicioItem, "id">>
+  ) {
     const index = this.servicios.findIndex((s) => s.id === servicioId);
     if (index === -1) throw new Error("Servicio no encontrado.");
 
     const anterior = { ...this.servicios[index] };
-    this.servicios[index].precioBase = precioBase;
-    this.servicios[index].duracionMinutos = duracionMinutos;
+    this.servicios[index] = {
+      ...this.servicios[index],
+      precioBase,
+      duracionMinutos,
+      ...dataExtra,
+    };
 
     this.registrarAuditLog({
       usuarioId: "usr-admin-1",
@@ -625,18 +735,29 @@ class GestorFisioStore {
       accion: "SERVICIO_ACTUALIZADO",
       modulo: "CONFIGURACION",
       entidadId: servicioId,
-      detalles: `Servicio "${anterior.nombre}" actualizado: Precio S/. ${precioBase} (antes S/. ${anterior.precioBase}), Duración ${duracionMinutos}m.`,
+      detalles: `Servicio "${this.servicios[index].nombre}" actualizado: Tarifa S/. ${precioBase}, Promo: "${this.servicios[index].textoPromocion || 'Sin promo'}", Duración: ${duracionMinutos}m.`,
     });
 
     return this.servicios[index];
   }
 
-  crearServicio(nombre: string, precioBase: number, duracionMinutos: number) {
+  crearServicio(
+    nombre: string, 
+    precioBase: number, 
+    duracionMinutos: number,
+    dataExtra?: Partial<Omit<ServicioItem, "id" | "nombre" | "precioBase" | "duracionMinutos">>
+  ) {
     const nuevoServicio: ServicioItem = {
       id: `serv-${Date.now()}`,
       nombre,
       precioBase,
       duracionMinutos,
+      categoriaTag: dataExtra?.categoriaTag || "DOLOR & MOVILIDAD",
+      descripcion: dataExtra?.descripcion || "Tratamiento personalizado enfocado en recuperación funcional.",
+      precioPromocional: dataExtra?.precioPromocional,
+      textoPromocion: dataExtra?.textoPromocion,
+      mostrarEnWeb: dataExtra?.mostrarEnWeb ?? true,
+      orden: dataExtra?.orden ?? (this.servicios.length + 1),
     };
     this.servicios.push(nuevoServicio);
 
@@ -647,7 +768,7 @@ class GestorFisioStore {
       accion: "SERVICIO_CREADO",
       modulo: "CONFIGURACION",
       entidadId: nuevoServicio.id,
-      detalles: `Nuevo servicio terapéutico "${nombre}" creado (Tarifa: S/. ${precioBase}, Duración: ${duracionMinutos}m).`,
+      detalles: `Nuevo servicio terapéutico "${nombre}" creado (Tarifa: S/. ${precioBase}, Promo: "${nuevoServicio.textoPromocion || 'Ninguna'}", Duración: ${duracionMinutos}m).`,
     });
 
     return nuevoServicio;

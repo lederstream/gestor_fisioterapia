@@ -32,9 +32,11 @@ export async function guardarConfiguracionClinica(
       rol: "ADMIN",
     });
 
+    revalidatePath("/");
     revalidatePath("/dashboard/configuracion");
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/agenda");
+    revalidatePath("/reservas");
 
     return { success: true, data: actualizada };
   } catch (err: unknown) {
@@ -63,10 +65,26 @@ export async function cambiarEstadoSala(
 export async function modificarServicio(
   servicioId: string,
   precioBase: number,
-  duracionMinutos: number
+  duracionMinutos: number,
+  dataExtra?: {
+    nombre?: string;
+    categoriaTag?: string;
+    descripcion?: string;
+    precioPromocional?: number;
+    textoPromocion?: string;
+    imagenUrl?: string;
+    mostrarEnWeb?: boolean;
+    orden?: number;
+  }
 ): Promise<ServerActionResult> {
   try {
-    const servicio = dbStore.actualizarServicio(servicioId, precioBase, duracionMinutos);
+    const servicio = dbStore.actualizarServicio(
+      servicioId, 
+      precioBase, 
+      duracionMinutos, 
+      dataExtra
+    );
+    revalidatePath("/");
     revalidatePath("/dashboard/configuracion");
     revalidatePath("/reservas");
     return { success: true, data: servicio };
@@ -139,10 +157,25 @@ export async function eliminarSala(salaId: string): Promise<ServerActionResult> 
 export async function crearNuevoServicio(
   nombre: string,
   precioBase: number,
-  duracionMinutos: number
+  duracionMinutos: number,
+  dataExtra?: {
+    categoriaTag?: string;
+    descripcion?: string;
+    precioPromocional?: number;
+    textoPromocion?: string;
+    imagenUrl?: string;
+    mostrarEnWeb?: boolean;
+    orden?: number;
+  }
 ): Promise<ServerActionResult> {
   try {
-    const servicio = dbStore.crearServicio(nombre, precioBase, duracionMinutos);
+    const servicio = dbStore.crearServicio(
+      nombre, 
+      precioBase, 
+      duracionMinutos, 
+      dataExtra
+    );
+    revalidatePath("/");
     revalidatePath("/dashboard/configuracion");
     revalidatePath("/reservas");
     return { success: true, data: servicio };
@@ -155,6 +188,7 @@ export async function crearNuevoServicio(
 export async function eliminarServicio(servicioId: string): Promise<ServerActionResult> {
   try {
     const eliminado = dbStore.eliminarServicio(servicioId);
+    revalidatePath("/");
     revalidatePath("/dashboard/configuracion");
     revalidatePath("/reservas");
     return { success: true, data: eliminado };

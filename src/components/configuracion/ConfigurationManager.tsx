@@ -33,11 +33,13 @@ import {
   ShieldCheck,
   MapPin,
   Phone,
-  FileText
+  FileText,
+  Star,
+  Quote
 } from "lucide-react";
 import { HorariosManager } from "./HorariosManager";
 import { Switch } from "./Switch";
-import { HorariosSemanaConfig } from "@/lib/store";
+import { HorariosSemanaConfig, TestimonioItem } from "@/lib/store";
 
 interface ConfigurationManagerProps {
   initialConfig: any;
@@ -46,7 +48,7 @@ interface ConfigurationManagerProps {
   initialPersonal?: any[];
 }
 
-type TabType = "general" | "horarios" | "salas" | "servicios" | "politicas";
+type TabType = "general" | "horarios" | "salas" | "servicios" | "testimonios" | "politicas";
 
 export function ConfigurationManager({
   initialConfig,
@@ -72,12 +74,32 @@ export function ConfigurationManager({
   // State Servicios
   const [servicios, setServicios] = useState(initialServicios);
   const [editingServicioId, setEditingServicioId] = useState<string | null>(null);
+  const [servicioNombre, setServicioNombre] = useState<string>("");
   const [servicioPrecio, setServicioPrecio] = useState<number>(0);
   const [servicioDuracion, setServicioDuracion] = useState<number>(45);
+  const [servicioTag, setServicioTag] = useState<string>("DOLOR & MOVILIDAD");
+  const [servicioDesc, setServicioDesc] = useState<string>("");
+  const [servicioPromo, setServicioPromo] = useState<number | undefined>(undefined);
+  const [servicioTextoPromo, setServicioTextoPromo] = useState<string>("");
+  const [servicioMostrarWeb, setServicioMostrarWeb] = useState<boolean>(true);
+
   const [isCreatingServicio, setIsCreatingServicio] = useState(false);
   const [nuevoServicioNombre, setNuevoServicioNombre] = useState("");
-  const [nuevoServicioPrecio, setNuevoServicioPrecio] = useState<number>(100);
+  const [nuevoServicioPrecio, setNuevoServicioPrecio] = useState<number>(40);
   const [nuevoServicioDuracion, setNuevoServicioDuracion] = useState<number>(45);
+  const [nuevoServicioTag, setNuevoServicioTag] = useState("DOLOR & MOVILIDAD");
+  const [nuevoServicioDesc, setNuevoServicioDesc] = useState("");
+  const [nuevoServicioPromo, setNuevoServicioPromo] = useState<number | undefined>(undefined);
+  const [nuevoServicioTextoPromo, setNuevoServicioTextoPromo] = useState("");
+  const [nuevoServicioWeb, setNuevoServicioWeb] = useState(true);
+
+  // State Testimonios (Patient Stories)
+  const [testimonios, setTestimonios] = useState<TestimonioItem[]>(config.testimonios || []);
+  const [isCreatingTestimonio, setIsCreatingTestimonio] = useState(false);
+  const [nuevoTestNombre, setNuevoTestNombre] = useState("");
+  const [nuevoTestCalif, setNuevoTestCalif] = useState(5);
+  const [nuevoTestComent, setNuevoTestComent] = useState("");
+  const [nuevoTestAvatar, setNuevoTestAvatar] = useState("");
 
   // Feedback Toast
   const [toastMsg, setToastMsg] = useState<string | null>(null);
@@ -121,6 +143,13 @@ export function ConfigurationManager({
     const payload = {
       razonSocial: config.razonSocial,
       nombreComercial: config.nombreComercial,
+      slogan: config.slogan || "REHABILITACIÓN & BIENESTAR",
+      tituloHero: config.tituloHero || "Vuelve a moverte.",
+      subtituloHero: config.subtituloHero || "Vuelve a sentirte tú.",
+      descripcionHero: config.descripcionHero || "Fisioterapia especializada y humana para recuperar tu bienestar, paso a paso.",
+      ratingPromedio: Number(config.ratingPromedio || 4.9),
+      totalPacientesMes: config.totalPacientesMes || "+1,100",
+      googleMapsUrl: config.googleMapsUrl,
       ruc: config.ruc,
       direccionAvenidaCalle: config.direccionAvenidaCalle,
       direccionNumero: config.direccionNumero,
@@ -131,6 +160,8 @@ export function ConfigurationManager({
       telefono: config.telefono,
       whatsapp: config.whatsapp,
       logoUrl: config.logoUrl || "/images/logo-clinica.svg",
+      heroImageUrl: config.heroImageUrl || "/images/hero-physio.jpg",
+      testimonios: testimonios,
     };
 
     const res = await guardarConfiguracionClinica(payload);
@@ -144,7 +175,7 @@ export function ConfigurationManager({
         window.dispatchEvent(new Event("clinic-logo-change"));
         window.dispatchEvent(new Event("clinic-config-change"));
       }
-      showToast("Datos de la clínica guardados correctamente.");
+      showToast("Datos de la clínica y marca guardados correctamente.");
     }
   };
 
@@ -259,23 +290,32 @@ export function ConfigurationManager({
     }
   };
 
-  // Servicios: Modificar existente
+  // Servicios: Modificar existente con todos los campos comerciales
   const handleSaveServicio = async (servicioId: string) => {
-    const res = await modificarServicio(servicioId, servicioPrecio, servicioDuracion);
-    if (res.success) {
+    const res = await modificarServicio(
+      servicioId, 
+      servicioPrecio, 
+      servicioDuracion,
+      {
+        nombre: servicioNombre,
+        categoriaTag: servicioTag,
+        descripcion: servicioDesc,
+        precioPromocional: servicioPromo,
+        textoPromocion: servicioTextoPromo,
+        mostrarEnWeb: servicioMostrarWeb,
+      }
+    );
+    if (res.success && res.data) {
+      const updated = res.data as any;
       setServicios((prev) =>
-        prev.map((s) =>
-          s.id === servicioId
-            ? { ...s, precioBase: servicioPrecio, duracionMinutos: servicioDuracion }
-            : s
-        )
+        prev.map((s) => (s.id === servicioId ? { ...s, ...updated } : s))
       );
       setEditingServicioId(null);
-      showToast("Tarifa de servicio actualizada.");
+      showToast("Servicio y promociones actualizadas.");
     }
   };
 
-  // Servicios: Crear nuevo
+  // Servicios: Crear nuevo con categorías y descuentos
   const handleCreateServicio = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nuevoServicioNombre.trim()) return;
@@ -283,14 +323,26 @@ export function ConfigurationManager({
     const res = await crearNuevoServicio(
       nuevoServicioNombre.trim(),
       Number(nuevoServicioPrecio),
-      Number(nuevoServicioDuracion)
+      Number(nuevoServicioDuracion),
+      {
+        categoriaTag: nuevoServicioTag,
+        descripcion: nuevoServicioDesc,
+        precioPromocional: nuevoServicioPromo,
+        textoPromocion: nuevoServicioTextoPromo,
+        mostrarEnWeb: nuevoServicioWeb,
+      }
     );
     if (res.success && res.data) {
       const nuevo = res.data as any;
       setServicios((prev) => [...prev, nuevo]);
       setNuevoServicioNombre("");
-      setNuevoServicioPrecio(100);
+      setNuevoServicioPrecio(40);
       setNuevoServicioDuracion(45);
+      setNuevoServicioTag("DOLOR & MOVILIDAD");
+      setNuevoServicioDesc("");
+      setNuevoServicioPromo(undefined);
+      setNuevoServicioTextoPromo("");
+      setNuevoServicioWeb(true);
       setIsCreatingServicio(false);
       showToast(`Servicio "${nuevo.nombre || nuevoServicioNombre}" agregado al catálogo.`);
     }
@@ -307,11 +359,49 @@ export function ConfigurationManager({
     }
   };
 
+  // Testimonios: Guardar lista
+  const handleSaveTestimonios = async (updatedList: TestimonioItem[]) => {
+    setTestimonios(updatedList);
+    const res = await guardarConfiguracionClinica({ testimonios: updatedList });
+    if (res.success) {
+      showToast("Testimonios de pacientes actualizados.");
+    }
+  };
+
+  // Testimonios: Crear nuevo
+  const handleAddTestimonio = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nuevoTestNombre.trim() || !nuevoTestComent.trim()) return;
+
+    const nuevo: TestimonioItem = {
+      id: `test-${Date.now()}`,
+      nombre: nuevoTestNombre.trim(),
+      calificacion: Number(nuevoTestCalif),
+      comentario: nuevoTestComent.trim(),
+      avatarUrl: nuevoTestAvatar.trim() || `https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80`,
+    };
+
+    const updated = [...testimonios, nuevo];
+    await handleSaveTestimonios(updated);
+    setNuevoTestNombre("");
+    setNuevoTestCalif(5);
+    setNuevoTestComent("");
+    setNuevoTestAvatar("");
+    setIsCreatingTestimonio(false);
+  };
+
+  // Testimonios: Eliminar
+  const handleDeleteTestimonio = async (id: string) => {
+    const updated = testimonios.filter((t) => t.id !== id);
+    await handleSaveTestimonios(updated);
+  };
+
   const TABS: { id: TabType; label: string; icon: any; badge?: string }[] = [
-    { id: "general", label: "Datos de la Clínica", icon: Building2 },
+    { id: "general", label: "Marca e Identidad", icon: Building2 },
     { id: "horarios", label: "Horarios y Agenda", icon: Clock },
     { id: "salas", label: "Salas y Boxes", icon: Layers, badge: `${salas.length}` },
-    { id: "servicios", label: "Servicios y Tarifas", icon: DollarSign, badge: `${servicios.length}` },
+    { id: "servicios", label: "Servicios y Promociones", icon: DollarSign, badge: `${servicios.length}` },
+    { id: "testimonios", label: "Testimonios Web", icon: Star, badge: `${testimonios.length}` },
     { id: "politicas", label: "Políticas Clínicas", icon: ShieldCheck },
   ];
 
@@ -573,6 +663,117 @@ export function ConfigurationManager({
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-bold text-teal-800"
                 />
               </div>
+
+              <div className="sm:col-span-4">
+                <label className="block font-bold text-slate-700 mb-1">Enlace o Mapa de Google Maps (Ubicación)</label>
+                <input
+                  type="text"
+                  placeholder="https://maps.google.com/?q=..."
+                  value={config.googleMapsUrl || ""}
+                  onChange={(e) => setConfig({ ...config, googleMapsUrl: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Tarjeta 4: Textos y Promoción en Landing Page (Marca Blanca) */}
+          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+            <div className="pb-3 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-teal-600" />
+                  Textos y Branding de la Landing Page Pública
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  Personaliza cómo se presenta la clínica al público y pacientes sin tocar código.
+                </p>
+              </div>
+              <span className="px-2.5 py-1 bg-teal-50 text-teal-700 border border-teal-200 rounded-lg text-[10px] font-bold">
+                100% Dinámico
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Slogan / Categoría Superior</label>
+                <input
+                  type="text"
+                  placeholder="Ej. REHABILITACIÓN & BIENESTAR"
+                  value={config.slogan || ""}
+                  onChange={(e) => setConfig({ ...config, slogan: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-semibold uppercase tracking-wider"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Título Hero (Línea 1)</label>
+                <input
+                  type="text"
+                  placeholder="Ej. Vuelve a moverte."
+                  value={config.tituloHero || ""}
+                  onChange={(e) => setConfig({ ...config, tituloHero: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Subtítulo Hero (Cursiva Elegante)</label>
+                <input
+                  type="text"
+                  placeholder="Ej. Vuelve a sentirte tú."
+                  value={config.subtituloHero || ""}
+                  onChange={(e) => setConfig({ ...config, subtituloHero: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-serif italic"
+                />
+              </div>
+
+              <div className="sm:col-span-3">
+                <label className="block font-bold text-slate-700 mb-1">Descripción del Hero</label>
+                <textarea
+                  rows={2}
+                  placeholder="Ej. Fisioterapia especializada y humana para recuperar tu bienestar, paso a paso."
+                  value={config.descripcionHero || ""}
+                  onChange={(e) => setConfig({ ...config, descripcionHero: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Calificación Promedio (Google/Web)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="1"
+                  max="5"
+                  placeholder="4.9"
+                  value={config.ratingPromedio || 4.9}
+                  onChange={(e) => setConfig({ ...config, ratingPromedio: Number(e.target.value) })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Métrica de Pacientes Atendidos</label>
+                <input
+                  type="text"
+                  placeholder="+1,100 pacientes"
+                  value={config.totalPacientesMes || "+1,100"}
+                  onChange={(e) => setConfig({ ...config, totalPacientesMes: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Imagen Principal de Portada (URL)</label>
+                <input
+                  type="text"
+                  placeholder="/images/hero-physio.jpg"
+                  value={config.heroImageUrl || "/images/hero-physio.jpg"}
+                  onChange={(e) => setConfig({ ...config, heroImageUrl: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                />
+              </div>
             </div>
           </div>
 
@@ -812,9 +1013,9 @@ export function ConfigurationManager({
         <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
             <div>
-              <h3 className="font-extrabold text-slate-800 text-sm">Catálogo de Procedimientos y Tarifas (S/.)</h3>
+              <h3 className="font-extrabold text-slate-800 text-sm">Catálogo de Procedimientos y Promociones</h3>
               <p className="text-[11px] text-slate-500">
-                Precios unitarios por sesión y duración oficial para agendamiento.
+                Precios regulares, descuentos promocionales y visibilidad pública en el Landing Page.
               </p>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -837,7 +1038,7 @@ export function ConfigurationManager({
               <div className="flex items-center justify-between">
                 <span className="font-extrabold text-teal-900 text-xs flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-teal-600" />
-                  Agregar Procedimiento Clínico
+                  Agregar Procedimiento Clínico & Promoción
                 </span>
                 <button
                   type="button"
@@ -856,19 +1057,18 @@ export function ConfigurationManager({
                     required
                     value={nuevoServicioNombre}
                     onChange={(e) => setNuevoServicioNombre(e.target.value)}
-                    placeholder="Ej. Terapia Combinada & Láser"
+                    placeholder="Ej. Terapia física"
                     className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-bold"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Precio Base (S/.) *</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Categoría / Etiqueta Web</label>
                   <input
-                    type="number"
-                    min={1}
-                    required
-                    value={nuevoServicioPrecio}
-                    onChange={(e) => setNuevoServicioPrecio(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-mono font-bold"
+                    type="text"
+                    value={nuevoServicioTag}
+                    onChange={(e) => setNuevoServicioTag(e.target.value)}
+                    placeholder="Ej. DOLOR & MOVILIDAD"
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none uppercase font-semibold text-orange-700"
                   />
                 </div>
                 <div>
@@ -883,6 +1083,63 @@ export function ConfigurationManager({
                     onChange={(e) => setNuevoServicioDuracion(Number(e.target.value))}
                     className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none"
                   />
+                </div>
+
+                <div className="sm:col-span-3">
+                  <label className="block font-semibold text-slate-700 mb-1">Descripción Breve (para Landing)</label>
+                  <input
+                    type="text"
+                    value={nuevoServicioDesc}
+                    onChange={(e) => setNuevoServicioDesc(e.target.value)}
+                    placeholder="Ej. Alivia dolores agudos y crónicos, recupera la movilidad articular y muscular."
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Precio Base / Regular (S/.) *</label>
+                  <input
+                    type="number"
+                    min={1}
+                    required
+                    value={nuevoServicioPrecio}
+                    onChange={(e) => setNuevoServicioPrecio(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Precio Promocional (S/.) (Opcional)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={nuevoServicioPromo || ""}
+                    onChange={(e) => setNuevoServicioPromo(e.target.value ? Number(e.target.value) : undefined)}
+                    placeholder="Ej. 30"
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-mono font-bold text-emerald-700"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Texto de Promoción (Etiqueta Roja)</label>
+                  <input
+                    type="text"
+                    value={nuevoServicioTextoPromo}
+                    onChange={(e) => setNuevoServicioTextoPromo(e.target.value)}
+                    placeholder="Ej. PROMOCION DSCTO S/ 30 por sesión"
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none text-rose-600 font-bold"
+                  />
+                </div>
+
+                <div className="sm:col-span-3 flex items-center gap-2 pt-1">
+                  <input
+                    type="checkbox"
+                    id="nuevo-servicio-web"
+                    checked={nuevoServicioWeb}
+                    onChange={(e) => setNuevoServicioWeb(e.target.checked)}
+                    className="rounded text-teal-600 focus:ring-teal-500 w-4 h-4 cursor-pointer"
+                  />
+                  <label htmlFor="nuevo-servicio-web" className="text-xs font-bold text-slate-700 cursor-pointer">
+                    Mostrar este servicio públicamente en el Landing Page
+                  </label>
                 </div>
               </div>
 
@@ -910,76 +1167,327 @@ export function ConfigurationManager({
               const isEditing = editingServicioId === s.id;
 
               return (
-                <div key={s.id} className="py-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div>
-                    <h4 className="font-bold text-slate-800 text-xs">{s.nombre}</h4>
-                    <span className="text-[11px] text-slate-500">
-                      Duración: <strong>{s.duracionMinutos} min</strong> • Paquete 10 ses: {formatCurrency(s.precioBase * 10 * 0.85)} (15% desc.)
-                    </span>
-                  </div>
-
+                <div key={s.id} className="py-4 space-y-3">
                   {isEditing ? (
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
-                      <div className="w-24">
-                        <label className="text-[10px] text-slate-400 block">Precio (S/.)</label>
-                        <input
-                          type="number"
-                          value={servicioPrecio}
-                          onChange={(e) => setServicioPrecio(Number(e.target.value))}
-                          className="w-full px-2 py-1 text-xs border rounded-lg bg-slate-50 font-bold"
-                        />
+                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 text-xs">
+                      <div className="font-bold text-slate-800">Editando {s.nombre}</div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-500 block mb-1">Nombre</label>
+                          <input
+                            type="text"
+                            value={servicioNombre}
+                            onChange={(e) => setServicioNombre(e.target.value)}
+                            className="w-full px-2.5 py-1.5 border rounded-xl bg-white font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-500 block mb-1">Categoría Tag</label>
+                          <input
+                            type="text"
+                            value={servicioTag}
+                            onChange={(e) => setServicioTag(e.target.value)}
+                            className="w-full px-2.5 py-1.5 border rounded-xl bg-white uppercase font-semibold text-orange-700"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-500 block mb-1">Duración (min)</label>
+                          <input
+                            type="number"
+                            value={servicioDuracion}
+                            onChange={(e) => setServicioDuracion(Number(e.target.value))}
+                            className="w-full px-2.5 py-1.5 border rounded-xl bg-white"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-3">
+                          <label className="text-[10px] font-bold text-slate-500 block mb-1">Descripción</label>
+                          <input
+                            type="text"
+                            value={servicioDesc}
+                            onChange={(e) => setServicioDesc(e.target.value)}
+                            className="w-full px-2.5 py-1.5 border rounded-xl bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-500 block mb-1">Precio Base (S/.)</label>
+                          <input
+                            type="number"
+                            value={servicioPrecio}
+                            onChange={(e) => setServicioPrecio(Number(e.target.value))}
+                            className="w-full px-2.5 py-1.5 border rounded-xl bg-white font-mono font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-500 block mb-1">Precio Promo (S/.)</label>
+                          <input
+                            type="number"
+                            value={servicioPromo || ""}
+                            onChange={(e) => setServicioPromo(e.target.value ? Number(e.target.value) : undefined)}
+                            className="w-full px-2.5 py-1.5 border rounded-xl bg-white font-mono font-bold text-emerald-700"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-500 block mb-1">Texto Promoción (Rojo)</label>
+                          <input
+                            type="text"
+                            value={servicioTextoPromo}
+                            onChange={(e) => setServicioTextoPromo(e.target.value)}
+                            className="w-full px-2.5 py-1.5 border rounded-xl bg-white text-rose-600 font-bold"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-3 flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id={`edit-web-${s.id}`}
+                            checked={servicioMostrarWeb}
+                            onChange={(e) => setServicioMostrarWeb(e.target.checked)}
+                            className="rounded text-teal-600"
+                          />
+                          <label htmlFor={`edit-web-${s.id}`} className="font-semibold text-slate-700">
+                            Mostrar en el Landing Page público
+                          </label>
+                        </div>
                       </div>
-                      <div className="w-20">
-                        <label className="text-[10px] text-slate-400 block">Minutos</label>
-                        <input
-                          type="number"
-                          value={servicioDuracion}
-                          onChange={(e) => setServicioDuracion(Number(e.target.value))}
-                          className="w-full px-2 py-1 text-xs border rounded-lg bg-slate-50"
-                        />
+
+                      <div className="flex justify-end gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingServicioId(null)}
+                          className="px-3 py-1.5 bg-slate-200 text-slate-700 rounded-xl font-semibold cursor-pointer"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSaveServicio(s.id)}
+                          className="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-xs cursor-pointer"
+                        >
+                          Guardar Cambios
+                        </button>
                       </div>
-                      <button
-                        onClick={() => handleSaveServicio(s.id)}
-                        className="mt-3.5 px-3 py-1 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg cursor-pointer"
-                      >
-                        Guardar
-                      </button>
-                      <button
-                        onClick={() => setEditingServicioId(null)}
-                        className="mt-3.5 px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded-lg cursor-pointer"
-                      >
-                        ✕
-                      </button>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-                      <span className="text-sm font-extrabold text-slate-800">
-                        {formatCurrency(s.precioBase)}
-                      </span>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => {
-                            setEditingServicioId(s.id);
-                            setServicioPrecio(s.precioBase);
-                            setServicioDuracion(s.duracionMinutos);
-                          }}
-                          className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-lg border border-slate-200 cursor-pointer transition"
-                        >
-                          Editar
-                        </button>
-                        <button
-                          onClick={() => handleDeleteServicio(s.id, s.nombre)}
-                          className="p-1.5 hover:bg-rose-50 text-rose-600 rounded-lg border border-rose-200 cursor-pointer transition"
-                          title="Eliminar procedimiento"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-extrabold text-slate-800 text-sm">{s.nombre}</h4>
+                          {s.categoriaTag && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                              {s.categoriaTag}
+                            </span>
+                          )}
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            s.mostrarEnWeb !== false
+                              ? "bg-teal-50 text-teal-700 border border-teal-200"
+                              : "bg-slate-100 text-slate-500 border border-slate-200"
+                          }`}>
+                            {s.mostrarEnWeb !== false ? "Visible en Web" : "Oculto en Web"}
+                          </span>
+                        </div>
+                        {s.descripcion && (
+                          <p className="text-xs text-slate-500 max-w-xl">{s.descripcion}</p>
+                        )}
+                        <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                          <span>Duración: <strong className="text-slate-600">{s.duracionMinutos} min</strong></span>
+                          {s.textoPromocion && (
+                            <span className="text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded-md border border-rose-100">
+                              {s.textoPromocion}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                        <div className="text-right">
+                          <span className="text-base font-black text-slate-800 block">
+                            {formatCurrency(s.precioBase)}
+                          </span>
+                          {s.precioPromocional ? (
+                            <span className="text-xs font-bold text-rose-600">
+                              Promo: {formatCurrency(s.precioPromocional)}
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => {
+                              setEditingServicioId(s.id);
+                              setServicioNombre(s.nombre);
+                              setServicioPrecio(s.precioBase);
+                              setServicioDuracion(s.duracionMinutos);
+                              setServicioTag(s.categoriaTag || "DOLOR & MOVILIDAD");
+                              setServicioDesc(s.descripcion || "");
+                              setServicioPromo(s.precioPromocional);
+                              setServicioTextoPromo(s.textoPromocion || "");
+                              setServicioMostrarWeb(s.mostrarEnWeb !== false);
+                            }}
+                            className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-lg border border-slate-200 cursor-pointer transition"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => handleDeleteServicio(s.id, s.nombre)}
+                            className="p-1.5 hover:bg-rose-50 text-rose-600 rounded-lg border border-rose-200 cursor-pointer transition"
+                            title="Eliminar procedimiento"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* PESTAÑA 5: TESTIMONIOS (PATIENT STORIES)                                   */}
+      {/* ========================================================================= */}
+      {activeTab === "testimonios" && (
+        <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
+            <div>
+              <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-1.5">
+                <Quote className="w-4 h-4 text-teal-600" />
+                Historias y Testimonios de Pacientes (Patient Stories)
+              </h3>
+              <p className="text-[11px] text-slate-500">
+                Reseñas mostradas con 5 estrellas en la sección pública para generar confianza inmediata.
+              </p>
+            </div>
+            <button
+              onClick={() => setIsCreatingTestimonio(true)}
+              className="flex items-center justify-center gap-2 px-3.5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Nuevo Testimonio</span>
+            </button>
+          </div>
+
+          {/* Formulario nuevo testimonio */}
+          {isCreatingTestimonio && (
+            <form onSubmit={handleAddTestimonio} className="p-4 bg-teal-50/60 border border-teal-200 rounded-2xl space-y-3 animate-in fade-in duration-150">
+              <div className="flex items-center justify-between">
+                <span className="font-extrabold text-teal-900 text-xs flex items-center gap-1.5">
+                  <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                  Agregar Testimonio de Paciente
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsCreatingTestimonio(false)}
+                  className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Nombre del Paciente *</label>
+                  <input
+                    type="text"
+                    required
+                    value={nuevoTestNombre}
+                    onChange={(e) => setNuevoTestNombre(e.target.value)}
+                    placeholder="Ej. Sarah M."
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Calificación (Estrellas 1-5)</label>
+                  <select
+                    value={nuevoTestCalif}
+                    onChange={(e) => setNuevoTestCalif(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-bold"
+                  >
+                    <option value={5}>⭐⭐⭐⭐⭐ (5 Estrellas)</option>
+                    <option value={4}>⭐⭐⭐⭐ (4 Estrellas)</option>
+                    <option value={3}>⭐⭐⭐ (3 Estrellas)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Avatar / Foto URL (Opcional)</label>
+                  <input
+                    type="text"
+                    value={nuevoTestAvatar}
+                    onChange={(e) => setNuevoTestAvatar(e.target.value)}
+                    placeholder="https://..."
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none text-xs"
+                  />
+                </div>
+
+                <div className="sm:col-span-3">
+                  <label className="block font-semibold text-slate-700 mb-1">Comentario del Paciente *</label>
+                  <textarea
+                    rows={3}
+                    required
+                    value={nuevoTestComent}
+                    onChange={(e) => setNuevoTestComent(e.target.value)}
+                    placeholder="Ej. Llegué con un dolor lumbar severo que me impedía trabajar. En solo 4 sesiones el progreso fue extraordinario..."
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setIsCreatingTestimonio(false)}
+                  className="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-600 text-xs font-semibold rounded-xl border border-slate-200 cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer"
+                >
+                  Guardar Testimonio
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Grid de Testimonios */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+            {testimonios.map((t) => (
+              <div key={t.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col justify-between space-y-3">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <img
+                        src={t.avatarUrl || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80"}
+                        alt={t.nombre}
+                        className="w-9 h-9 rounded-full object-cover border border-slate-200"
+                      />
+                      <div>
+                        <h4 className="font-bold text-slate-800 text-xs">{t.nombre}</h4>
+                        <div className="flex items-center text-amber-500 text-[10px]">
+                          {Array.from({ length: t.calificacion }).map((_, i) => (
+                            <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteTestimonio(t.id)}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                      title="Eliminar testimonio"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-600 italic">"{t.comentario}"</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

@@ -74,16 +74,24 @@ model User {
 
 // 2. Pacientes
 model Paciente {
-  id                 String    @id @default(uuid())
-  dni                String    @unique // DNI peruano (8 dígitos)
-  nombres            String
-  apellidos          String
-  telefono           String
-  email              String?
-  fechaNacimiento    DateTime  @map("fecha_nacimiento")
-  contactoEmergencia String?   @map("contacto_emergencia")
-  createdAt          DateTime  @default(now()) @map("created_at")
-  updatedAt          DateTime  @updatedAt @map("updated_at")
+  id                         String    @id @default(uuid())
+  tipoDocumento              String    @default("DNI") @map("tipo_documento")
+  dni                        String    @unique // DNI peruano (8 dígitos) o documento de identidad
+  primerNombre               String?   @map("primer_nombre")
+  segundoNombre              String?   @map("segundo_nombre")
+  apellidoPaterno            String?   @map("apellido_paterno")
+  apellidoMaterno            String?   @map("apellido_materno")
+  nombres                    String
+  apellidos                  String
+  telefono                   String
+  email                      String?
+  fechaNacimiento            DateTime  @map("fecha_nacimiento")
+  contactoEmergenciaNombre   String?   @map("contacto_emergencia_nombre")
+  contactoEmergenciaParentesco String? @map("contacto_emergencia_parentesco")
+  contactoEmergenciaTelefono String?   @map("contacto_emergencia_telefono")
+  contactoEmergencia         String?   @map("contacto_emergencia")
+  createdAt                  DateTime  @default(now()) @map("created_at")
+  updatedAt                  DateTime  @updatedAt @map("updated_at")
 
   // Relaciones
   tratamientos TratamientoPaquete[]
@@ -110,12 +118,19 @@ model Sala {
 
 // 4. Servicios Clínicos
 model Servicio {
-  id              String   @id @default(uuid())
-  nombre          String   // Ej: "Fisioterapia Traumatológica y Deportiva", "Rehabilitación Neurológica"
-  duracionMinutos Int      @default(45) @map("duracion_minutos")
-  precioBase      Decimal  @map("precio_base") @db.Decimal(10, 2)
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id                String   @id @default(uuid())
+  nombre            String   // Ej: "Terapia física", "Rehabilitación deportiva"
+  categoriaTag      String?  @default("DOLOR & MOVILIDAD") @map("categoria_tag")
+  descripcion       String?  @db.Text
+  duracionMinutos   Int      @default(45) @map("duracion_minutos")
+  precioBase        Decimal  @map("precio_base") @db.Decimal(10, 2)
+  precioPromocional Decimal? @map("precio_promocional") @db.Decimal(10, 2)
+  textoPromocion    String?  @map("texto_promocion")
+  imagenUrl         String?  @map("imagen_url")
+  mostrarEnWeb      Boolean  @default(true) @map("mostrar_en_web")
+  orden             Int      @default(1)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
   // Relaciones
   tratamientosPaquetes TratamientoPaquete[]
@@ -157,6 +172,9 @@ model Cita {
   fechaHoraFin    DateTime   @map("fecha_hora_fin")
   estado          EstadoCita @default(PROGRAMADA)
   esReevaluacion  Boolean    @default(false) @map("es_reevaluacion") // Regla clínica cada 5 sesiones
+  notasCita       String?    @map("notas_cita") @db.Text
+  creadoPorNombre String?    @map("creado_por_nombre")
+  confirmadoPorNombre String? @map("confirmado_por_nombre")
   createdAt       DateTime   @default(now()) @map("created_at")
   updatedAt       DateTime   @updatedAt @map("updated_at")
 
@@ -238,21 +256,38 @@ model AuditLog {
   @@map("audit_logs")
 }
 
-// 10. Configuración Maestra del Centro Clínico AJ Fisioterapia
+// 10. Configuración Maestra del Centro Clínico (Marca Blanca)
 model ConfiguracionClinica {
   id                     String   @id @default("config-principal")
   razonSocial            String   @default("AJ Fisioterapia S.A.C.") @map("razon_social")
   nombreComercial        String   @default("AJ Fisioterapia") @map("nombre_comercial")
+  slogan                 String?  @default("REHABILITACIÓN & BIENESTAR")
+  tituloHero             String?  @default("Vuelve a moverte.") @map("titulo_hero")
+  subtituloHero          String?  @default("Vuelve a sentirte tú.") @map("subtitulo_hero")
+  descripcionHero        String?  @default("Fisioterapia especializada y humana para recuperar tu bienestar, paso a paso.") @map("descripcion_hero") @db.Text
   ruc                    String   @default("20608912345")
   direccion              String   @default("Av. Guardia Civil 520, San Borja, Lima")
+  direccionAvenidaCalle  String?  @default("Av. Guardia Civil") @map("direccion_avenida_calle")
+  direccionNumero        String?  @default("520") @map("direccion_numero")
+  direccionDistrito      String?  @default("San Borja") @map("direccion_distrito")
+  direccionCiudad        String?  @default("Lima") @map("direccion_ciudad")
+  direccionReferencia    String?  @default("A 2 cuadras de Av. Javier Prado Este") @map("direccion_referencia")
   telefono               String   @default("(01) 475-2010")
   whatsapp               String   @default("+51 987 654 321")
+  googleMapsUrl          String?  @map("google_maps_url")
   horaApertura           String   @default("08:00") @map("hora_apertura")
   horaCierre             String   @default("20:00") @map("hora_cierre")
   intervaloMinutos       Int      @default(45) @map("intervalo_minutos")
   frecuenciaReevaluacion Int      @default(5) @map("frecuencia_reevaluacion")
   bloqueoAltaReevaluacion Boolean @default(true) @map("bloqueo_alta_reevaluacion")
   totalSalasFisicas      Int      @default(6) @map("total_salas_fisicas")
+  horariosSemana         Json?    @map("horarios_semana")
+  testimonios            Json?
+  ratingPromedio         Decimal? @default(4.9) @map("rating_promedio") @db.Decimal(3, 1)
+  totalPacientesMes      String?  @default("+1,100") @map("total_pacientes_mes")
+  logoUrl                String?  @map("logo_url")
+  faviconUrl             String?  @map("favicon_url")
+  heroImageUrl           String?  @default("/images/hero-physio.jpg") @map("hero_image_url")
   updatedAt              DateTime @updatedAt @map("updated_at")
 
   @@map("configuracion_clinica")
