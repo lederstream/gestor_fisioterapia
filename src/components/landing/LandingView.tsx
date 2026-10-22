@@ -689,27 +689,97 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
         </div>
       </section>
 
-      {/* ── HISTORIAS DE PACIENTES / TESTIMONIALS (Image 3 Reference) ──── */}
-      <section id="historias" className="py-20 lg:py-24 bg-white/60 border-t border-stone-200/60 overflow-hidden">
+      {/* ── 3 PASOS / SIMPLE Y CERCANO (Cómo funciona) ─────────────── */}
+      <section id="como-funciona" className="py-20 lg:py-24 text-center border-t border-stone-200/60 bg-[#FAF9F5]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <span className="text-[#D96548] text-xs font-bold uppercase tracking-widest block mb-3">
+            SIMPLE Y CERCANO
+          </span>
+
+          <h2 className="text-3xl sm:text-5xl font-black text-[#0B2E28]">
+            Empieza a sentirte mejor
+          </h2>
+          <div className="font-editorial text-3xl sm:text-5xl text-[#124B41] font-normal mt-1 mb-16">
+            en tres pasos.
+          </div>
+
+          {/* Process Timeline */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-8 relative max-w-5xl mx-auto">
+            {/* Background Dotted Line */}
+            <div className="hidden md:block absolute top-10 left-20 right-20 border-t-2 border-dashed border-[#A8CFC5]/60 z-0"></div>
+
+            {/* Step 1 */}
+            <div className="relative z-10 flex flex-col items-center">
+              <div className="w-20 h-20 rounded-full bg-[#E2EEE7] text-[#145347] flex items-center justify-center relative shadow-xs">
+                <Calendar className="w-7 h-7 stroke-[1.8]" />
+                <span className="w-6 h-6 rounded-full bg-[#E07052] text-white text-xs font-bold flex items-center justify-center absolute -top-1 -right-1 shadow-xs ring-2 ring-[#FAF9F5]">
+                  1
+                </span>
+              </div>
+              <h3 className="font-bold text-lg text-[#0B2E28] mt-5 mb-2">
+                Reserva tu cita
+              </h3>
+              <p className="text-stone-500 text-sm max-w-xs leading-relaxed">
+                Elige el servicio, día y turno que mejor se adapten a tu horario.
+              </p>
+            </div>
+
+            {/* Step 2 */}
+            <div className="relative z-10 flex flex-col items-center">
+              <div className="w-20 h-20 rounded-full bg-[#E2EEE7] text-[#145347] flex items-center justify-center relative shadow-xs">
+                <User className="w-7 h-7 stroke-[1.8]" />
+                <span className="w-6 h-6 rounded-full bg-[#E07052] text-white text-xs font-bold flex items-center justify-center absolute -top-1 -right-1 shadow-xs ring-2 ring-[#FAF9F5]">
+                  2
+                </span>
+              </div>
+              <h3 className="font-bold text-lg text-[#0B2E28] mt-5 mb-2">
+                Evaluamos tu caso
+              </h3>
+              <p className="text-stone-500 text-sm max-w-xs leading-relaxed">
+                Conocemos tu historia clínica, movilidad y objetivos de recuperación.
+              </p>
+            </div>
+
+            {/* Step 3 */}
+            <div className="relative z-10 flex flex-col items-center">
+              <div className="w-20 h-20 rounded-full bg-[#E2EEE7] text-[#145347] flex items-center justify-center relative shadow-xs">
+                <Sparkles className="w-7 h-7 stroke-[1.8]" />
+                <span className="w-6 h-6 rounded-full bg-[#E07052] text-white text-xs font-bold flex items-center justify-center absolute -top-1 -right-1 shadow-xs ring-2 ring-[#FAF9F5]">
+                  3
+                </span>
+              </div>
+              <h3 className="font-bold text-lg text-[#0B2E28] mt-5 mb-2">
+                Inicia tu recuperación
+              </h3>
+              <p className="text-stone-500 text-sm max-w-xs leading-relaxed">
+                Diseñamos un tratamiento progresivo y medimos cada avance sesión a sesión.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── HISTORIAS DE PACIENTES / TESTIMONIOS (100% Español Clínico) ── */}
+      <section id="historias" className="py-20 lg:py-24 bg-white border-t border-stone-200/60 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
-          {/* Header matching Image 3 */}
+          {/* Header en Español */}
           <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16">
             <span className="text-[#0D9488] text-xs font-bold uppercase tracking-widest block mb-2">
-              PATIENT STORIES
+              HISTORIAS DE RECUPERACIÓN
             </span>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#0B2E28] tracking-tight">
               Lo que dicen nuestros pacientes
             </h2>
             <p className="text-stone-600 text-sm sm:text-base mt-2">
-              Resultados reales de personas que recuperaron su movilidad y bienestar con nosotros.
+              Casos reales de personas que recuperaron su movilidad y bienestar con nosotros en San Borja.
             </p>
           </div>
 
-          {/* Carousel Layout with Side Circular Arrows (Image 3) */}
+          {/* Carrusel Interactivo con Botones Circulares Laterales */}
           <div className="relative flex items-center justify-between gap-2 sm:gap-4 lg:gap-6">
             
-            {/* Left Circular Arrow Button */}
+            {/* Botón Circular Izquierdo */}
             <button
               type="button"
               onClick={prevTestimonial}
@@ -719,19 +789,19 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
               <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
 
-            {/* Testimonials Window */}
+            {/* Ventana de Testimonios */}
             <div className="flex-1 overflow-hidden py-2">
-              {/* Desktop: 3 visible cards */}
+              {/* Escritorio: 3 tarjetas visibles */}
               <div className="hidden lg:grid lg:grid-cols-3 gap-6">
                 {[0, 1, 2].map((offset) => {
                   const item = testimoniosList[(testimonialIndex + offset) % testimoniosList.length];
                   return (
                     <div
                       key={`${item.id}-${offset}`}
-                      className="bg-white rounded-2xl p-6 sm:p-7 border border-stone-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[260px]"
+                      className="bg-white rounded-2xl p-6 sm:p-7 border border-stone-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[270px]"
                     >
                       <div>
-                        {/* Header: Avatar + Stars */}
+                        {/* Header: Avatar + Estrellas */}
                         <div className="flex items-center gap-4 mb-4">
                           <img
                             src={item.avatarUrl || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=160&auto=format&fit=crop&q=80"}
@@ -750,13 +820,13 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
                           </div>
                         </div>
 
-                        {/* Quote */}
+                        {/* Testimonio */}
                         <p className="text-stone-600 text-sm leading-relaxed italic mb-6">
                           "{item.comentario}"
                         </p>
                       </div>
 
-                      {/* Author */}
+                      {/* Firma del Paciente */}
                       <div className="pt-3 border-t border-stone-100">
                         <h4 className="font-bold text-sm text-[#0B2E28]">
                           — {item.nombre}
@@ -770,17 +840,17 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
                 })}
               </div>
 
-              {/* Mobile / Tablet: 1 card view */}
+              {/* Móvil / Tablet: 1 tarjeta por vista */}
               <div className="lg:hidden">
                 {(() => {
                   const item = testimoniosList[testimonialIndex % testimoniosList.length];
                   return (
                     <div
                       key={item.id}
-                      className="bg-white rounded-2xl p-6 sm:p-7 border border-stone-200/90 shadow-sm flex flex-col justify-between transition-all min-h-[240px]"
+                      className="bg-white rounded-2xl p-6 sm:p-7 border border-stone-200/90 shadow-sm flex flex-col justify-between transition-all min-h-[250px]"
                     >
                       <div>
-                        {/* Header: Avatar + Stars */}
+                        {/* Header: Avatar + Estrellas */}
                         <div className="flex items-center gap-3.5 mb-4">
                           <img
                             src={item.avatarUrl || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=160&auto=format&fit=crop&q=80"}
@@ -799,13 +869,13 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
                           </div>
                         </div>
 
-                        {/* Quote */}
+                        {/* Testimonio */}
                         <p className="text-stone-600 text-sm leading-relaxed italic mb-5">
                           "{item.comentario}"
                         </p>
                       </div>
 
-                      {/* Author */}
+                      {/* Firma */}
                       <div className="pt-3 border-t border-stone-100">
                         <h4 className="font-bold text-sm text-[#0B2E28]">
                           — {item.nombre}
@@ -821,7 +891,7 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
 
             </div>
 
-            {/* Right Circular Arrow Button */}
+            {/* Botón Circular Derecho */}
             <button
               type="button"
               onClick={nextTestimonial}
@@ -833,7 +903,7 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
 
           </div>
 
-          {/* Pagination Indicators / Dots */}
+          {/* Indicadores / Puntos de Paginación */}
           <div className="flex items-center justify-center gap-2 mt-6">
             {testimoniosList.map((_, idx) => (
               <button
@@ -848,149 +918,52 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
             ))}
           </div>
 
-          {/* ── BANNER CTA: READY TO START YOUR RECOVERY? (Image 3 Reference) ── */}
-          <div className="mt-14 relative rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#0C3E37] via-[#0D4B42] to-[#0A332C] text-white p-6 sm:p-8 lg:p-10 shadow-xl border border-teal-800/40 overflow-hidden">
-            {/* Subtle background glow */}
-            <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-emerald-400/10 blur-2xl pointer-events-none" />
-            <div className="absolute -left-16 -bottom-16 w-64 h-64 rounded-full bg-teal-500/10 blur-2xl pointer-events-none" />
+          {/* ── BANNER CTA FINAL: LISTO PARA INICIAR TU RECUPERACIÓN (100% Español) ── */}
+          <div className="mt-16 relative rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#0C3E37] via-[#0D4B42] to-[#0A332C] text-white p-7 sm:p-10 lg:p-12 shadow-2xl border border-teal-800/40 overflow-hidden">
+            {/* Efectos de luz sutil */}
+            <div className="absolute -right-16 -top-16 w-72 h-72 rounded-full bg-emerald-400/10 blur-2xl pointer-events-none" />
+            <div className="absolute -left-16 -bottom-16 w-72 h-72 rounded-full bg-teal-500/10 blur-2xl pointer-events-none" />
 
-            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6 sm:gap-8">
+            <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-6 sm:gap-8">
               
-              {/* Left Column: Icon + Text */}
-              <div className="flex items-center gap-4 sm:gap-5 text-center md:text-left flex-col md:flex-row">
-                <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-white shrink-0 shadow-inner">
-                  <CalendarClock className="w-7 h-7 text-[#84CCB5]" />
+              {/* Lado izquierdo: Icono + Título + Bajada */}
+              <div className="flex items-center gap-4 sm:gap-5 text-center lg:text-left flex-col lg:flex-row">
+                <div className="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-white shrink-0 shadow-inner">
+                  <CalendarClock className="w-8 h-8 text-[#84CCB5]" />
                 </div>
                 <div>
-                  <h3 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-white tracking-tight">
-                    Ready to Start Your Recovery?
+                  <span className="text-[#84CCB5] text-xs font-bold uppercase tracking-widest block mb-1">
+                    DA EL PRIMER PASO
+                  </span>
+                  <h3 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight">
+                    ¿Listo para volver a moverte sin dolor?
                   </h3>
-                  <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed max-w-xl mt-1">
-                    Book your appointment today and take the first step toward a healthier, pain-free life.
+                  <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed max-w-xl mt-1.5">
+                    Agenda hoy tu evaluación clínica en {config.nombreComercial || "AJ Fisioterapia"} y recupera tu calidad de vida sin esperas ni dolor.
                   </p>
                 </div>
               </div>
 
-              {/* Right Column: White Button matching Image 3 */}
-              <Link
-                href="/reservas"
-                className="rounded-full bg-white hover:bg-stone-50 text-[#0C3E37] font-bold text-sm sm:text-base px-7 sm:px-8 py-3.5 sm:py-4 shadow-lg hover:shadow-xl flex items-center justify-center gap-2.5 transition-all hover:gap-3.5 shrink-0 w-full sm:w-auto active:scale-95"
-              >
-                <span>Book an Appointment</span>
-                <ArrowRight className="w-5 h-5 text-[#0C3E37]" />
-              </Link>
-
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ── 3 PASOS / SIMPLE Y CERCANO (Screenshot 5) ────────────────── */}
-      <section id="como-funciona" className="pt-20 lg:pt-24 pb-12 lg:pb-16 text-center">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <span className="text-[#D96548] text-xs font-bold uppercase tracking-widest block mb-3">
-            SIMPLE Y CERCANO
-          </span>
-
-          <h2 className="text-3xl sm:text-5xl font-black text-[#0B2E28]">
-            Empieza a sentirte mejor
-          </h2>
-          <div className="font-editorial text-3xl sm:text-5xl text-[#124B41] font-normal mt-1 mb-16">
-            en tres pasos.
-          </div>
-
-          {/* Process Timeline */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-8 relative max-w-5xl mx-auto mb-16">
-            {/* Background Dotted Line */}
-            <div className="hidden md:block absolute top-10 left-20 right-20 border-t-2 border-dashed border-[#A8CFC5]/60 z-0"></div>
-
-            {/* Step 1 */}
-            <div className="relative z-10 flex flex-col items-center">
-              <div className="w-20 h-20 rounded-full bg-[#E2EEE7] text-[#145347] flex items-center justify-center relative shadow-xs">
-                <Calendar className="w-7 h-7 stroke-[1.8]" />
-                <span className="w-6 h-6 rounded-full bg-[#E07052] text-white text-xs font-bold flex items-center justify-center absolute -top-1 -right-1 shadow-xs ring-2 ring-[#FAF9F5]">
-                  1
-                </span>
-              </div>
-              <h3 className="font-bold text-lg text-[#0B2E28] mt-5 mb-2">
-                Reserva tu cita
-              </h3>
-              <p className="text-stone-500 text-sm max-w-xs leading-relaxed">
-                Elige el servicio, día y turno que mejor se adapten a ti.
-              </p>
-            </div>
-
-            {/* Step 2 */}
-            <div className="relative z-10 flex flex-col items-center">
-              <div className="w-20 h-20 rounded-full bg-[#E2EEE7] text-[#145347] flex items-center justify-center relative shadow-xs">
-                <User className="w-7 h-7 stroke-[1.8]" />
-                <span className="w-6 h-6 rounded-full bg-[#E07052] text-white text-xs font-bold flex items-center justify-center absolute -top-1 -right-1 shadow-xs ring-2 ring-[#FAF9F5]">
-                  2
-                </span>
-              </div>
-              <h3 className="font-bold text-lg text-[#0B2E28] mt-5 mb-2">
-                Evaluamos tu caso
-              </h3>
-              <p className="text-stone-500 text-sm max-w-xs leading-relaxed">
-                Conocemos tu historia, movilidad y objetivos de recuperación.
-              </p>
-            </div>
-
-            {/* Step 3 */}
-            <div className="relative z-10 flex flex-col items-center">
-              <div className="w-20 h-20 rounded-full bg-[#E2EEE7] text-[#145347] flex items-center justify-center relative shadow-xs">
-                <Sparkles className="w-7 h-7 stroke-[1.8]" />
-                <span className="w-6 h-6 rounded-full bg-[#E07052] text-white text-xs font-bold flex items-center justify-center absolute -top-1 -right-1 shadow-xs ring-2 ring-[#FAF9F5]">
-                  3
-                </span>
-              </div>
-              <h3 className="font-bold text-lg text-[#0B2E28] mt-5 mb-2">
-                Inicia tu recuperación
-              </h3>
-              <p className="text-stone-500 text-sm max-w-xs leading-relaxed">
-                Diseñamos un tratamiento progresivo y medimos cada avance.
-              </p>
-            </div>
-          </div>
-
-          {/* ── BANNER CTA: LISTO PARA RECUPERARTE (Image 3) ──────────── */}
-          <div className="relative rounded-[32px] bg-[#0B332D] text-white p-8 sm:p-12 lg:p-16 overflow-hidden shadow-2xl text-left my-8">
-            <div className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full border border-white/5 pointer-events-none"></div>
-            <div className="absolute -bottom-16 -right-16 w-80 h-80 rounded-full border border-white/5 pointer-events-none"></div>
-            <div className="absolute -bottom-8 -right-8 w-64 h-64 rounded-full border border-emerald-500/10 pointer-events-none"></div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
-              <div className="lg:col-span-7 space-y-4">
-                <span className="text-[#84CCB5] text-xs font-bold uppercase tracking-widest block">
-                  DA EL PRIMER PASO
-                </span>
-                <h3 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight">
-                  Tu cuerpo está listo <br className="hidden sm:inline" />
-                  para volver a moverse.
-                </h3>
-                <p className="text-stone-200 text-sm sm:text-base leading-relaxed max-w-lg pt-1">
-                  Agenda hoy tu evaluación en {config.nombreComercial || "nuestra clínica"} y recupera tu calidad de vida sin esperas.
-                </p>
-              </div>
-
-              <div className="lg:col-span-5 flex flex-col items-start lg:items-end justify-center gap-3">
+              {/* Lado derecho: Botón y Dirección en San Borja */}
+              <div className="flex flex-col items-center lg:items-end gap-3 shrink-0 w-full sm:w-auto">
                 <Link
                   href="/reservas"
-                  className="rounded-full bg-[#E07052] hover:bg-[#D45F41] text-white font-bold text-base px-8 py-4 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 transition-all hover:gap-3 w-full sm:w-auto"
+                  className="rounded-full bg-white hover:bg-stone-50 text-[#0C3E37] font-bold text-sm sm:text-base px-8 py-4 shadow-lg hover:shadow-xl flex items-center justify-center gap-2.5 transition-all hover:gap-3.5 shrink-0 w-full sm:w-auto active:scale-95"
                 >
-                  <Calendar className="w-5 h-5" />
+                  <Calendar className="w-5 h-5 text-[#0C3E37]" />
                   <span>Reservar mi evaluación</span>
-                  <ArrowRight className="w-5 h-5" />
+                  <ArrowRight className="w-5 h-5 text-[#0C3E37]" />
                 </Link>
 
-                <div className="flex items-center gap-2 text-xs sm:text-sm text-[#A8D3C4] pt-1">
+                <div className="flex items-center gap-2 text-xs text-[#A8D3C4]">
                   <MapPin className="w-4 h-4 text-[#84CCB5] shrink-0" />
                   <span>{config.direccion || "Av. Guardia Civil 520, San Borja, Lima"}</span>
                 </div>
               </div>
+
             </div>
           </div>
+
         </div>
       </section>
 
