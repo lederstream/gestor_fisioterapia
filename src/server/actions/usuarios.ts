@@ -300,3 +300,59 @@ export async function eliminarUsuarioSistema(
     return { success: false, error: message };
   }
 }
+
+export async function cambiarPasswordUsuarioDesdeAdmin(
+  usuarioId: string,
+  nuevaPassword: string
+): Promise<ServerActionResult> {
+  try {
+    const sesion = await obtenerSesionServidor();
+    if (!sesion || sesion.rol !== "ADMIN") {
+      return { success: false, error: "Solo los administradores pueden gestionar contraseñas del equipo." };
+    }
+
+    const cleanPass = nuevaPassword.trim();
+    if (!cleanPass || cleanPass.length < 6) {
+      return { success: false, error: "La contraseña debe tener al menos 6 caracteres." };
+    }
+
+    const passwordHash = await bcrypt.hash(cleanPass, 10);
+    const clientIp = await obtenerIpCliente();
+
+    if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+      try {
+        const usuarioActualizado = await prisma.user.update({
+          where: { id: usuarioId },
+          data: { passwordHash },
+        });
+
+        await prisma.auditLog.create({
+          data: {
+            usuarioId: sesion.userId,
+            usuarioNombre: sesion.nombre,
+            usuarioRol: sesion.rol,
+            accion: "CONTRASENA_RESETEADA",
+            modulo: "CONFIGURACION",
+            entidadId: usuarioId,
+            detalles: `El administrador ${sesion.nombre} restableció la contraseña de acceso de ${usuarioActualizado.nombre}.`,
+            ipAddress: clientIp,
+          },
+        });
+
+        revalidatePath("/dashboard/usuarios");
+        revalidatePath("/dashboard/auditoria");
+
+        return { success: true };
+      } catch (dbErr) {
+        console.error("Error al actualizar contraseña en Prisma:", dbErr);
+        return { success: false, error: "No se pudo actualizar la contraseña en la base de datos." };
+      }
+    }
+
+    return { success: true };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Error al actualizar la contraseña del usuario.";
+    return { success: false, error: message };
+  }
+}
+

@@ -56,9 +56,8 @@ export function LoginPortalModal({ isOpen, onClose }: LoginPortalModalProps) {
 
       setTimeout(() => {
         onClose();
-        router.push(res.data?.user.targetUrl || "/dashboard");
-        router.refresh();
-      }, 500);
+        window.location.href = res.data?.user.targetUrl || "/dashboard";
+      }, 300);
     } catch {
       setErrorMessage("Error de conexión al autenticar. Inténtalo nuevamente.");
       setIsLoading(false);

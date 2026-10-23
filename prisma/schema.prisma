@@ -15,22 +15,30 @@ enum Rol {
   RECEPCION
   TERAPEUTA
   PACIENTE
+
+  @@map("rol_usuario")
 }
 
 enum EstadoUsuario {
   ACTIVO
   INACTIVO
+
+  @@map("estado_usuario")
 }
 
 enum EstadoSala {
   DISPONIBLE
   MANTENIMIENTO
+
+  @@map("estado_sala")
 }
 
 enum EstadoPago {
   PENDIENTE
   PARCIAL
   PAGADO
+
+  @@map("estado_pago")
 }
 
 enum EstadoCita {
@@ -39,6 +47,8 @@ enum EstadoCita {
   ATENDIDA
   CANCELADA
   NO_ASISTIO
+
+  @@map("estado_cita")
 }
 
 enum MetodoPago {
@@ -46,11 +56,15 @@ enum MetodoPago {
   YAPE
   PLIN
   POS
+
+  @@map("metodo_pago")
 }
 
 enum EstadoVerificacionPago {
   VERIFICADO
   PENDIENTE
+
+  @@map("estado_verificacion_pago")
 }
 
 // 1. Personal y Usuarios del Sistema (RBAC)

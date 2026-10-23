@@ -320,22 +320,58 @@ export async function crearNuevaSala(
   equipamiento?: string
 ): Promise<ServerActionResult> {
   try {
-    const sala = dbStore.crearSala(nombre, equipamiento);
+    const cleanNombre = nombre.trim();
+    if (!cleanNombre) {
+      return { success: false, error: "El nombre de la sala es obligatorio." };
+    }
 
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       try {
-        await prisma.sala.create({
+        const existe = await prisma.sala.findUnique({
+          where: { nombre: cleanNombre },
+        });
+        if (existe) {
+          return { success: false, error: `Ya existe una sala registrada con el nombre "${cleanNombre}".` };
+        }
+
+        const nuevaDb = await prisma.sala.create({
           data: {
-            id: sala.id,
-            nombre: sala.nombre,
+            nombre: cleanNombre,
             estado: "DISPONIBLE",
           },
         });
-      } catch (dbErr) {
-        console.warn("Error creando sala en Prisma:", dbErr);
+
+        const totalSalas = await prisma.sala.count();
+        const config = await prisma.configuracionClinica.findFirst();
+        if (config) {
+          await prisma.configuracionClinica.update({
+            where: { id: config.id },
+            data: { totalSalasFisicas: totalSalas },
+          });
+        }
+
+        revalidatePath("/dashboard/agenda");
+        revalidatePath("/dashboard/configuracion");
+        revalidatePath("/dashboard");
+        revalidatePath("/reservas");
+
+        return {
+          success: true,
+          data: {
+            id: nuevaDb.id,
+            nombre: nuevaDb.nombre,
+            estado: nuevaDb.estado,
+            equipamiento: equipamiento || "Camilla clínica estándar",
+            capacidadSimultanea: 1,
+          },
+        };
+      } catch (dbErr: any) {
+        console.error("Error creando sala en Prisma:", dbErr);
+        return { success: false, error: "No se pudo registrar la sala en la base de datos." };
       }
     }
 
+    const sala = dbStore.crearSala(cleanNombre, equipamiento);
     revalidatePath("/dashboard/agenda");
     revalidatePath("/dashboard/configuracion");
     revalidatePath("/dashboard");
@@ -352,19 +388,40 @@ export async function editarDatosSala(
   equipamiento?: string
 ): Promise<ServerActionResult> {
   try {
-    const sala = dbStore.editarSala(salaId, nombre, equipamiento);
+    const cleanNombre = nombre.trim();
+    if (!cleanNombre) {
+      return { success: false, error: "El nombre de la sala no puede estar vacío." };
+    }
 
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       try {
-        await prisma.sala.update({
+        const actualizada = await prisma.sala.update({
           where: { id: salaId },
-          data: { nombre },
+          data: { nombre: cleanNombre },
         });
-      } catch (dbErr) {
-        console.warn("Error editando sala en Prisma:", dbErr);
+
+        revalidatePath("/dashboard/agenda");
+        revalidatePath("/dashboard/configuracion");
+        revalidatePath("/dashboard");
+        revalidatePath("/reservas");
+
+        return {
+          success: true,
+          data: {
+            id: actualizada.id,
+            nombre: actualizada.nombre,
+            estado: actualizada.estado,
+            equipamiento: equipamiento || "Camilla clínica estándar",
+            capacidadSimultanea: 1,
+          },
+        };
+      } catch (dbErr: any) {
+        console.error("Error editando sala en Prisma:", dbErr);
+        return { success: false, error: "No se pudo actualizar el nombre de la sala." };
       }
     }
 
+    const sala = dbStore.editarSala(salaId, cleanNombre, equipamiento);
     revalidatePath("/dashboard/agenda");
     revalidatePath("/dashboard/configuracion");
     return { success: true, data: sala };
@@ -376,18 +433,45 @@ export async function editarDatosSala(
 
 export async function eliminarSala(salaId: string): Promise<ServerActionResult> {
   try {
-    const eliminada = dbStore.eliminarSala(salaId);
-
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       try {
+        const citasCount = await prisma.cita.count({
+          where: { salaId },
+        });
+
+        if (citasCount > 0) {
+          return {
+            success: false,
+            error: `Esta sala tiene ${citasCount} cita(s) agendada(s). En su lugar, puedes ponerla en estado MANTENIMIENTO para inhabilitarla sin perder el historial clínico.`,
+          };
+        }
+
         await prisma.sala.delete({
           where: { id: salaId },
         });
-      } catch (dbErr) {
-        console.warn("Error eliminando sala en Prisma:", dbErr);
+
+        const totalSalas = await prisma.sala.count();
+        const config = await prisma.configuracionClinica.findFirst();
+        if (config) {
+          await prisma.configuracionClinica.update({
+            where: { id: config.id },
+            data: { totalSalasFisicas: totalSalas },
+          });
+        }
+
+        revalidatePath("/dashboard/agenda");
+        revalidatePath("/dashboard/configuracion");
+        revalidatePath("/dashboard");
+        revalidatePath("/reservas");
+
+        return { success: true };
+      } catch (dbErr: any) {
+        console.error("Error eliminando sala en Prisma:", dbErr);
+        return { success: false, error: "No se pudo eliminar la sala de la base de datos." };
       }
     }
 
+    const eliminada = dbStore.eliminarSala(salaId);
     revalidatePath("/dashboard/agenda");
     revalidatePath("/dashboard/configuracion");
     revalidatePath("/dashboard");
@@ -413,19 +497,11 @@ export async function crearNuevoServicio(
   }
 ): Promise<ServerActionResult> {
   try {
-    const servicio = dbStore.crearServicio(
-      nombre, 
-      precioBase, 
-      duracionMinutos, 
-      dataExtra
-    );
-
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       try {
-        await prisma.servicio.create({
+        const nuevoDb = await prisma.servicio.create({
           data: {
-            id: servicio.id,
-            nombre,
+            nombre: nombre.trim(),
             duracionMinutos,
             precioBase,
             categoriaTag: dataExtra?.categoriaTag || "DOLOR & MOVILIDAD",
@@ -437,11 +513,34 @@ export async function crearNuevoServicio(
             orden: dataExtra?.orden ?? 1,
           },
         });
-      } catch (dbErr) {
-        console.warn("Error creando servicio en Prisma:", dbErr);
+
+        revalidatePath("/");
+        revalidatePath("/dashboard/configuracion");
+        revalidatePath("/reservas");
+
+        return {
+          success: true,
+          data: {
+            id: nuevoDb.id,
+            nombre: nuevoDb.nombre,
+            categoriaTag: nuevoDb.categoriaTag || "DOLOR & MOVILIDAD",
+            descripcion: nuevoDb.descripcion || "",
+            duracionMinutos: nuevoDb.duracionMinutos,
+            precioBase: Number(nuevoDb.precioBase),
+            precioPromocional: nuevoDb.precioPromocional ? Number(nuevoDb.precioPromocional) : undefined,
+            textoPromocion: nuevoDb.textoPromocion || undefined,
+            imagenUrl: nuevoDb.imagenUrl || undefined,
+            mostrarEnWeb: nuevoDb.mostrarEnWeb,
+            orden: nuevoDb.orden,
+          },
+        };
+      } catch (dbErr: any) {
+        console.error("Error creando servicio en Prisma:", dbErr);
+        return { success: false, error: "No se pudo registrar el servicio en la base de datos." };
       }
     }
 
+    const servicio = dbStore.crearServicio(nombre, precioBase, duracionMinutos, dataExtra);
     revalidatePath("/");
     revalidatePath("/dashboard/configuracion");
     revalidatePath("/reservas");
@@ -454,18 +553,23 @@ export async function crearNuevoServicio(
 
 export async function eliminarServicio(servicioId: string): Promise<ServerActionResult> {
   try {
-    const eliminado = dbStore.eliminarServicio(servicioId);
-
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       try {
         await prisma.servicio.delete({
           where: { id: servicioId },
         });
-      } catch (dbErr) {
-        console.warn("Error eliminando servicio en Prisma:", dbErr);
+
+        revalidatePath("/");
+        revalidatePath("/dashboard/configuracion");
+        revalidatePath("/reservas");
+        return { success: true };
+      } catch (dbErr: any) {
+        console.error("Error eliminando servicio en Prisma:", dbErr);
+        return { success: false, error: "No se pudo eliminar el servicio." };
       }
     }
 
+    const eliminado = dbStore.eliminarServicio(servicioId);
     revalidatePath("/");
     revalidatePath("/dashboard/configuracion");
     revalidatePath("/reservas");

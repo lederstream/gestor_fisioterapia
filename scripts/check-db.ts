@@ -8,19 +8,19 @@ const pool = new Pool({
 });
 
 async function run() {
-  const res = await pool.query(`
-    SELECT column_name, data_type 
+  const cols = await pool.query(`
+    SELECT column_name, data_type, udt_name 
     FROM information_schema.columns 
     WHERE table_name = 'users';
   `);
-  console.log("Users columns:", res.rows.map(r => `${r.column_name} (${r.data_type})`));
-  
-  const pacientesRes = await pool.query(`
-    SELECT column_name, data_type 
-    FROM information_schema.columns 
-    WHERE table_name = 'pacientes';
+  console.log("Users columns and types:", cols.rows);
+
+  const enums = await pool.query(`
+    SELECT t.typname, e.enumlabel
+    FROM pg_type t 
+    JOIN pg_enum e ON t.oid = e.enumtypid;
   `);
-  console.log("Pacientes columns:", pacientesRes.rows.map(r => `${r.column_name} (${r.data_type})`));
+  console.log("Enums in DB:", enums.rows);
 
   process.exit(0);
 }

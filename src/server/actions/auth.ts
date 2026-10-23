@@ -48,23 +48,49 @@ export async function iniciarSesion(
     const clientIp = await obtenerIpCliente();
 
     // 1. Buscar en la tabla de personal y usuarios (users)
-    const usuario = await prisma.user.findFirst({
+    let usuario = await prisma.user.findFirst({
       where: {
         email: { equals: cleanIdentifier, mode: "insensitive" },
       },
     });
+
+    // Soporte para alias de administrador universal ('admin', 'administrador', 'admin@ajfisioterapia.pe')
+    if (!usuario && (
+      cleanIdentifier === "admin" || 
+      cleanIdentifier === "administrador" || 
+      cleanIdentifier === "admin@ajfisioterapia.pe"
+    )) {
+      usuario = await prisma.user.findFirst({
+        where: {
+          rol: "ADMIN",
+        },
+      });
+    }
 
     if (usuario) {
       if (usuario.estado === "INACTIVO") {
         return { success: false, error: "Tu cuenta de usuario se encuentra suspendida o inactiva." };
       }
 
-      // Validar contraseña
+      // Validar contraseña estrictamente con hashing criptográfico bcrypt
       const passwordValida = usuario.passwordHash
         ? await bcrypt.compare(cleanPass, usuario.passwordHash)
-        : cleanPass === "AdminFisio2026!" || cleanPass === "StaffFisio2026!"; // Respaldo temporal si no se ejecutó seed
+        : false;
 
       if (!passwordValida) {
+        // Registro inmutable de intento fallido en bitácora forense de seguridad
+        await prisma.auditLog.create({
+          data: {
+            usuarioId: usuario.id,
+            usuarioNombre: usuario.nombre,
+            usuarioRol: usuario.rol,
+            accion: "LOGIN_FALLIDO",
+            modulo: "SEGURIDAD",
+            detalles: `Intento de acceso fallido para ${usuario.email} (${usuario.rol}). Contraseña incorrecta.`,
+            ipAddress: clientIp,
+          },
+        }).catch(() => {});
+
         return { success: false, error: "Contraseña incorrecta. Por favor verifica tus credenciales." };
       }
 

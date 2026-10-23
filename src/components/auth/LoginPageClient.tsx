@@ -70,9 +70,8 @@ export function LoginPageClient({ config }: LoginPageClientProps) {
       const destination = redirectParam || res.data?.user.targetUrl || "/dashboard";
 
       setTimeout(() => {
-        router.push(destination);
-        router.refresh();
-      }, 500);
+        window.location.href = destination;
+      }, 300);
     } catch {
       setErrorMessage("Ocurrió un error inesperado al conectar con el servidor. Inténtalo de nuevo.");
       setIsLoading(false);
@@ -168,7 +167,7 @@ export function LoginPageClient({ config }: LoginPageClientProps) {
                   type="text"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="ej. gerencia@clinica.pe o DNI"
+                  placeholder="ej. admin o correo@clinica.pe"
                   required
                   autoFocus
                   disabled={isLoading}
@@ -231,18 +230,20 @@ export function LoginPageClient({ config }: LoginPageClientProps) {
             </button>
           </form>
 
-          {/* Información de Seguridad Institucional */}
-          <div className="mt-6 pt-5 border-t border-stone-100 space-y-2">
-            <div className="flex items-center gap-2 text-[11px] font-bold text-stone-600">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Autenticación de Nivel Clínico</span>
+            {/* Indicador de Seguridad Institucional (Ciberseguridad OWASP) */}
+            <div className="mt-5 p-3.5 bg-stone-50 border border-stone-200/80 rounded-2xl flex items-start gap-2.5 text-stone-600">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <span className="text-xs font-bold text-stone-800 block">
+                  Autenticación Criptográfica Segura
+                </span>
+                <p className="text-[10px] text-stone-500 leading-relaxed">
+                  Canal protegido con cifrado TLS 1.3, hashing unidireccional bcrypt y cookies HTTP-only. Todo intento de acceso queda auditado.
+                </p>
+              </div>
             </div>
-            <p className="text-[10px] text-stone-400 leading-relaxed">
-              El sistema valida credenciales con cifrado bcrypt y emite tokens de sesión HTTP-only seguros según las políticas de privacidad y control de accesos RBAC de la clínica.
-            </p>
           </div>
-        </div>
-      </main>
+        </main>
 
       {/* Footer */}
       <footer className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 text-center text-xs text-stone-400">
