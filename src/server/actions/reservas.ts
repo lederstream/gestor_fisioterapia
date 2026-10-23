@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { dbStore } from "@/lib/store";
 import { agendarCita, ServerActionResult } from "./citas";
+import { prisma } from "@/lib/prisma";
 
 export interface SolicitarReservaPublicaInput {
   dni: string;
@@ -21,8 +22,8 @@ export interface SolicitarReservaPublicaInput {
 /**
  * Server Action: solicitarReservaPublica()
  * Permite a un paciente solicitar cita directamente desde la web pública reduciendo
- * los 20-30 minutos de espera en recepción de AJ Fisioterapia.
- * 1. Valida los datos del paciente y verifica si ya existe por DNI (o lo crea).
+ * los 20-30 minutos de espera en recepción de la clínica.
+ * 1. Valida los datos del paciente y verifica si ya existe por DNI (o lo crea en Supabase).
  * 2. Asigna la primera sala disponible del centro clínico.
  * 3. Asigna un terapeuta colegiado activo.
  * 4. Agrega la cita con estado PROGRAMADA en la agenda central con trazabilidad.
@@ -44,24 +45,81 @@ export async function solicitarReservaPublica(
       return { success: false, error: "El teléfono o celular de contacto es obligatorio." };
     }
 
-    // 1. Obtener o crear paciente
-    let paciente = dbStore.getPacientes().find((p) => p.dni === dniLimpio);
+    const nombres = [input.primerNombre.trim(), input.segundoNombre?.trim()].filter(Boolean).join(" ");
+    const apellidos = [input.apellidoPaterno.trim(), input.apellidoMaterno?.trim()].filter(Boolean).join(" ");
 
-    if (!paciente) {
-      paciente = dbStore.crearPaciente({
-        tipoDocumento: "DNI",
-        dni: dniLimpio,
-        primerNombre: input.primerNombre.trim(),
-        segundoNombre: input.segundoNombre?.trim() || undefined,
-        apellidoPaterno: input.apellidoPaterno.trim(),
-        apellidoMaterno: input.apellidoMaterno?.trim() || undefined,
-        nombres: [input.primerNombre.trim(), input.segundoNombre?.trim()].filter(Boolean).join(" "),
-        apellidos: [input.apellidoPaterno.trim(), input.apellidoMaterno?.trim()].filter(Boolean).join(" "),
-        telefono: input.telefono.trim(),
-        email: input.email?.trim() || undefined,
-        fechaNacimiento: "1995-01-01",
-        contactoEmergencia: "Registro vía portal público web",
-      });
+    let pacienteId: string;
+    let pacienteData: any;
+
+    // 1. Obtener o crear paciente en Supabase DB
+    if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+      try {
+        let pacDb = await prisma.paciente.findUnique({
+          where: { dni: dniLimpio },
+        });
+
+        if (!pacDb) {
+          pacDb = await prisma.paciente.create({
+            data: {
+              tipoDocumento: "DNI",
+              dni: dniLimpio,
+              primerNombre: input.primerNombre.trim(),
+              segundoNombre: input.segundoNombre?.trim() || null,
+              apellidoPaterno: input.apellidoPaterno.trim(),
+              apellidoMaterno: input.apellidoMaterno?.trim() || null,
+              nombres,
+              apellidos,
+              telefono: input.telefono.trim(),
+              email: input.email?.trim() || null,
+              fechaNacimiento: new Date("1995-01-01"),
+              contactoEmergencia: "Registro vía portal público web",
+            },
+          });
+        }
+        pacienteId = pacDb.id;
+        pacienteData = pacDb;
+      } catch (errDb) {
+        console.warn("solicitarReservaPublica: Error DB paciente, usando dbStore:", errDb);
+        let pac = dbStore.getPacientes().find((p) => p.dni === dniLimpio);
+        if (!pac) {
+          pac = dbStore.crearPaciente({
+            tipoDocumento: "DNI",
+            dni: dniLimpio,
+            primerNombre: input.primerNombre.trim(),
+            segundoNombre: input.segundoNombre?.trim() || undefined,
+            apellidoPaterno: input.apellidoPaterno.trim(),
+            apellidoMaterno: input.apellidoMaterno?.trim() || undefined,
+            nombres,
+            apellidos,
+            telefono: input.telefono.trim(),
+            email: input.email?.trim() || undefined,
+            fechaNacimiento: "1995-01-01",
+            contactoEmergencia: "Registro vía portal público web",
+          });
+        }
+        pacienteId = pac.id;
+        pacienteData = pac;
+      }
+    } else {
+      let pac = dbStore.getPacientes().find((p) => p.dni === dniLimpio);
+      if (!pac) {
+        pac = dbStore.crearPaciente({
+          tipoDocumento: "DNI",
+          dni: dniLimpio,
+          primerNombre: input.primerNombre.trim(),
+          segundoNombre: input.segundoNombre?.trim() || undefined,
+          apellidoPaterno: input.apellidoPaterno.trim(),
+          apellidoMaterno: input.apellidoMaterno?.trim() || undefined,
+          nombres,
+          apellidos,
+          telefono: input.telefono.trim(),
+          email: input.email?.trim() || undefined,
+          fechaNacimiento: "1995-01-01",
+          contactoEmergencia: "Registro vía portal público web",
+        });
+      }
+      pacienteId = pac.id;
+      pacienteData = pac;
     }
 
     // 2. Determinar horario y fecha de inicio
@@ -73,8 +131,25 @@ export async function solicitarReservaPublica(
     }
 
     // 3. Buscar salas y terapeutas activos
-    const salas = dbStore.getSalas().filter((s) => s.estado === "DISPONIBLE");
-    const terapeutas = dbStore.getTerapeutas().filter((t) => t.estado === "ACTIVO");
+    let salas: any[] = [];
+    let terapeutas: any[] = [];
+
+    if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+      try {
+        const [salasDb, terDb] = await Promise.all([
+          prisma.sala.findMany({ where: { estado: "DISPONIBLE" } }),
+          prisma.user.findMany({ where: { rol: "TERAPEUTA", estado: "ACTIVO" } }),
+        ]);
+        salas = salasDb;
+        terapeutas = terDb;
+      } catch {
+        salas = dbStore.getSalas().filter((s) => s.estado === "DISPONIBLE");
+        terapeutas = dbStore.getTerapeutas().filter((t) => t.estado === "ACTIVO");
+      }
+    } else {
+      salas = dbStore.getSalas().filter((s) => s.estado === "DISPONIBLE");
+      terapeutas = dbStore.getTerapeutas().filter((t) => t.estado === "ACTIVO");
+    }
 
     if (salas.length === 0) {
       return { success: false, error: "No hay salas físicas disponibles para este horario." };
@@ -93,7 +168,7 @@ export async function solicitarReservaPublica(
       for (const terapeuta of terapeutas) {
         const intento = await agendarCita(
           {
-            pacienteId: paciente.id,
+            pacienteId,
             salaId: sala.id,
             terapeutaId: terapeuta.id,
             fechaHoraInicio,
@@ -138,7 +213,7 @@ export async function solicitarReservaPublica(
           salaNombre: salaAsignada.nombre,
           terapeutaNombre: terapeutaAsignado.nombre,
         },
-        paciente,
+        paciente: pacienteData,
       },
     };
   } catch (err: unknown) {

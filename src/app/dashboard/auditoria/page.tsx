@@ -1,7 +1,9 @@
 import { obtenerLogsAuditoria } from "@/server/actions/auditoria";
 import { AuditLogTable } from "@/components/auditoria/AuditLogTable";
 import { PermissionGuard } from "@/components/layout/PermissionGuard";
-import { ShieldCheck, History, Eye, Lock } from "lucide-react";
+import { ShieldCheck, History } from "lucide-react";
+
+export const dynamic = "force-dynamic";
 
 export default async function AuditoriaPage() {
   const logs = await obtenerLogsAuditoria();
@@ -40,4 +42,3 @@ export default async function AuditoriaPage() {
     </PermissionGuard>
   );
 }
-

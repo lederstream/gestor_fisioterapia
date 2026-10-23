@@ -1,32 +1,36 @@
-import { dbStore } from "@/lib/store";
+import { obtenerConfiguracionCompleta } from "@/server/actions/configuracion";
 import { BookingForm } from "@/components/reservas/BookingForm";
 import Link from "next/link";
-import { ShieldCheck, MapPin, Phone, Clock, Sparkles } from "lucide-react";
+import { MapPin } from "lucide-react";
 
-export default function ReservasPage() {
-  const servicios = dbStore.getServicios();
-  const configuracion = dbStore.getConfiguracion();
+export const dynamic = "force-dynamic";
+
+export default async function ReservasPage() {
+  const { configuracion, servicios } = await obtenerConfiguracionCompleta();
 
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
       {/* Top Brand Bar */}
       <header className="max-w-2xl mx-auto flex items-center justify-between pb-8">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-teal-600 to-emerald-400 flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-teal-600/20">
-            GF
+          <div 
+            className="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-extrabold text-xl shadow-lg"
+            style={{ backgroundColor: configuracion.colorPrimario || "#0C3E37" }}
+          >
+            {configuracion.nombreComercial?.substring(0, 2).toUpperCase() || "AJ"}
           </div>
           <div>
             <span className="font-extrabold text-slate-800 text-lg block leading-none">
               {configuracion.nombreComercial || "AJ Fisioterapia"}
             </span>
             <span className="text-xs text-teal-600 font-semibold tracking-wide">
-              Centro Clínico Especializado • Gestor Fisioterapia
+              {configuracion.slogan || "Centro Clínico Especializado"}
             </span>
           </div>
         </div>
 
         <Link
-          href="/dashboard"
+          href="/login"
           className="text-xs font-bold text-slate-600 hover:text-teal-600 bg-white px-3.5 py-2 rounded-xl border border-slate-200 shadow-xs transition"
         >
           Acceso Personal Clínico

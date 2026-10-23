@@ -1,7 +1,9 @@
 import { obtenerConfiguracionCompleta } from "@/server/actions/configuracion";
 import { ConfigurationManager } from "@/components/configuracion/ConfigurationManager";
 import { PermissionGuard } from "@/components/layout/PermissionGuard";
-import { Settings, ShieldCheck } from "lucide-react";
+import { Settings } from "lucide-react";
+
+export const dynamic = "force-dynamic";
 
 export default async function ConfiguracionPage() {
   const data = await obtenerConfiguracionCompleta();
@@ -39,4 +41,3 @@ export default async function ConfiguracionPage() {
     </PermissionGuard>
   );
 }
-

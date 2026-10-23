@@ -2,6 +2,8 @@ import { Metadata } from "next";
 import { obtenerConfiguracionCompleta } from "@/server/actions/configuracion";
 import { LandingView } from "@/components/landing/LandingView";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata(): Promise<Metadata> {
   const { configuracion } = await obtenerConfiguracionCompleta();
 

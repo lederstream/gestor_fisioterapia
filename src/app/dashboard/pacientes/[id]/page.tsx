@@ -1,8 +1,11 @@
 import { notFound } from "next/navigation";
 import { obtenerFichaPaciente } from "@/server/actions/pacientes";
-import { dbStore } from "@/lib/store";
+import { obtenerConfiguracionCompleta } from "@/server/actions/configuracion";
+import { obtenerLogsAuditoria } from "@/server/actions/auditoria";
 import { PatientHeader } from "@/components/pacientes/PatientHeader";
 import { PatientDetailClient } from "./PatientDetailClient";
+
+export const dynamic = "force-dynamic";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -10,16 +13,16 @@ interface Props {
 
 export default async function PacienteDetailPage({ params }: Props) {
   const { id } = await params;
-  const ficha = await obtenerFichaPaciente(id);
+  const [ficha, configData, todosLosLogs] = await Promise.all([
+    obtenerFichaPaciente(id),
+    obtenerConfiguracionCompleta(),
+    obtenerLogsAuditoria(),
+  ]);
 
   if (!ficha) {
     notFound();
   }
 
-  const terapeutas = dbStore.getTerapeutas();
-  const servicios = dbStore.getServicios();
-  const todosLosLogs = dbStore.getAuditLogs();
-  
   // Filtrar logs de trazabilidad relacionados a este paciente
   const logsDelPaciente = todosLosLogs.filter((log) => {
     const qNombre = ficha.paciente.nombres.toLowerCase();
@@ -32,13 +35,13 @@ export default async function PacienteDetailPage({ params }: Props) {
       {/* Cabecera del Paciente con Acciones Rápidas */}
       <PatientHeader paciente={ficha.paciente} />
 
-      {/* Experiencia Clínica y de Negocio Unificada: Pestañas, Historial sin scroll horizontal, EVA y Paquetes */}
+      {/* Experiencia Clínica y de Negocio Unificada */}
       <PatientDetailClient
         paciente={ficha.paciente}
         citas={ficha.citas}
         paquetes={ficha.paquetes}
-        terapeutas={terapeutas}
-        servicios={servicios}
+        terapeutas={configData.personal.filter((p) => p.rol === "TERAPEUTA")}
+        servicios={configData.servicios}
         historialEva={ficha.historialEva}
         logsDelPaciente={logsDelPaciente}
       />

@@ -1,9 +1,11 @@
-import { dbStore } from "@/lib/store";
+import { obtenerUsuarios } from "@/server/actions/usuarios";
 import { UserManager } from "@/components/usuarios/UserManager";
 import { PermissionGuard } from "@/components/layout/PermissionGuard";
 
-export default function UsuariosPage() {
-  const users = dbStore.getUsers();
+export const dynamic = "force-dynamic";
+
+export default async function UsuariosPage() {
+  const users = await obtenerUsuarios();
 
   return (
     <PermissionGuard

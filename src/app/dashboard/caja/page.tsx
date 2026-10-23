@@ -2,6 +2,8 @@ import { obtenerReporteCaja } from "@/server/actions/pagos";
 import { CajaClient } from "./CajaClient";
 import { PermissionGuard } from "@/components/layout/PermissionGuard";
 
+export const dynamic = "force-dynamic";
+
 export default async function CajaPage() {
   const reporte = await obtenerReporteCaja();
 
@@ -15,4 +17,3 @@ export default async function CajaPage() {
     </PermissionGuard>
   );
 }
-

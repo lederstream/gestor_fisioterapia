@@ -48,12 +48,12 @@ export function DashboardPageClient({
   terapeutas = [],
   servicios = [],
 }: DashboardPageClientProps) {
-  const { currentRole, hasPermission, roleDetails } = useAuth();
+  const { currentRole, hasPermission, roleDetails, currentUser } = useAuth();
   const [isAusentismoOpen, setIsAusentismoOpen] = useState(false);
 
   // Si el usuario activo es PACIENTE, renderizar exclusivamente su portal clínico privado
   if (currentRole === "PACIENTE") {
-    const pacienteActivo = pacientes.find((p) => p.dni === "45892011") || pacientes[0];
+    const pacienteActivo = pacientes.find((p) => p.id === currentUser.id || p.email === currentUser.email) || pacientes[0];
     const paquetesActivos = paquetes.filter((paq) => paq.pacienteId === pacienteActivo?.id);
     const citasActivas = citas.filter((c) => c.pacienteId === pacienteActivo?.id);
     const historiasActivas = historias.filter((h) => citasActivas.some((c) => c.id === h.citaId));

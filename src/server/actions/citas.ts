@@ -189,6 +189,105 @@ export async function obtenerCitasAgenda(fechaIso?: string) {
   const endOfDay = new Date(targetDate);
   endOfDay.setHours(23, 59, 59, 999);
 
+  if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+    try {
+      const [citasDb, salasDb, terapeutasDb, serviciosDb, paquetesDb, pacientesDb] = await Promise.all([
+        prisma.cita.findMany({
+          where: {
+            fechaHoraInicio: {
+              gte: startOfDay,
+              lte: endOfDay,
+            },
+          },
+          include: {
+            paciente: true,
+            sala: true,
+            terapeuta: true,
+            paquete: {
+              include: {
+                servicio: true,
+              },
+            },
+          },
+          orderBy: {
+            fechaHoraInicio: "asc",
+          },
+        }),
+        prisma.sala.findMany({ orderBy: { nombre: "asc" } }),
+        prisma.user.findMany({
+          where: { rol: "TERAPEUTA" },
+          orderBy: { nombre: "asc" },
+        }),
+        prisma.servicio.findMany({ orderBy: { orden: "asc" } }),
+        prisma.tratamientoPaquete.findMany(),
+        prisma.paciente.findMany(),
+      ]);
+
+      const citasFormateadas = citasDb.map((c) => ({
+        id: c.id,
+        paqueteId: c.paqueteId,
+        terapeutaId: c.terapeutaId,
+        salaId: c.salaId,
+        pacienteId: c.pacienteId,
+        fechaHoraInicio: c.fechaHoraInicio.toISOString(),
+        fechaHoraFin: c.fechaHoraFin.toISOString(),
+        estado: c.estado as any,
+        esReevaluacion: c.esReevaluacion,
+        creadoPorNombre: c.creadoPorNombre || undefined,
+        confirmadoPorNombre: c.confirmadoPorNombre || undefined,
+        createdAt: c.createdAt.toISOString(),
+        paciente: c.paciente ? {
+          ...c.paciente,
+          fechaNacimiento: c.paciente.fechaNacimiento.toISOString().split("T")[0],
+          createdAt: c.paciente.createdAt.toISOString(),
+        } : undefined,
+        sala: c.sala,
+        terapeuta: c.terapeuta,
+        paquete: c.paquete ? {
+          ...c.paquete,
+          montoTotal: Number(c.paquete.montoTotal),
+          montoPagado: Number(c.paquete.montoPagado),
+          createdAt: c.paquete.createdAt.toISOString(),
+        } : undefined,
+        servicio: c.paquete?.servicio ? {
+          ...c.paquete.servicio,
+          precioBase: Number(c.paquete.servicio.precioBase),
+          precioPromocional: c.paquete.servicio.precioPromocional ? Number(c.paquete.servicio.precioPromocional) : undefined,
+        } : (serviciosDb[0] ? {
+          ...serviciosDb[0],
+          precioBase: Number(serviciosDb[0].precioBase),
+          precioPromocional: serviciosDb[0].precioPromocional ? Number(serviciosDb[0].precioPromocional) : undefined,
+        } : undefined),
+      }));
+
+      return {
+        fecha: startOfDay.toISOString(),
+        citas: citasFormateadas,
+        salas: salasDb.map((s) => ({
+          id: s.id,
+          nombre: s.nombre,
+          estado: s.estado as any,
+          capacidadSimultanea: 1,
+        })),
+        terapeutas: terapeutasDb.map((t) => ({
+          id: t.id,
+          nombre: t.nombre,
+          email: t.email,
+          rol: t.rol as any,
+          especialidad: t.especialidad || undefined,
+          estado: t.estado as any,
+        })),
+        servicios: serviciosDb.map((s) => ({
+          ...s,
+          precioBase: Number(s.precioBase),
+          precioPromocional: s.precioPromocional ? Number(s.precioPromocional) : undefined,
+        })),
+      };
+    } catch (err) {
+      console.warn("obtenerCitasAgenda: Error al consultar Supabase, usando dbStore:", err);
+    }
+  }
+
   const citas = dbStore.getCitas();
   const pacientes = dbStore.getPacientes();
   const salas = dbStore.getSalas();
@@ -223,6 +322,7 @@ export async function obtenerCitasAgenda(fechaIso?: string) {
     citas: citasFiltradas,
     salas,
     terapeutas,
+    servicios,
   };
 }
 
@@ -292,6 +392,49 @@ export async function reprogramarCita(params: {
   try {
     const clientIp = await obtenerIpCliente();
     const fechaDate = new Date(params.nuevaFechaHoraInicio);
+    const duracion = params.duracionMinutos || 45;
+    const fechaFin = new Date(fechaDate.getTime() + duracion * 60000);
+
+    if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+      try {
+        // Validar solapamiento en DB
+        const solapamiento = await prisma.cita.findFirst({
+          where: {
+            id: { not: params.citaId },
+            estado: { not: "CANCELADA" },
+            OR: [
+              { salaId: params.nuevaSalaId },
+              { terapeutaId: params.nuevoTerapeutaId },
+            ],
+            AND: [
+              { fechaHoraInicio: { lt: fechaFin } },
+              { fechaHoraFin: { gt: fechaDate } },
+            ],
+          },
+        });
+
+        if (solapamiento) {
+          return { success: false, error: "Conflicto de horario: La sala o el terapeuta ya tienen una cita asignada en ese bloque horario." };
+        }
+
+        const actualizadaDb = await prisma.cita.update({
+          where: { id: params.citaId },
+          data: {
+            salaId: params.nuevaSalaId,
+            terapeutaId: params.nuevoTerapeutaId,
+            fechaHoraInicio: fechaDate,
+            fechaHoraFin: fechaFin,
+          },
+        });
+
+        revalidatePath("/dashboard/agenda");
+        revalidatePath("/dashboard");
+        return { success: true, data: actualizadaDb };
+      } catch (errDb: any) {
+        console.warn("reprogramarCita db error:", errDb);
+      }
+    }
+
     const reprogramada = dbStore.reprogramarCita({
       citaId: params.citaId,
       nuevaFechaHoraInicio: fechaDate,
@@ -311,4 +454,5 @@ export async function reprogramarCita(params: {
     return { success: false, error: message };
   }
 }
+
 

@@ -1,11 +1,36 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import bcrypt from "bcryptjs";
 import { dbStore, UserItem } from "@/lib/store";
 import { UserRole } from "@/lib/permissions";
 import { ServerActionResult } from "./citas";
+import { prisma } from "@/lib/prisma";
+import { obtenerSesionServidor } from "@/lib/auth-server";
+import { obtenerIpCliente } from "./auditoria";
 
 export async function obtenerUsuarios(): Promise<UserItem[]> {
+  if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+    try {
+      const usersDb = await prisma.user.findMany({
+        orderBy: {
+          nombre: "asc",
+        },
+      });
+
+      return usersDb.map((u) => ({
+        id: u.id,
+        nombre: u.nombre,
+        email: u.email,
+        rol: u.rol as UserRole,
+        especialidad: u.especialidad || undefined,
+        estado: u.estado as "ACTIVO" | "INACTIVO",
+      }));
+    } catch (err) {
+      console.warn("obtenerUsuarios db error, usando fallback dbStore:", err);
+    }
+  }
+
   return dbStore.getUsers();
 }
 
@@ -15,12 +40,78 @@ export async function crearNuevoUsuario(data: {
   rol: UserRole;
   especialidad?: string;
   estado?: "ACTIVO" | "INACTIVO";
+  password?: string;
 }): Promise<ServerActionResult<UserItem>> {
   try {
+    const sesion = await obtenerSesionServidor();
+    const clientIp = await obtenerIpCliente();
+    const cleanEmail = data.email.trim().toLowerCase();
+
+    if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+      try {
+        const existe = await prisma.user.findUnique({
+          where: { email: cleanEmail },
+        });
+
+        if (existe) {
+          return { success: false, error: `Ya existe un usuario registrado con el correo ${cleanEmail}.` };
+        }
+
+        const rawPass = data.password?.trim() || "StaffFisio2026!";
+        const passwordHash = await bcrypt.hash(rawPass, 10);
+
+        const nuevoDb = await prisma.user.create({
+          data: {
+            nombre: data.nombre.trim(),
+            email: cleanEmail,
+            rol: data.rol,
+            especialidad: data.especialidad?.trim() || null,
+            estado: data.estado || "ACTIVO",
+            passwordHash,
+          },
+        });
+
+        await prisma.auditLog.create({
+          data: {
+            usuarioId: sesion?.userId,
+            usuarioNombre: sesion?.nombre || "Administrador",
+            usuarioRol: (sesion?.rol as any) || "ADMIN",
+            accion: "USUARIO_CREADO",
+            modulo: "CONFIGURACION",
+            entidadId: nuevoDb.id,
+            detalles: `Usuario ${nuevoDb.nombre} (${nuevoDb.rol}) creado en el sistema.`,
+            ipAddress: clientIp,
+          },
+        });
+
+        revalidatePath("/dashboard/usuarios");
+        revalidatePath("/dashboard/configuracion");
+        revalidatePath("/dashboard/auditoria");
+        revalidatePath("/dashboard");
+
+        return {
+          success: true,
+          data: {
+            id: nuevoDb.id,
+            nombre: nuevoDb.nombre,
+            email: nuevoDb.email,
+            rol: nuevoDb.rol as UserRole,
+            especialidad: nuevoDb.especialidad || undefined,
+            estado: nuevoDb.estado as "ACTIVO" | "INACTIVO",
+          },
+        };
+      } catch (dbErr: any) {
+        if (dbErr.code === "P2002") {
+          return { success: false, error: `El correo ${cleanEmail} ya está registrado.` };
+        }
+        console.warn("crearNuevoUsuario db error, usando fallback dbStore:", dbErr);
+      }
+    }
+
     const usuario = dbStore.crearUsuario(data, {
-      id: "usr-admin-1",
-      nombre: "Marco Yana (Administrador)",
-      rol: "ADMIN",
+      id: sesion?.userId || "usr-admin-1",
+      nombre: sesion?.nombre || "Administrador",
+      rol: (sesion?.rol as any) || "ADMIN",
     });
 
     revalidatePath("/dashboard/usuarios");
@@ -40,10 +131,54 @@ export async function modificarRolUsuario(
   nuevoRol: UserRole
 ): Promise<ServerActionResult<UserItem>> {
   try {
+    const sesion = await obtenerSesionServidor();
+    const clientIp = await obtenerIpCliente();
+
+    if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+      try {
+        const actualizadoDb = await prisma.user.update({
+          where: { id: usuarioId },
+          data: { rol: nuevoRol },
+        });
+
+        await prisma.auditLog.create({
+          data: {
+            usuarioId: sesion?.userId,
+            usuarioNombre: sesion?.nombre || "Administrador",
+            usuarioRol: (sesion?.rol as any) || "ADMIN",
+            accion: "ROL_USUARIO_MODIFICADO",
+            modulo: "CONFIGURACION",
+            entidadId: usuarioId,
+            detalles: `Rol de ${actualizadoDb.nombre} actualizado a ${nuevoRol}.`,
+            ipAddress: clientIp,
+          },
+        });
+
+        revalidatePath("/dashboard/usuarios");
+        revalidatePath("/dashboard/configuracion");
+        revalidatePath("/dashboard/auditoria");
+        revalidatePath("/dashboard");
+
+        return {
+          success: true,
+          data: {
+            id: actualizadoDb.id,
+            nombre: actualizadoDb.nombre,
+            email: actualizadoDb.email,
+            rol: actualizadoDb.rol as UserRole,
+            especialidad: actualizadoDb.especialidad || undefined,
+            estado: actualizadoDb.estado as "ACTIVO" | "INACTIVO",
+          },
+        };
+      } catch (dbErr) {
+        console.warn("modificarRolUsuario db error, usando fallback:", dbErr);
+      }
+    }
+
     const usuario = dbStore.actualizarRolUsuario(usuarioId, nuevoRol, {
-      id: "usr-admin-1",
-      nombre: "Marco Antonio (Administrador)",
-      rol: "ADMIN",
+      id: sesion?.userId || "usr-admin-1",
+      nombre: sesion?.nombre || "Administrador",
+      rol: (sesion?.rol as any) || "ADMIN",
     });
 
     revalidatePath("/dashboard/usuarios");
@@ -63,6 +198,33 @@ export async function cambiarEstadoUsuario(
   nuevoEstado: "ACTIVO" | "INACTIVO"
 ): Promise<ServerActionResult<UserItem>> {
   try {
+    if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+      try {
+        const actualizadoDb = await prisma.user.update({
+          where: { id: usuarioId },
+          data: { estado: nuevoEstado },
+        });
+
+        revalidatePath("/dashboard/usuarios");
+        revalidatePath("/dashboard/configuracion");
+        revalidatePath("/dashboard");
+
+        return {
+          success: true,
+          data: {
+            id: actualizadoDb.id,
+            nombre: actualizadoDb.nombre,
+            email: actualizadoDb.email,
+            rol: actualizadoDb.rol as UserRole,
+            especialidad: actualizadoDb.especialidad || undefined,
+            estado: actualizadoDb.estado as "ACTIVO" | "INACTIVO",
+          },
+        };
+      } catch (dbErr) {
+        console.warn("cambiarEstadoUsuario db error, usando fallback:", dbErr);
+      }
+    }
+
     const usuario = dbStore.actualizarUsuario(usuarioId, nuevoEstado);
 
     revalidatePath("/dashboard/usuarios");
@@ -80,10 +242,52 @@ export async function eliminarUsuarioSistema(
   usuarioId: string
 ): Promise<ServerActionResult<UserItem>> {
   try {
+    const sesion = await obtenerSesionServidor();
+    const clientIp = await obtenerIpCliente();
+
+    if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+      try {
+        const eliminadoDb = await prisma.user.delete({
+          where: { id: usuarioId },
+        });
+
+        await prisma.auditLog.create({
+          data: {
+            usuarioId: sesion?.userId,
+            usuarioNombre: sesion?.nombre || "Administrador",
+            usuarioRol: (sesion?.rol as any) || "ADMIN",
+            accion: "USUARIO_ELIMINADO",
+            modulo: "CONFIGURACION",
+            entidadId: usuarioId,
+            detalles: `Usuario ${eliminadoDb.nombre} eliminado del sistema.`,
+            ipAddress: clientIp,
+          },
+        });
+
+        revalidatePath("/dashboard/usuarios");
+        revalidatePath("/dashboard/configuracion");
+        revalidatePath("/dashboard/auditoria");
+
+        return {
+          success: true,
+          data: {
+            id: eliminadoDb.id,
+            nombre: eliminadoDb.nombre,
+            email: eliminadoDb.email,
+            rol: eliminadoDb.rol as UserRole,
+            especialidad: eliminadoDb.especialidad || undefined,
+            estado: eliminadoDb.estado as "ACTIVO" | "INACTIVO",
+          },
+        };
+      } catch (dbErr) {
+        console.warn("eliminarUsuarioSistema db error, usando fallback:", dbErr);
+      }
+    }
+
     const eliminado = dbStore.eliminarUsuario(usuarioId, {
-      id: "usr-admin-1",
-      nombre: "Marco Antonio (Administrador)",
-      rol: "ADMIN",
+      id: sesion?.userId || "usr-admin-1",
+      nombre: sesion?.nombre || "Administrador",
+      rol: (sesion?.rol as any) || "ADMIN",
     });
 
     revalidatePath("/dashboard/usuarios");

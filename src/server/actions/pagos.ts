@@ -147,6 +147,102 @@ export async function registrarPago(
  * Obtener consolidado y transacciones de caja
  */
 export async function obtenerReporteCaja() {
+  if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+    try {
+      const [pagosDb, paquetesDb] = await Promise.all([
+        prisma.pago.findMany({
+          include: {
+            paquete: {
+              include: {
+                paciente: true,
+                servicio: true,
+              },
+            },
+          },
+          orderBy: {
+            fechaPago: "desc",
+          },
+        }),
+        prisma.tratamientoPaquete.findMany({
+          include: {
+            paciente: true,
+            servicio: true,
+          },
+        }),
+      ]);
+
+      const transacciones = pagosDb.map((p) => ({
+        id: p.id,
+        paqueteId: p.paqueteId,
+        monto: Number(p.monto),
+        metodoPago: p.metodoPago as any,
+        numeroOperacion: p.numeroOperacion || null,
+        comprobanteUrl: p.comprobanteUrl || null,
+        estado: p.estado as any,
+        fechaPago: p.fechaPago.toISOString(),
+        paciente: p.paquete?.paciente ? {
+          ...p.paquete.paciente,
+          fechaNacimiento: p.paquete.paciente.fechaNacimiento.toISOString().split("T")[0],
+          createdAt: p.paquete.paciente.createdAt.toISOString(),
+        } : null,
+        paquete: p.paquete ? {
+          ...p.paquete,
+          montoTotal: Number(p.paquete.montoTotal),
+          montoPagado: Number(p.paquete.montoPagado),
+          createdAt: p.paquete.createdAt.toISOString(),
+        } : null,
+        servicio: p.paquete?.servicio ? {
+          ...p.paquete.servicio,
+          precioBase: Number(p.paquete.servicio.precioBase),
+          precioPromocional: p.paquete.servicio.precioPromocional ? Number(p.paquete.servicio.precioPromocional) : undefined,
+        } : null,
+      }));
+
+      const totalRecaudado = transacciones.reduce((acc, curr) => acc + curr.monto, 0);
+      const totalEfectivo = transacciones.filter((p) => p.metodoPago === "EFECTIVO").reduce((acc, c) => acc + c.monto, 0);
+      const totalYape = transacciones.filter((p) => p.metodoPago === "YAPE").reduce((acc, c) => acc + c.monto, 0);
+      const totalPlin = transacciones.filter((p) => p.metodoPago === "PLIN").reduce((acc, c) => acc + c.monto, 0);
+      const totalPos = transacciones.filter((p) => p.metodoPago === "POS").reduce((acc, c) => acc + c.monto, 0);
+
+      const deudaPendiente = paquetesDb.reduce((acc, paq) => {
+        const saldo = Number(paq.montoTotal) - Number(paq.montoPagado);
+        return acc + (saldo > 0 ? saldo : 0);
+      }, 0);
+
+      const paquetesConSaldo = paquetesDb
+        .filter((pa) => pa.estadoPago !== "PAGADO")
+        .map((pa) => ({
+          ...pa,
+          montoTotal: Number(pa.montoTotal),
+          montoPagado: Number(pa.montoPagado),
+          createdAt: pa.createdAt.toISOString(),
+          paciente: pa.paciente ? {
+            ...pa.paciente,
+            fechaNacimiento: pa.paciente.fechaNacimiento.toISOString().split("T")[0],
+            createdAt: pa.paciente.createdAt.toISOString(),
+          } : undefined,
+          servicio: pa.servicio ? {
+            ...pa.servicio,
+            precioBase: Number(pa.servicio.precioBase),
+            precioPromocional: pa.servicio.precioPromocional ? Number(pa.servicio.precioPromocional) : undefined,
+          } : undefined,
+        }));
+
+      return {
+        totalRecaudado,
+        totalEfectivo,
+        totalYape,
+        totalPlin,
+        totalPos,
+        deudaPendiente,
+        transacciones,
+        paquetesConSaldo,
+      };
+    } catch (err) {
+      console.warn("obtenerReporteCaja db error, usando fallback dbStore:", err);
+    }
+  }
+
   const pagos = dbStore.getPagos();
   const paquetes = dbStore.getPaquetes();
   const pacientes = dbStore.getPacientes();

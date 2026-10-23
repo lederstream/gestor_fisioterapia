@@ -61,6 +61,7 @@ model User {
   rol          Rol           @default(TERAPEUTA)
   especialidad String?       // Ej: "Lic. Fisioterapia Deportiva", "Lic. Neurorehabilitación", "Técnico"
   estado       EstadoUsuario @default(ACTIVO)
+  passwordHash String?       @map("password_hash")
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @updatedAt @map("updated_at")
 
@@ -90,6 +91,7 @@ model Paciente {
   contactoEmergenciaParentesco String? @map("contacto_emergencia_parentesco")
   contactoEmergenciaTelefono String?   @map("contacto_emergencia_telefono")
   contactoEmergencia         String?   @map("contacto_emergencia")
+  passwordHash               String?   @map("password_hash")
   createdAt                  DateTime  @default(now()) @map("created_at")
   updatedAt                  DateTime  @updatedAt @map("updated_at")
 

@@ -52,6 +52,7 @@ export function UserManager({ initialUsers }: UserManagerProps) {
   const [nuevoApellidoPaterno, setNuevoApellidoPaterno] = useState("");
   const [nuevoApellidoMaterno, setNuevoApellidoMaterno] = useState("");
   const [nuevoEmail, setNuevoEmail] = useState("");
+  const [nuevoPassword, setNuevoPassword] = useState("");
   const [nuevoRol, setNuevoRol] = useState<UserRole>("TERAPEUTA");
   const [nuevaEspecialidad, setNuevaEspecialidad] = useState("");
   const [loading, setLoading] = useState(false);
@@ -137,6 +138,7 @@ export function UserManager({ initialUsers }: UserManagerProps) {
       rol: nuevoRol,
       especialidad: nuevaEspecialidad || undefined,
       estado: "ACTIVO",
+      password: nuevoPassword || undefined,
     });
 
     setLoading(false);
@@ -149,6 +151,7 @@ export function UserManager({ initialUsers }: UserManagerProps) {
       setNuevoApellidoPaterno("");
       setNuevoApellidoMaterno("");
       setNuevoEmail("");
+      setNuevoPassword("");
       setNuevaEspecialidad("");
       setMensaje({
         tipo: "exito",
@@ -630,6 +633,22 @@ export function UserManager({ initialUsers }: UserManagerProps) {
                   onChange={(e) => setNuevoEmail(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
                 />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Contraseña Inicial de Acceso (Opcional)
+                </label>
+                <input
+                  type="password"
+                  placeholder="Por defecto: StaffFisio2026!"
+                  value={nuevoPassword}
+                  onChange={(e) => setNuevoPassword(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                />
+                <span className="text-[10px] text-slate-400 block mt-1">
+                  Si se deja en blanco, el usuario podrá ingresar inicialmente con &quot;StaffFisio2026!&quot;.
+                </span>
               </div>
 
               <div>

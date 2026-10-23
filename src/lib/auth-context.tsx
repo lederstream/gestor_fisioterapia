@@ -1,7 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { UserRole, Permission, ROLE_PERMISSIONS, ROLE_DETAILS, hasPermission as checkPerm } from "./permissions";
+import { UserRole, Permission, ROLE_DETAILS, hasPermission as checkPerm } from "./permissions";
+import { cerrarSesion, obtenerSesionActual } from "@/server/actions/auth";
 
 export interface AuthUser {
   id: string;
@@ -9,95 +10,82 @@ export interface AuthUser {
   email: string;
   rol: UserRole;
   especialidad?: string;
+  isPaciente?: boolean;
 }
-
-const DEFAULT_USERS: Record<UserRole, AuthUser> = {
-  ADMIN: {
-    id: "usr-admin-1",
-    nombre: "Marco Yana",
-    email: "marco.yana@ajfisioterapia.pe",
-    rol: "ADMIN",
-    especialidad: "Dirección Médica y Gerencia",
-  },
-  RECEPCION: {
-    id: "usr-rec-1",
-    nombre: "Karin Palacios",
-    email: "karin.palacios@ajfisioterapia.pe",
-    rol: "RECEPCION",
-    especialidad: "Admisión & Coordinación San Borja",
-  },
-  TERAPEUTA: {
-    id: "usr-ter-1",
-    nombre: "Lic. Jeiser Vasquez",
-    email: "jeiser.vasquez@ajfisioterapia.pe",
-    rol: "TERAPEUTA",
-    especialidad: "Lic. Fisioterapia Deportiva (CTMP 12480)",
-  },
-  PACIENTE: {
-    id: "usr-pac-1",
-    nombre: "Alexander Saavedra",
-    email: "alexander.saavedra@gmail.com",
-    rol: "PACIENTE",
-    especialidad: "Paciente Titular (DNI: 45892011)",
-  },
-};
 
 interface AuthContextType {
   currentRole: UserRole;
   currentUser: AuthUser;
   isAuthenticated: boolean;
-  login: (role?: UserRole) => void;
-  logout: () => void;
-  switchRole: (role: UserRole) => void;
+  isLoading: boolean;
+  logout: () => Promise<void>;
   hasPermission: (permission: Permission) => boolean;
   roleDetails: typeof ROLE_DETAILS[UserRole];
+  setCurrentUser: (user: AuthUser) => void;
 }
+
+const FALLBACK_USER: AuthUser = {
+  id: "usr-guest",
+  nombre: "Usuario Clínico",
+  email: "usuario@ajfisioterapia.pe",
+  rol: "RECEPCION",
+  especialidad: "Atención General",
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [currentRole, setCurrentRole] = useState<UserRole>("ADMIN");
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [mounted, setMounted] = useState(false);
+export function AuthProvider({ 
+  children,
+  initialUser,
+}: { 
+  children: React.ReactNode;
+  initialUser?: AuthUser | null;
+}) {
+  const [currentUser, setCurrentUser] = useState<AuthUser>(initialUser || FALLBACK_USER);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!initialUser);
+  const [isLoading, setIsLoading] = useState<boolean>(!initialUser);
 
   useEffect(() => {
-    setMounted(true);
-    const savedRole = localStorage.getItem("gestorfisio_active_role") as UserRole;
-    if (savedRole && (savedRole === "ADMIN" || savedRole === "RECEPCION" || savedRole === "TERAPEUTA" || savedRole === "PACIENTE")) {
-      setCurrentRole(savedRole);
+    // Si no se proporcionó initialUser desde el servidor, consultar la sesión HTTP-only
+    if (!initialUser) {
+      obtenerSesionActual()
+        .then((sesion) => {
+          if (sesion) {
+            const user: AuthUser = {
+              id: sesion.userId,
+              nombre: sesion.nombre,
+              email: sesion.email,
+              rol: sesion.rol,
+              especialidad: sesion.especialidad,
+              isPaciente: sesion.isPaciente,
+            };
+            setCurrentUser(user);
+            setIsAuthenticated(true);
+          } else {
+            setIsAuthenticated(false);
+          }
+        })
+        .catch(() => {
+          setIsAuthenticated(false);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    } else {
+      setIsLoading(false);
     }
-    const sessionActive = localStorage.getItem("gestorfisio_session_active");
-    if (sessionActive === "true") {
-      setIsAuthenticated(true);
-    }
-  }, []);
+  }, [initialUser]);
 
-  const login = (role?: UserRole) => {
-    const targetRole = role || currentRole;
-    setCurrentRole(targetRole);
-    setIsAuthenticated(true);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("gestorfisio_session_active", "true");
-      localStorage.setItem("gestorfisio_active_role", targetRole);
-    }
-  };
-
-  const logout = () => {
+  const logout = async () => {
+    await cerrarSesion();
     setIsAuthenticated(false);
     if (typeof window !== "undefined") {
-      localStorage.removeItem("gestorfisio_session_active");
+      window.location.href = "/login";
     }
   };
 
-  const switchRole = (role: UserRole) => {
-    setCurrentRole(role);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("gestorfisio_active_role", role);
-    }
-  };
-
-  const currentUser = DEFAULT_USERS[currentRole];
-  const roleDetails = ROLE_DETAILS[currentRole];
+  const currentRole = currentUser.rol || "RECEPCION";
+  const roleDetails = ROLE_DETAILS[currentRole] || ROLE_DETAILS["RECEPCION"];
 
   const hasPerm = (permission: Permission) => {
     return checkPerm(currentRole, permission);
@@ -109,11 +97,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         currentRole,
         currentUser,
         isAuthenticated,
-        login,
+        isLoading,
         logout,
-        switchRole,
         hasPermission: hasPerm,
         roleDetails,
+        setCurrentUser,
       }}
     >
       {children}

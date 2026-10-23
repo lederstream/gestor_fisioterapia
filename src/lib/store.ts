@@ -258,67 +258,11 @@ const initialServicios: ServicioItem[] = [
   },
 ];
 
-const initialPacientes: PacienteItem[] = [
-  { id: "pac-1", dni: "45892011", nombres: "Alexander", apellidos: "Saavedra Castillo", telefono: "987123456", email: "alexander.saavedra@gmail.com", fechaNacimiento: "1991-04-12", contactoEmergencia: "Esposa - 987999111", createdAt: new Date(Date.now() - 30 * 86400000).toISOString() },
-  { id: "pac-2", dni: "72109483", nombres: "Camila", apellidos: "Vargas Flores", telefono: "976543210", email: "camila.vargas@hotmail.com", fechaNacimiento: "1998-09-24", contactoEmergencia: "Madre - 976000222", createdAt: new Date(Date.now() - 20 * 86400000).toISOString() },
-  { id: "pac-3", dni: "10492837", nombres: "Jorge", apellidos: "Alvarez Benavides", telefono: "951234876", email: "jorge.alvarez@outlook.com", fechaNacimiento: "1975-11-05", contactoEmergencia: "Hija - 951111333", createdAt: new Date(Date.now() - 15 * 86400000).toISOString() },
-  { id: "pac-4", dni: "48201934", nombres: "Mariana", apellidos: "Quispe Romero", telefono: "998877665", email: "mariana.quispe@gmail.com", fechaNacimiento: "1994-02-18", contactoEmergencia: "Hermano - 998000444", createdAt: new Date(Date.now() - 5 * 86400000).toISOString() },
-  { id: "pac-5", dni: "08927163", nombres: "Guillermo", apellidos: "Navarro Prado", telefono: "964789123", email: "g.navarro@empresa.pe", fechaNacimiento: "1968-07-30", contactoEmergencia: "Esposa - 964555666", createdAt: new Date(Date.now() - 40 * 86400000).toISOString() },
-];
-
-const initialPaquetes: TratamientoPaqueteItem[] = [
-  { id: "paq-1", pacienteId: "pac-1", servicioId: "serv-1", totalSesiones: 10, sesionesConsumidas: 4, montoTotal: 700.00, montoPagado: 400.00, estadoPago: "PARCIAL", createdAt: new Date(Date.now() - 25 * 86400000).toISOString() },
-  { id: "paq-2", pacienteId: "pac-2", servicioId: "serv-2", totalSesiones: 20, sesionesConsumidas: 5, montoTotal: 1400.00, montoPagado: 1400.00, estadoPago: "PAGADO", createdAt: new Date(Date.now() - 18 * 86400000).toISOString() },
-  { id: "paq-3", pacienteId: "pac-3", servicioId: "serv-3", totalSesiones: 10, sesionesConsumidas: 1, montoTotal: 950.00, montoPagado: 0.00, estadoPago: "PENDIENTE", createdAt: new Date(Date.now() - 10 * 86400000).toISOString() },
-  { id: "paq-4", pacienteId: "pac-4", servicioId: "serv-4", totalSesiones: 1, sesionesConsumidas: 0, montoTotal: 90.00, montoPagado: 90.00, estadoPago: "PAGADO", createdAt: new Date(Date.now() - 2 * 86400000).toISOString() },
-];
-
-function getTodaySlot(hour: number, minute: number = 0): string {
-  const d = new Date();
-  d.setHours(hour, minute, 0, 0);
-  return d.toISOString();
-}
-
-function getTodaySlotEnd(hour: number, durationMinutes: number = 45): string {
-  const d = new Date();
-  d.setHours(hour, durationMinutes, 0, 0);
-  return d.toISOString();
-}
-
-const initialCitas: CitaItem[] = [
-  // Citas del día actual
-  { id: "cita-1", paqueteId: "paq-1", terapeutaId: "usr-ter-1", salaId: "sala-1", pacienteId: "pac-1", fechaHoraInicio: getTodaySlot(8, 0), fechaHoraFin: getTodaySlotEnd(8, 45), estado: "CONFIRMADA", esReevaluacion: true, creadoPorNombre: "Laura Peña (Recepción)", confirmadoPorNombre: "Karin Palacios (Recepción)", createdAt: new Date().toISOString() },
-  { id: "cita-2", paqueteId: "paq-2", terapeutaId: "usr-ter-2", salaId: "sala-2", pacienteId: "pac-2", fechaHoraInicio: getTodaySlot(9, 0), fechaHoraFin: getTodaySlotEnd(9, 45), estado: "PROGRAMADA", esReevaluacion: false, creadoPorNombre: "Karin Palacios (Recepción)", createdAt: new Date().toISOString() },
-  { id: "cita-3", paqueteId: "paq-3", terapeutaId: "usr-ter-4", salaId: "sala-3", pacienteId: "pac-3", fechaHoraInicio: getTodaySlot(10, 0), fechaHoraFin: getTodaySlotEnd(10, 60), estado: "ATENDIDA", esReevaluacion: false, creadoPorNombre: "Laura Peña (Recepción)", confirmadoPorNombre: "Laura Peña (Recepción)", createdAt: new Date().toISOString() },
-  { id: "cita-4", paqueteId: "paq-4", terapeutaId: "usr-tec-1", salaId: "sala-4", pacienteId: "pac-4", fechaHoraInicio: getTodaySlot(11, 0), fechaHoraFin: getTodaySlotEnd(11, 45), estado: "CONFIRMADA", esReevaluacion: false, creadoPorNombre: "Karin Palacios (Recepción)", confirmadoPorNombre: "Karin Palacios (Recepción)", createdAt: new Date().toISOString() },
-  { id: "cita-5", paqueteId: null, terapeutaId: "usr-ter-3", salaId: "sala-5", pacienteId: "pac-5", fechaHoraInicio: getTodaySlot(15, 0), fechaHoraFin: getTodaySlotEnd(15, 45), estado: "PROGRAMADA", esReevaluacion: false, creadoPorNombre: "Laura Peña (Recepción)", createdAt: new Date().toISOString() },
-  { id: "cita-6", paqueteId: "paq-2", terapeutaId: "usr-ter-1", salaId: "sala-1", pacienteId: "pac-2", fechaHoraInicio: getTodaySlot(16, 0), fechaHoraFin: getTodaySlotEnd(16, 45), estado: "PROGRAMADA", esReevaluacion: false, creadoPorNombre: "Karin Palacios (Recepción)", createdAt: new Date().toISOString() },
-
-  // Historial Multianual de Sesiones - Paciente Alexander Saavedra (pac-1)
-  { id: "hist-cita-pac1-2024", paqueteId: "paq-1", terapeutaId: "usr-ter-3", salaId: "sala-3", pacienteId: "pac-1", fechaHoraInicio: "2024-10-18T14:00:00.000Z", fechaHoraFin: "2024-10-18T14:45:00.000Z", estado: "ATENDIDA", esReevaluacion: false, creadoPorNombre: "Karin Palacios (Recepción)", confirmadoPorNombre: "Karin Palacios (Recepción)", createdAt: "2024-10-15T09:30:00.000Z" },
-  { id: "hist-cita-pac1-2025", paqueteId: "paq-1", terapeutaId: "usr-ter-2", salaId: "sala-2", pacienteId: "pac-1", fechaHoraInicio: "2025-05-12T11:00:00.000Z", fechaHoraFin: "2025-05-12T11:45:00.000Z", estado: "ATENDIDA", esReevaluacion: false, creadoPorNombre: "Laura Peña (Recepción)", confirmadoPorNombre: "Laura Peña (Recepción)", createdAt: "2025-05-10T11:15:00.000Z" },
-  { id: "hist-cita-pac1-2026-1", paqueteId: "paq-1", terapeutaId: "usr-ter-4", salaId: "sala-4", pacienteId: "pac-1", fechaHoraInicio: "2026-03-04T16:00:00.000Z", fechaHoraFin: "2026-03-04T16:45:00.000Z", estado: "ATENDIDA", esReevaluacion: false, creadoPorNombre: "Karin Palacios (Recepción)", confirmadoPorNombre: "Karin Palacios (Recepción)", createdAt: "2026-03-01T15:20:00.000Z" },
-  { id: "hist-cita-prev-1", paqueteId: "paq-1", terapeutaId: "usr-ter-1", salaId: "sala-1", pacienteId: "pac-1", fechaHoraInicio: new Date(Date.now() - 3 * 86400000).toISOString(), fechaHoraFin: new Date(Date.now() - 3 * 86400000 + 45 * 60000).toISOString(), estado: "ATENDIDA", esReevaluacion: false, creadoPorNombre: "Laura Peña (Recepción)", confirmadoPorNombre: "Laura Peña (Recepción)", createdAt: new Date(Date.now() - 4 * 86400000).toISOString() },
-
-  // Historial Multianual de Sesiones - Paciente Camila Vargas (pac-2)
-  { id: "hist-cita-prev-2", paqueteId: "paq-2", terapeutaId: "usr-ter-2", salaId: "sala-2", pacienteId: "pac-2", fechaHoraInicio: new Date(Date.now() - 7 * 86400000).toISOString(), fechaHoraFin: new Date(Date.now() - 7 * 86400000 + 45 * 60000).toISOString(), estado: "ATENDIDA", esReevaluacion: true, creadoPorNombre: "Karin Palacios (Recepción)", confirmadoPorNombre: "Karin Palacios (Recepción)", createdAt: new Date(Date.now() - 8 * 86400000).toISOString() },
-];
-
-const initialPagos: PagoItem[] = [
-  { id: "pago-1", paqueteId: "paq-1", monto: 400.00, metodoPago: "YAPE", numeroOperacion: "YAP-892104", comprobanteUrl: null, estado: "VERIFICADO", fechaPago: new Date(Date.now() - 15 * 86400000).toISOString() },
-  { id: "pago-2", paqueteId: "paq-2", monto: 700.00, metodoPago: "POS", numeroOperacion: "POS-339182", comprobanteUrl: null, estado: "VERIFICADO", fechaPago: new Date(Date.now() - 18 * 86400000).toISOString() },
-  { id: "pago-3", paqueteId: "paq-2", monto: 700.00, metodoPago: "PLIN", numeroOperacion: "PLN-554109", comprobanteUrl: null, estado: "VERIFICADO", fechaPago: new Date(Date.now() - 5 * 86400000).toISOString() },
-  { id: "pago-4", paqueteId: "paq-4", monto: 90.00, metodoPago: "EFECTIVO", numeroOperacion: "EFE-REC-0012", comprobanteUrl: null, estado: "VERIFICADO", fechaPago: new Date(Date.now() - 2 * 86400000).toISOString() },
-];
-
-const initialHistorias: HistoriaEvolucionItem[] = [
-  { id: "evo-1", citaId: "cita-3", terapeutaId: "usr-ter-4", evaDolorInicio: 7, evaDolorFin: 4, tratamientoAplicado: "Movilización pasiva de extremidad inferior derecha, facilitación neuromuscular propioceptiva y electroestimulación TENS 20 min.", notasReevaluacion: null, bloqueaAlta: false, createdAt: new Date().toISOString() },
-  { id: "evo-2", citaId: "hist-cita-prev-1", terapeutaId: "usr-ter-1", evaDolorInicio: 6, evaDolorFin: 3, tratamientoAplicado: "Punción seca en gemelo medial y estiramientos miofasciales de cadena posterior.", notasReevaluacion: "Paciente refiere notable alivio tras descarga. Próxima sesión (5ta) requiere prueba de dinamometría obligatoria.", bloqueaAlta: false, createdAt: new Date(Date.now() - 3 * 86400000).toISOString() },
-  { id: "evo-3", citaId: "hist-cita-prev-2", terapeutaId: "usr-ter-2", evaDolorInicio: 5, evaDolorFin: 2, tratamientoAplicado: "Reevaluación de rangos articulares en columna lumbar. Test de Schober mejorado en 2cm. Fortalecimiento de transverso abdominal.", notasReevaluacion: "REEVALUACIÓN COMPLETA SESIÓN 5: Rango de flexión aumentó 15°. Autorizado paso a fase 2 de tonificación.", bloqueaAlta: false, createdAt: new Date(Date.now() - 7 * 86400000).toISOString() },
-  { id: "evo-4", citaId: "hist-cita-pac1-2024", terapeutaId: "usr-ter-3", evaDolorInicio: 8, evaDolorFin: 6, tratamientoAplicado: "Evaluación postural biomecánica de columna y miembro inferior. Reeducación propioceptiva y termoterapia superficial.", notasReevaluacion: "Inicio del protocolo correctivo traumatológico.", bloqueaAlta: false, createdAt: "2024-10-18T14:45:00.000Z" },
-  { id: "evo-5", citaId: "hist-cita-pac1-2025", terapeutaId: "usr-ter-2", evaDolorInicio: 7, evaDolorFin: 4, tratamientoAplicado: "Terapia manual ortopédica para descompresión lumbar. Liberación miofascial profunda y ultrasonido pulsátil.", notasReevaluacion: "Notable reducción de rigidez matutina en flexión.", bloqueaAlta: false, createdAt: "2025-05-12T11:45:00.000Z" },
-  { id: "evo-6", citaId: "hist-cita-pac1-2026-1", terapeutaId: "usr-ter-4", evaDolorInicio: 5, evaDolorFin: 3, tratamientoAplicado: "Fortalecimiento del core, magnetoterapia focal y crioterapia compresiva Game Ready.", notasReevaluacion: "Evolución positiva progresiva sin recaídas.", bloqueaAlta: false, createdAt: "2026-03-04T16:45:00.000Z" },
-];
+const initialPacientes: PacienteItem[] = [];
+const initialPaquetes: TratamientoPaqueteItem[] = [];
+const initialCitas: CitaItem[] = [];
+const initialPagos: PagoItem[] = [];
+const initialHistorias: HistoriaEvolucionItem[] = [];
 
 const initialConfiguracion: ConfiguracionClinicaItem = {
   id: "config-principal",

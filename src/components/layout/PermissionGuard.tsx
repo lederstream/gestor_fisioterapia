@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { Permission, ROLE_DETAILS } from "@/lib/permissions";
-import { ShieldAlert, ArrowLeft, Lock, CheckCircle2 } from "lucide-react";
+import { ShieldAlert, ArrowLeft, Lock } from "lucide-react";
 
 interface PermissionGuardProps {
   permission: Permission;
@@ -19,13 +19,13 @@ export function PermissionGuard({
   fallbackTitle,
   fallbackMessage,
 }: PermissionGuardProps) {
-  const { hasPermission, currentRole, switchRole } = useAuth();
+  const { hasPermission, currentRole } = useAuth();
 
   if (hasPermission(permission)) {
     return <>{children}</>;
   }
 
-  const roleInfo = ROLE_DETAILS[currentRole];
+  const roleInfo = ROLE_DETAILS[currentRole] || ROLE_DETAILS["RECEPCION"];
 
   return (
     <div className="bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 shadow-sm max-w-2xl mx-auto my-8 text-center space-y-6">
@@ -64,23 +64,14 @@ export function PermissionGuard({
         </p>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+      <div className="flex items-center justify-center gap-3 pt-2">
         <Link
           href="/dashboard"
-          className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition"
+          className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>{currentRole === "PACIENTE" ? "Volver a Mi Portal de Paciente" : "Volver al Panel Autorizado"}</span>
         </Link>
-        {currentRole !== "ADMIN" && (
-          <button
-            onClick={() => switchRole("ADMIN")}
-            className="w-full sm:w-auto px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl shadow-md shadow-teal-600/25 flex items-center justify-center gap-2 transition"
-          >
-            <CheckCircle2 className="w-4 h-4" />
-            <span>Simular como Administrador</span>
-          </button>
-        )}
       </div>
     </div>
   );

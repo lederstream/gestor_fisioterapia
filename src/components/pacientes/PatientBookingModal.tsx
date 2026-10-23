@@ -42,16 +42,9 @@ export function PatientBookingModal({
   servicios = [],
   onSuccess,
 }: PatientBookingModalProps) {
-  // Fallbacks para datos del paciente Alexander Saavedra si no vienen inyectados
+  // Paciente objetivo
   const pacienteData = useMemo(() => {
-    return paciente || {
-      id: "pac-1",
-      dni: "45892011",
-      nombres: "Alexander",
-      apellidos: "Saavedra",
-      telefono: "987654321",
-      email: "alexander.saavedra@gmail.com",
-    };
+    return paciente || null;
   }, [paciente]);
 
   // Lista de terapeutas clínica con Lic. Jeiser Vasquez como predeterminado
@@ -175,6 +168,12 @@ export function PatientBookingModal({
       const [sh, sm] = startHourStr.split(":").map(Number);
       const [y, m, d] = fecha.split("-").map(Number);
       const fechaHoraInicio = new Date(y, m - 1, d, sh, sm, 0);
+
+      if (!pacienteData) {
+        setErrorMsg("No se ha seleccionado ningún paciente para esta reserva.");
+        setLoading(false);
+        return;
+      }
 
       const res = await agendarCita({
         pacienteId: pacienteData.id,

@@ -2,6 +2,8 @@ import { Metadata } from "next";
 import { obtenerConfiguracionClinica } from "@/server/actions/configuracion";
 import { LoginPageClient } from "@/components/auth/LoginPageClient";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata(): Promise<Metadata> {
   const config = await obtenerConfiguracionClinica();
   const clinicName = config?.nombreComercial || "AJ Fisioterapia";

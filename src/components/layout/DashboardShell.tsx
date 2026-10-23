@@ -2,9 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { AuthProvider } from "@/lib/auth-context";
+import { AuthProvider, AuthUser } from "@/lib/auth-context";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { DashboardNavbar } from "./DashboardNavbar";
+
+interface DashboardShellProps {
+  children: React.ReactNode;
+  initialUser?: AuthUser | null;
+}
 
 function ShellInner({ children }: { children: React.ReactNode }) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -38,6 +43,10 @@ function ShellInner({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function DashboardShell({ children }: { children: React.ReactNode }) {
-  return <ShellInner>{children}</ShellInner>;
+export function DashboardShell({ children, initialUser }: DashboardShellProps) {
+  return (
+    <AuthProvider initialUser={initialUser}>
+      <ShellInner>{children}</ShellInner>
+    </AuthProvider>
+  );
 }

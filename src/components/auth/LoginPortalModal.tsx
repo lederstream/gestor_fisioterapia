@@ -4,321 +4,181 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   X,
-  Shield,
-  Stethoscope,
-  UserCheck,
-  User,
   ArrowRight,
   Lock,
   Mail,
   CheckCircle2,
-  Sparkles,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  ShieldCheck,
 } from "lucide-react";
-import { useAuth } from "@/lib/auth-context";
-import { UserRole, ROLE_DETAILS } from "@/lib/permissions";
+import { iniciarSesion } from "@/server/actions/auth";
 
 interface LoginPortalModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const DEMO_PROFILES: {
-  role: UserRole;
-  name: string;
-  email: string;
-  title: string;
-  badge: string;
-  targetUrl: string;
-  targetName: string;
-  icon: any;
-  accentColor: string;
-  borderHover: string;
-  badgeBg: string;
-}[] = [
-  {
-    role: "PACIENTE",
-    name: "Alexander Saavedra",
-    email: "alexander.saavedra@gmail.com",
-    title: "Paciente Titular • DNI 45892011",
-    badge: "Mis Citas y Paquetes",
-    targetUrl: "/dashboard",
-    targetName: "Portal Privado del Paciente",
-    icon: User,
-    accentColor: "text-emerald-700",
-    borderHover: "hover:border-emerald-500 hover:bg-emerald-50/50",
-    badgeBg: "bg-emerald-100 text-emerald-800",
-  },
-  {
-    role: "TERAPEUTA",
-    name: "Lic. Jeiser Vasquez",
-    email: "jeiser.vasquez@ajfisioterapia.pe",
-    title: "Lic. Fisioterapia Deportiva (CTMP 12480)",
-    badge: "Agenda & Ficha EVA",
-    targetUrl: "/dashboard/agenda",
-    targetName: "Panel Clínico de Terapia",
-    icon: Stethoscope,
-    accentColor: "text-teal-700",
-    borderHover: "hover:border-teal-500 hover:bg-teal-50/50",
-    badgeBg: "bg-teal-100 text-teal-800",
-  },
-  {
-    role: "RECEPCION",
-    name: "Karin Palacios",
-    email: "karin.palacios@ajfisioterapia.pe",
-    title: "Admisión & Coordinación San Borja",
-    badge: "6 Salas & Caja",
-    targetUrl: "/dashboard/agenda",
-    targetName: "Matriz 6 Salas y Caja",
-    icon: UserCheck,
-    accentColor: "text-blue-700",
-    borderHover: "hover:border-blue-500 hover:bg-blue-50/50",
-    badgeBg: "bg-blue-100 text-blue-800",
-  },
-  {
-    role: "ADMIN",
-    name: "Marco Yana",
-    email: "marco.yana@ajfisioterapia.pe",
-    title: "Dirección Clínica y Gerencia",
-    badge: "Control Total & Auditoría",
-    targetUrl: "/dashboard",
-    targetName: "Dashboard de Gerencia",
-    icon: Shield,
-    accentColor: "text-purple-700",
-    borderHover: "hover:border-purple-500 hover:bg-purple-50/50",
-    badgeBg: "bg-purple-100 text-purple-800",
-  },
-];
-
 export function LoginPortalModal({ isOpen, onClose }: LoginPortalModalProps) {
   const router = useRouter();
-  const { login } = useAuth();
-  const [emailInput, setEmailInput] = useState("");
-  const [passwordInput, setPasswordInput] = useState("");
-  const [loadingRole, setLoadingRole] = useState<UserRole | null>(null);
-  const [redirectMessage, setRedirectMessage] = useState<string | null>(null);
-  const [clinicName, setClinicName] = useState("AJ Fisioterapia");
-
-  useState(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem("clinic_config");
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed.nombreComercial) setClinicName(parsed.nombreComercial);
-        }
-      } catch (_) {}
-    }
-  });
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const handleSelectRole = (profile: typeof DEMO_PROFILES[0]) => {
-    setLoadingRole(profile.role);
-    setRedirectMessage(`Ingresando como ${profile.name}... Redirigiendo a ${profile.targetName}`);
-    
-    // Iniciar sesión y guardar estado
-    login(profile.role);
-
-    setTimeout(() => {
-      onClose();
-      router.push(profile.targetUrl);
-    }, 700);
-  };
-
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Identificar si coincide con algún perfil o asignar ADMIN por defecto
-    const lower = emailInput.toLowerCase().trim();
-    let selectedProfile = DEMO_PROFILES.find((p) => p.email.toLowerCase() === lower || lower.includes("alexander") || lower === "45892011");
-    if (!selectedProfile) {
-      if (lower.includes("jeiser") || lower.includes("terapeuta")) {
-        selectedProfile = DEMO_PROFILES[1];
-      } else if (lower.includes("karin") || lower.includes("recepcion")) {
-        selectedProfile = DEMO_PROFILES[2];
-      } else if (lower.includes("marco") || lower.includes("admin")) {
-        selectedProfile = DEMO_PROFILES[3];
-      } else {
-        selectedProfile = DEMO_PROFILES[0]; // Paciente por defecto
-      }
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    if (!identifier.trim() || !password.trim()) {
+      setErrorMessage("Por favor ingresa tu correo electrónico/DNI y tu contraseña.");
+      return;
     }
-    handleSelectRole(selectedProfile);
+
+    setIsLoading(true);
+
+    try {
+      const res = await iniciarSesion(identifier, password);
+
+      if (!res.success) {
+        setErrorMessage(res.error || "Credenciales inválidas.");
+        setIsLoading(false);
+        return;
+      }
+
+      setSuccessMessage(`Bienvenido, ${res.data?.user.nombre}. Accediendo...`);
+
+      setTimeout(() => {
+        onClose();
+        router.push(res.data?.user.targetUrl || "/dashboard");
+        router.refresh();
+      }, 500);
+    } catch {
+      setErrorMessage("Error de conexión al autenticar. Inténtalo nuevamente.");
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
       <div 
-        className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-stone-200 overflow-hidden animate-in zoom-in-95 duration-200 text-stone-800"
+        className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-stone-200 overflow-hidden animate-in zoom-in-95 duration-200 text-stone-800"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header Modal */}
-        <div
-          className="text-white p-6 sm:p-7 relative"
-          style={{ backgroundColor: "var(--brand-primary, #0C3E37)" }}
-        >
+        <div className="bg-[#0C3E37] text-white p-6 relative">
           <button
             onClick={onClose}
-            className="absolute top-5 right-5 p-2 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition"
+            className="absolute top-5 right-5 p-2 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition cursor-pointer"
             aria-label="Cerrar modal"
           >
             <X className="w-5 h-5" />
           </button>
 
-          <div className="flex items-center gap-3 mb-2">
-            <div
-              className="w-10 h-10 rounded-full bg-white flex items-center justify-center font-bold text-sm shadow-sm"
-              style={{ color: "var(--brand-primary, #0C3E37)" }}
-            >
-              {clinicName.substring(0, 2).toUpperCase()}
-            </div>
-            <div>
-              <span className="font-bold text-white text-base block leading-tight">
-                {clinicName}
-              </span>
-              <span className="text-[10px] tracking-wider uppercase text-emerald-200 font-semibold block">
-                PORTAL CLÍNICO Y DE PACIENTES
-              </span>
-            </div>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[10px] tracking-wider uppercase text-emerald-200 font-bold block">
+              PORTAL OFICIAL
+            </span>
           </div>
 
-          <h2 className="text-xl sm:text-2xl font-black text-white mt-3">
-            Acceso a Mi Portal
+          <h2 className="text-xl sm:text-2xl font-black text-white">
+            Iniciar Sesión
           </h2>
-          <p className="text-xs sm:text-sm text-stone-200 mt-1 max-w-lg leading-relaxed">
-            Ingresa a tu espacio privado según tu rol. El sistema te redireccionará automáticamente a tus citas, agenda o panel de control.
+          <p className="text-xs text-stone-200 mt-1 max-w-sm leading-relaxed">
+            Ingresa con tu correo o DNI y contraseña asignada para acceder al sistema.
           </p>
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 sm:p-7 space-y-6 max-h-[75vh] overflow-y-auto">
-          {/* Mensaje de redirección / carga */}
-          {redirectMessage ? (
-            <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
-              <div className="w-12 h-12 rounded-full bg-[#E2EEE7] text-[#145347] flex items-center justify-center animate-spin">
-                <Sparkles className="w-6 h-6 text-[#0C3E37]" />
+        <div className="p-6 space-y-4">
+          <form onSubmit={handleFormSubmit} className="space-y-4">
+            {errorMessage && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-800 animate-in fade-in">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <span className="leading-relaxed font-medium">{errorMessage}</span>
               </div>
-              <p className="font-bold text-sm text-[#0B2E28]">
-                {redirectMessage}
-              </p>
-              <p className="text-xs text-stone-400">
-                Verificando credenciales y permisos RBAC...
-              </p>
+            )}
+
+            {successMessage && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-2.5 text-xs text-emerald-800 animate-in fade-in">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <span className="leading-relaxed font-semibold">{successMessage}</span>
+              </div>
+            )}
+
+            <div className="space-y-1">
+              <label className="block text-xs font-bold text-stone-700">
+                Correo Electrónico o DNI
+              </label>
+              <div className="relative">
+                <Mail className="w-4 h-4 text-stone-400 absolute left-3 top-3 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="ej. gerencia@clinica.pe o DNI"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  required
+                  disabled={isLoading}
+                  className="w-full pl-9 pr-3 py-2.5 text-xs sm:text-sm rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-[#0C3E37]/30 focus:border-[#0C3E37] transition"
+                />
+              </div>
             </div>
-          ) : (
-            <>
-              {/* Formulario Formal de Credenciales */}
-              <form onSubmit={handleFormSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                      DNI o Correo Electrónico
-                    </label>
-                    <div className="relative">
-                      <Mail className="w-4 h-4 text-stone-400 absolute left-3 top-3" />
-                      <input
-                        type="text"
-                        placeholder="Ej. 45892011 o usuario@..."
-                        value={emailInput}
-                        onChange={(e) => setEmailInput(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2.5 text-xs sm:text-sm rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-[#0C3E37]/30 focus:border-[#0C3E37] transition"
-                      />
-                    </div>
-                  </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                      Contraseña
-                    </label>
-                    <div className="relative">
-                      <Lock className="w-4 h-4 text-stone-400 absolute left-3 top-3" />
-                      <input
-                        type="password"
-                        placeholder="••••••••"
-                        value={passwordInput}
-                        onChange={(e) => setPasswordInput(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2.5 text-xs sm:text-sm rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-[#0C3E37]/30 focus:border-[#0C3E37] transition"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-1">
-                  <label className="flex items-center gap-2 text-xs text-stone-500 cursor-pointer">
-                    <input type="checkbox" defaultChecked className="rounded border-stone-300 text-[#0C3E37] focus:ring-[#0C3E37]" />
-                    <span>Recordar mi sesión</span>
-                  </label>
-                  <button
-                    type="submit"
-                    className="rounded-xl text-white text-xs sm:text-sm font-bold px-6 py-2.5 flex items-center gap-2 shadow-sm transition hover:opacity-90"
-                    style={{ backgroundColor: "var(--brand-primary, #0C3E37)" }}
-                  >
-                    <span>Ingresar</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </form>
-
-              {/* Separador */}
-              <div className="relative my-4">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-stone-200"></div>
-                </div>
-                <div className="relative flex justify-center text-xs">
-                  <span className="px-3 bg-white text-stone-400 font-semibold uppercase tracking-wider text-[10px]">
-                    O elige un perfil de evaluación en 1 clic
-                  </span>
-                </div>
+            <div className="space-y-1">
+              <label className="block text-xs font-bold text-stone-700">
+                Contraseña
+              </label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-stone-400 absolute left-3 top-3 pointer-events-none" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={isLoading}
+                  className="w-full pl-9 pr-10 py-2.5 text-xs sm:text-sm rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-[#0C3E37]/30 focus:border-[#0C3E37] transition"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-stone-400 hover:text-stone-700 transition cursor-pointer"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
+            </div>
 
-              {/* 4 Perfiles de Demostración con los nombres solicitados */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                {DEMO_PROFILES.map((profile) => {
-                  const Icon = profile.icon;
-                  const isLoading = loadingRole === profile.role;
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-2.5 px-4 rounded-xl bg-[#0C3E37] hover:bg-[#0a332d] text-white font-extrabold text-xs sm:text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              {isLoading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Autenticando...</span>
+                </>
+              ) : (
+                <>
+                  <span>Ingresar</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </form>
 
-                  return (
-                    <button
-                      key={profile.role}
-                      type="button"
-                      disabled={loadingRole !== null}
-                      onClick={() => handleSelectRole(profile)}
-                      className={`text-left p-3.5 rounded-2xl border border-stone-200 bg-white transition-all flex items-start gap-3.5 shadow-2xs group cursor-pointer ${profile.borderHover}`}
-                    >
-                      <div className={`w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform ${profile.accentColor}`}>
-                        <Icon className="w-5 h-5" />
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1">
-                          <span className="font-bold text-xs sm:text-sm text-stone-900 group-hover:text-[#0C3E37] transition-colors truncate">
-                            {profile.name}
-                          </span>
-                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 ${profile.badgeBg}`}>
-                            {profile.role}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-stone-500 truncate mt-0.5">
-                          {profile.title}
-                        </p>
-                        <div className="flex items-center gap-1 text-[10px] text-stone-400 mt-1 font-medium">
-                          <span>Destino:</span>
-                          <span className="font-semibold text-stone-600 underline decoration-stone-200">
-                            {profile.targetName}
-                          </span>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="p-3 bg-stone-50 rounded-2xl border border-stone-200/80 text-[11px] text-stone-500 leading-relaxed flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-[#0C3E37] shrink-0" />
-                <span>
-                  <strong>Control de Acceso (RBAC):</strong> Cada perfil ingresa con restricciones automáticas de seguridad y trazabilidad.
-                </span>
-              </div>
-            </>
-          )}
+          <div className="pt-3 border-t border-stone-100 flex items-center gap-2 text-[10px] text-stone-400">
+            <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>Acceso seguro protegido con tokens de sesión y hash bcrypt.</span>
+          </div>
         </div>
       </div>
     </div>
