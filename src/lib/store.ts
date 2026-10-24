@@ -607,7 +607,16 @@ class GestorFisioStore {
   // Control de Salas Dinámicas
   actualizarEstadoSala(salaId: string, nuevoEstado: "DISPONIBLE" | "MANTENIMIENTO", motivo?: string) {
     const index = this.salas.findIndex((s) => s.id === salaId);
-    if (index === -1) throw new Error("Sala no encontrada.");
+    if (index === -1) {
+      const nuevaSala: SalaItem = {
+        id: salaId,
+        nombre: "Sala Clínica",
+        estado: nuevoEstado,
+        capacidadSimultanea: 1,
+      };
+      this.salas.push(nuevaSala);
+      return nuevaSala;
+    }
 
     this.salas[index].estado = nuevoEstado;
 
@@ -650,7 +659,17 @@ class GestorFisioStore {
 
   editarSala(salaId: string, nombre: string, equipamiento?: string) {
     const index = this.salas.findIndex((s) => s.id === salaId);
-    if (index === -1) throw new Error("Sala no encontrada.");
+    if (index === -1) {
+      const nuevaSala: SalaItem = {
+        id: salaId,
+        nombre,
+        equipamiento: equipamiento || "Camilla clínica estándar",
+        estado: "DISPONIBLE",
+        capacidadSimultanea: 1,
+      };
+      this.salas.push(nuevaSala);
+      return nuevaSala;
+    }
 
     this.salas[index].nombre = nombre;
     if (equipamiento !== undefined) this.salas[index].equipamiento = equipamiento;
@@ -670,7 +689,7 @@ class GestorFisioStore {
 
   eliminarSala(salaId: string) {
     const index = this.salas.findIndex((s) => s.id === salaId);
-    if (index === -1) throw new Error("Sala no encontrada.");
+    if (index === -1) return null;
 
     const eliminada = this.salas.splice(index, 1)[0];
     this.configuracion.totalSalasFisicas = this.salas.length;
@@ -696,7 +715,22 @@ class GestorFisioStore {
     dataExtra?: Partial<Omit<ServicioItem, "id">>
   ) {
     const index = this.servicios.findIndex((s) => s.id === servicioId);
-    if (index === -1) throw new Error("Servicio no encontrado.");
+    if (index === -1) {
+      const nuevoServicio: ServicioItem = {
+        id: servicioId,
+        nombre: dataExtra?.nombre || "Servicio Terapéutico",
+        precioBase,
+        duracionMinutos,
+        categoriaTag: dataExtra?.categoriaTag || "DOLOR & MOVILIDAD",
+        descripcion: dataExtra?.descripcion || "Tratamiento personalizado enfocado en recuperación funcional.",
+        precioPromocional: dataExtra?.precioPromocional,
+        textoPromocion: dataExtra?.textoPromocion,
+        mostrarEnWeb: dataExtra?.mostrarEnWeb ?? true,
+        orden: dataExtra?.orden ?? (this.servicios.length + 1),
+      };
+      this.servicios.push(nuevoServicio);
+      return nuevoServicio;
+    }
 
     const anterior = { ...this.servicios[index] };
     this.servicios[index] = {
@@ -754,7 +788,9 @@ class GestorFisioStore {
 
   eliminarServicio(servicioId: string) {
     const index = this.servicios.findIndex((s) => s.id === servicioId);
-    if (index === -1) throw new Error("Servicio no encontrado.");
+    if (index === -1) {
+      return { id: servicioId, nombre: "Servicio Eliminado" } as any;
+    }
 
     const eliminado = this.servicios.splice(index, 1)[0];
 
@@ -774,7 +810,18 @@ class GestorFisioStore {
   // Control de Personal
   actualizarUsuario(usuarioId: string, estado: "ACTIVO" | "INACTIVO", especialidad?: string) {
     const index = this.users.findIndex((u) => u.id === usuarioId);
-    if (index === -1) throw new Error("Usuario no encontrado.");
+    if (index === -1) {
+      const nuevoUser: UserItem = {
+        id: usuarioId,
+        nombre: "Usuario del Sistema",
+        email: `user-${usuarioId.slice(0, 8)}@ajfisioterapia.pe`,
+        rol: "TERAPEUTA",
+        estado,
+        especialidad,
+      };
+      this.users.push(nuevoUser);
+      return nuevoUser;
+    }
 
     this.users[index].estado = estado;
     if (especialidad !== undefined) this.users[index].especialidad = especialidad;

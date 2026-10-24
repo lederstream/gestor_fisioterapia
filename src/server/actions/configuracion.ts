@@ -212,23 +212,36 @@ export async function cambiarEstadoSala(
   motivo?: string
 ): Promise<ServerActionResult> {
   try {
-    const sala = dbStore.actualizarEstadoSala(salaId, nuevoEstado, motivo);
+    let resultSala: any = null;
 
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       try {
-        await prisma.sala.update({
+        const updatedDb = await prisma.sala.update({
           where: { id: salaId },
           data: { estado: nuevoEstado as any },
         });
+        resultSala = {
+          id: updatedDb.id,
+          nombre: updatedDb.nombre,
+          estado: updatedDb.estado,
+          capacidadSimultanea: 1,
+        };
       } catch (dbErr) {
         console.warn("Error actualizando sala en Prisma:", dbErr);
       }
     }
 
+    try {
+      const salaStore = dbStore.actualizarEstadoSala(salaId, nuevoEstado, motivo);
+      if (!resultSala) resultSala = salaStore;
+    } catch (storeErr) {
+      if (!resultSala) throw storeErr;
+    }
+
     revalidatePath("/dashboard/agenda");
     revalidatePath("/dashboard/configuracion");
     revalidatePath("/dashboard");
-    return { success: true, data: sala };
+    return { success: true, data: resultSala };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Error al cambiar estado de sala.";
     return { success: false, error: message };
@@ -251,16 +264,11 @@ export async function modificarServicio(
   }
 ): Promise<ServerActionResult> {
   try {
-    const servicio = dbStore.actualizarServicio(
-      servicioId, 
-      precioBase, 
-      duracionMinutos, 
-      dataExtra
-    );
+    let resultData: any = null;
 
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       try {
-        await prisma.servicio.update({
+        const updatedDb = await prisma.servicio.update({
           where: { id: servicioId },
           data: {
             ...(dataExtra?.nombre ? { nombre: dataExtra.nombre } : {}),
@@ -275,15 +283,41 @@ export async function modificarServicio(
             ...(dataExtra?.orden !== undefined ? { orden: dataExtra.orden } : {}),
           },
         });
+
+        resultData = {
+          id: updatedDb.id,
+          nombre: updatedDb.nombre,
+          categoriaTag: updatedDb.categoriaTag || "DOLOR & MOVILIDAD",
+          descripcion: updatedDb.descripcion || "",
+          duracionMinutos: updatedDb.duracionMinutos,
+          precioBase: Number(updatedDb.precioBase),
+          precioPromocional: updatedDb.precioPromocional ? Number(updatedDb.precioPromocional) : undefined,
+          textoPromocion: updatedDb.textoPromocion || undefined,
+          imagenUrl: updatedDb.imagenUrl || undefined,
+          mostrarEnWeb: updatedDb.mostrarEnWeb,
+          orden: updatedDb.orden,
+        };
       } catch (dbErr) {
         console.warn("Error actualizando servicio en Prisma:", dbErr);
       }
     }
 
+    try {
+      const servicioStore = dbStore.actualizarServicio(
+        servicioId, 
+        precioBase, 
+        duracionMinutos, 
+        dataExtra
+      );
+      if (!resultData) resultData = servicioStore;
+    } catch (storeErr) {
+      if (!resultData) throw storeErr;
+    }
+
     revalidatePath("/");
     revalidatePath("/dashboard/configuracion");
     revalidatePath("/reservas");
-    return { success: true, data: servicio };
+    return { success: true, data: resultData };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Error al actualizar servicio.";
     return { success: false, error: message };
@@ -296,24 +330,39 @@ export async function cambiarEstadoPersonal(
   especialidad?: string
 ): Promise<ServerActionResult> {
   try {
-    const usuario = dbStore.actualizarUsuario(usuarioId, estado, especialidad);
+    let resultUser: any = null;
 
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       try {
-        await prisma.user.update({
+        const updatedDb = await prisma.user.update({
           where: { id: usuarioId },
           data: {
             estado: estado as any,
             ...(especialidad ? { especialidad } : {}),
           },
         });
+        resultUser = {
+          id: updatedDb.id,
+          nombre: updatedDb.nombre,
+          email: updatedDb.email,
+          rol: updatedDb.rol,
+          especialidad: updatedDb.especialidad || undefined,
+          estado: updatedDb.estado,
+        };
       } catch (dbErr) {
         console.warn("Error actualizando usuario en Prisma:", dbErr);
       }
     }
 
+    try {
+      const userStore = dbStore.actualizarUsuario(usuarioId, estado, especialidad);
+      if (!resultUser) resultUser = userStore;
+    } catch (storeErr) {
+      if (!resultUser) throw storeErr;
+    }
+
     revalidatePath("/dashboard/configuracion");
-    return { success: true, data: usuario };
+    return { success: true, data: resultUser };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Error al actualizar personal.";
     return { success: false, error: message };
@@ -519,25 +568,42 @@ export async function crearNuevoServicio(
           },
         });
 
+        const nuevoMapped = {
+          id: nuevoDb.id,
+          nombre: nuevoDb.nombre,
+          categoriaTag: nuevoDb.categoriaTag || "DOLOR & MOVILIDAD",
+          descripcion: nuevoDb.descripcion || "",
+          duracionMinutos: nuevoDb.duracionMinutos,
+          precioBase: Number(nuevoDb.precioBase),
+          precioPromocional: nuevoDb.precioPromocional ? Number(nuevoDb.precioPromocional) : undefined,
+          textoPromocion: nuevoDb.textoPromocion || undefined,
+          imagenUrl: nuevoDb.imagenUrl || undefined,
+          mostrarEnWeb: nuevoDb.mostrarEnWeb,
+          orden: nuevoDb.orden,
+        };
+
+        try {
+          dbStore.actualizarServicio(nuevoDb.id, Number(nuevoDb.precioBase), nuevoDb.duracionMinutos, {
+            nombre: nuevoDb.nombre,
+            categoriaTag: nuevoMapped.categoriaTag,
+            descripcion: nuevoMapped.descripcion,
+            precioPromocional: nuevoMapped.precioPromocional,
+            textoPromocion: nuevoMapped.textoPromocion,
+            imagenUrl: nuevoMapped.imagenUrl,
+            mostrarEnWeb: nuevoMapped.mostrarEnWeb,
+            orden: nuevoMapped.orden,
+          });
+        } catch {
+          // No-op
+        }
+
         revalidatePath("/");
         revalidatePath("/dashboard/configuracion");
         revalidatePath("/reservas");
 
         return {
           success: true,
-          data: {
-            id: nuevoDb.id,
-            nombre: nuevoDb.nombre,
-            categoriaTag: nuevoDb.categoriaTag || "DOLOR & MOVILIDAD",
-            descripcion: nuevoDb.descripcion || "",
-            duracionMinutos: nuevoDb.duracionMinutos,
-            precioBase: Number(nuevoDb.precioBase),
-            precioPromocional: nuevoDb.precioPromocional ? Number(nuevoDb.precioPromocional) : undefined,
-            textoPromocion: nuevoDb.textoPromocion || undefined,
-            imagenUrl: nuevoDb.imagenUrl || undefined,
-            mostrarEnWeb: nuevoDb.mostrarEnWeb,
-            orden: nuevoDb.orden,
-          },
+          data: nuevoMapped,
         };
       } catch (dbErr: any) {
         console.error("Error creando servicio en Prisma:", dbErr);
@@ -560,9 +626,26 @@ export async function eliminarServicio(servicioId: string): Promise<ServerAction
   try {
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       try {
+        const paquetesCount = await prisma.tratamientoPaquete.count({
+          where: { servicioId },
+        });
+
+        if (paquetesCount > 0) {
+          return {
+            success: false,
+            error: `Este servicio tiene ${paquetesCount} paquete(s) o tratamiento(s) asociado(s). Para resguardar la trazabilidad médica y contable, puedes desactivar su opción "Mostrar en la web pública" en lugar de eliminarlo.`,
+          };
+        }
+
         await prisma.servicio.delete({
           where: { id: servicioId },
         });
+
+        try {
+          dbStore.eliminarServicio(servicioId);
+        } catch {
+          // No-op
+        }
 
         revalidatePath("/");
         revalidatePath("/dashboard/configuracion");
@@ -570,7 +653,7 @@ export async function eliminarServicio(servicioId: string): Promise<ServerAction
         return { success: true };
       } catch (dbErr: any) {
         console.error("Error eliminando servicio en Prisma:", dbErr);
-        return { success: false, error: "No se pudo eliminar el servicio." };
+        return { success: false, error: "No se pudo eliminar el servicio de la base de datos." };
       }
     }
 
