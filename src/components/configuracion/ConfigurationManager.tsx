@@ -1182,9 +1182,9 @@ export function ConfigurationManager({
                         Oculto en web
                       </span>
                     )}
-                    {s.precioPromocional && (
+                    {s.precioPromocional && Number(s.precioPromocional) < Number(s.precioBase) && (
                       <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                        {s.textoPromocion || "Promoción activa"}
+                        -{Math.round(((Number(s.precioBase) - Number(s.precioPromocional)) / Number(s.precioBase)) * 100)}% Dscto.
                       </span>
                     )}
                   </div>

@@ -336,14 +336,49 @@ export function QuickPreBookingModal({
                 <select
                   value={servicioId}
                   onChange={(e) => setServicioId(e.target.value)}
-                  className="w-full px-3 py-2.5 text-xs sm:text-sm rounded-xl border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#0C3E37]/20 focus:border-[#0C3E37] transition"
+                  className="w-full px-3 py-2.5 text-xs sm:text-sm rounded-xl border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#0C3E37]/20 focus:border-[#0C3E37] transition font-medium"
                 >
-                  {servicios.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.nombre} ({formatCurrency(s.precioPromocional || s.precioBase)} - 45 min)
-                    </option>
-                  ))}
+                  {servicios.map((s) => {
+                    const basePrice = Number(s.precioBase) || 0;
+                    const promoPrice = s.precioPromocional ? Number(s.precioPromocional) : null;
+                    const hasPromo = Boolean(promoPrice && promoPrice > 0 && promoPrice < basePrice);
+                    const discountPercent = hasPromo ? Math.round(((basePrice - promoPrice!) / basePrice) * 100) : 0;
+                    const priceLabel = hasPromo
+                      ? `${formatCurrency(promoPrice!)} (-${discountPercent}% promo, antes ${formatCurrency(basePrice)})`
+                      : formatCurrency(basePrice);
+
+                    return (
+                      <option key={s.id} value={s.id}>
+                        {s.nombre} ({priceLabel} • {s.duracionMinutos || 45} min)
+                      </option>
+                    );
+                  })}
                 </select>
+
+                {/* Sub-badge sutil si el servicio seleccionado tiene promoción */}
+                {activeServicio && (() => {
+                  const basePrice = Number(activeServicio.precioBase) || 0;
+                  const promoPrice = activeServicio.precioPromocional ? Number(activeServicio.precioPromocional) : null;
+                  const hasPromo = Boolean(promoPrice && promoPrice > 0 && promoPrice < basePrice);
+                  const discountPercent = hasPromo ? Math.round(((basePrice - promoPrice!) / basePrice) * 100) : 0;
+
+                  if (!hasPromo) return null;
+
+                  return (
+                    <div className="mt-1.5 flex items-center justify-between text-[11px] bg-emerald-50 border border-emerald-200/70 text-emerald-900 px-3 py-1 rounded-lg">
+                      <span className="font-medium text-emerald-800">
+                        Tarifa especial aplicada:
+                      </span>
+                      <span className="font-bold">
+                        <span className="line-through text-stone-400 font-normal mr-1.5">{formatCurrency(basePrice)}</span>
+                        {formatCurrency(promoPrice!)}
+                        <span className="text-[10px] bg-emerald-200 text-emerald-900 px-1 py-0.2 rounded font-extrabold ml-1.5">
+                          -{discountPercent}%
+                        </span>
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Fecha y Turno (Mañana / Tarde) */}

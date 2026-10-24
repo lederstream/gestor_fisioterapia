@@ -227,30 +227,52 @@ export function BookingForm({ servicios, configuracion }: BookingFormProps) {
             1. Seleccione el Servicio Clínico
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {servicios.map((s) => (
-              <div
-                key={s.id}
-                onClick={() => setServicioId(s.id)}
-                className={`p-4 rounded-2xl border cursor-pointer transition-all ${
-                  servicioId === s.id
-                    ? "border-teal-600 bg-teal-50/60 ring-2 ring-teal-500/20 shadow-xs"
-                    : "border-slate-200 hover:bg-slate-50"
-                }`}
-              >
-                <div className="flex justify-between items-start">
-                  <span className="font-bold text-slate-800 text-xs block">
-                    {s.nombre}
-                  </span>
-                  <span className="text-teal-700 font-extrabold text-xs">
-                    {formatCurrency(s.precioBase)}
-                  </span>
+            {servicios.map((s) => {
+              const basePrice = Number(s.precioBase) || 0;
+              const promoPrice = s.precioPromocional ? Number(s.precioPromocional) : null;
+              const hasPromo = Boolean(promoPrice && promoPrice > 0 && promoPrice < basePrice);
+              const discountPercent = hasPromo ? Math.round(((basePrice - promoPrice!) / basePrice) * 100) : 0;
+              const displayPrice = hasPromo ? promoPrice! : basePrice;
+
+              return (
+                <div
+                  key={s.id}
+                  onClick={() => setServicioId(s.id)}
+                  className={`p-4 rounded-2xl border cursor-pointer transition-all ${
+                    servicioId === s.id
+                      ? "border-teal-600 bg-teal-50/60 ring-2 ring-teal-500/20 shadow-xs"
+                      : "border-slate-200 hover:bg-slate-50"
+                  }`}
+                >
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="font-bold text-slate-800 text-xs block">
+                      {s.nombre}
+                    </span>
+                    <div className="text-right shrink-0">
+                      <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                        {hasPromo && (
+                          <span className="text-[10px] text-slate-400 line-through">
+                            {formatCurrency(basePrice)}
+                          </span>
+                        )}
+                        <span className="text-teal-700 font-extrabold text-xs">
+                          {formatCurrency(displayPrice)}
+                        </span>
+                        {hasPromo && discountPercent > 0 && (
+                          <span className="text-[9px] font-extrabold text-emerald-800 bg-emerald-100/80 px-1 py-0.5 rounded">
+                            -{discountPercent}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2 text-[11px] text-slate-500">
+                    <Clock className="w-3 h-3 text-slate-400" />
+                    <span>{s.duracionMinutos} minutos de sesión</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 mt-2 text-[11px] text-slate-500">
-                  <Clock className="w-3 h-3 text-slate-400" />
-                  <span>{s.duracionMinutos} minutos de sesión</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

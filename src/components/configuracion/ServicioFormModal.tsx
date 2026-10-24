@@ -362,14 +362,14 @@ export function ServicioFormModal({
 
                       <div>
                         <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                          Texto del Cartel / Insignia Roja
+                          Nota o Condición Interna <span className="text-[10px] font-normal text-slate-400">(Opcional)</span>
                         </label>
                         <input
                           type="text"
                           value={textoPromocion}
                           onChange={(e) => setTextoPromocion(e.target.value)}
-                          placeholder="Ej: 15% DSCTO PRIMERA SESIÓN"
-                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl font-bold text-rose-600 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                          placeholder="Ej: Válido solo primera cita"
+                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl font-medium text-slate-700 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none"
                         />
                       </div>
                     </div>
@@ -414,20 +414,22 @@ export function ServicioFormModal({
                     {nombre || "Nombre del tratamiento"}
                   </div>
                   <div className="flex items-baseline justify-between pt-1 border-t border-stone-100">
-                    <span className="font-extrabold text-xs text-slate-900">
-                      Desde {formatCurrency(tienePromo && precioPromocional ? precioPromocional : precioBase)}
-                    </span>
-                    {tienePromo && precioPromocional && (
-                      <span className="line-through text-stone-400 text-[10px]">
-                        {formatCurrency(precioBase)}
+                    <div className="flex items-baseline gap-1.5 flex-wrap">
+                      <span className="font-extrabold text-xs text-slate-900">
+                        Desde {formatCurrency(tienePromo && precioPromocional ? precioPromocional : precioBase)}
                       </span>
-                    )}
-                  </div>
-                  {tienePromo && textoPromocion && (
-                    <div className="text-[9px] font-bold text-rose-600 bg-rose-50 border border-rose-200/60 rounded px-2 py-0.5 text-center">
-                      {textoPromocion}
+                      {tienePromo && precioPromocional && (
+                        <span className="line-through text-stone-400 text-[10px]">
+                          {formatCurrency(precioBase)}
+                        </span>
+                      )}
                     </div>
-                  )}
+                    {tienePromo && discountPercent && discountPercent > 0 ? (
+                      <span className="text-[9px] font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.2 rounded">
+                        -{discountPercent}%
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
               </div>
             </div>

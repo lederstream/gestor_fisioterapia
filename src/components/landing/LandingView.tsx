@@ -699,7 +699,11 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {serviciosWeb.map((servicio, index) => {
               const formattedIndex = String(index + 1).padStart(2, "0");
-              const regularPrice = servicio.precioPromocional || servicio.precioBase;
+              const basePrice = Number(servicio.precioBase) || 0;
+              const promoPrice = servicio.precioPromocional ? Number(servicio.precioPromocional) : null;
+              const hasPromo = Boolean(promoPrice && promoPrice > 0 && promoPrice < basePrice);
+              const discountPercent = hasPromo ? Math.round(((basePrice - promoPrice!) / basePrice) * 100) : 0;
+              const displayPrice = hasPromo ? promoPrice! : basePrice;
 
               return (
                 <div
@@ -736,25 +740,30 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
                   </div>
 
                   <div className="pt-4 border-t border-stone-100 space-y-3">
-                    <div className="flex items-baseline justify-between">
-                      <div className="flex items-baseline">
-                        <span className="font-bold text-sm text-[#0B2E28]">
-                          Desde {formatCurrency(regularPrice)}
-                        </span>
-                        <span className="text-xs text-stone-400 ml-1.5">por sesión</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <div className="flex items-baseline gap-2 flex-wrap">
+                          <span className="font-extrabold text-base text-[#0B2E28]">
+                            Desde {formatCurrency(displayPrice)}
+                          </span>
+                          {hasPromo && (
+                            <span className="text-xs text-stone-400 line-through">
+                              {formatCurrency(basePrice)}
+                            </span>
+                          )}
+                          {hasPromo && discountPercent > 0 && (
+                            <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded-md">
+                              -{discountPercent}%
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs text-stone-400">por sesión</span>
                       </div>
 
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-stone-500 bg-stone-100 px-2 py-0.5 rounded-md">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-stone-500 bg-stone-100 px-2 py-0.5 rounded-md shrink-0">
                         <Clock className="w-3 h-3 text-stone-400" /> {servicio.duracionMinutos || 45} min
                       </span>
                     </div>
-
-                    {/* Etiqueta Roja de Promoción (Image 4) */}
-                    {servicio.textoPromocion ? (
-                      <div className="text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-200/70 px-2.5 py-1 rounded-md text-center">
-                        {servicio.textoPromocion}
-                      </div>
-                    ) : null}
 
                     {/* Botón de Reserva Rápida (Modal) + Link */}
                     <div className="pt-1 flex items-center gap-2">
