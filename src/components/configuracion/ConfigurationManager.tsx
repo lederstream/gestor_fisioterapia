@@ -43,8 +43,9 @@ import {
   Check
 } from "lucide-react";
 import { HorariosManager } from "./HorariosManager";
+import { ServicioFormModal } from "./ServicioFormModal";
 import { Switch } from "./Switch";
-import { HorariosSemanaConfig, TestimonioItem } from "@/lib/store";
+import { HorariosSemanaConfig, TestimonioItem, ServicioItem } from "@/lib/store";
 
 interface ConfigurationManagerProps {
   initialConfig: any;
@@ -144,27 +145,9 @@ export function ConfigurationManager({
   const [editSalaNombre, setEditSalaNombre] = useState("");
   const [editSalaEquip, setEditSalaEquip] = useState("");
 
-  // Estados modales y formularios de Servicios
-  const [isCreatingServicio, setIsCreatingServicio] = useState(false);
-  const [nuevoServicioNombre, setNuevoServicioNombre] = useState("");
-  const [nuevoServicioPrecio, setNuevoServicioPrecio] = useState(85);
-  const [nuevoServicioDuracion, setNuevoServicioDuracion] = useState(45);
-  const [nuevoServicioTag, setNuevoServicioTag] = useState("DOLOR & MOVILIDAD");
-  const [nuevoServicioDesc, setNuevoServicioDesc] = useState("");
-  const [nuevoServicioPromo, setNuevoServicioPromo] = useState<number | undefined>(undefined);
-  const [nuevoServicioTextoPromo, setNuevoServicioTextoPromo] = useState("");
-  const [nuevoServicioWeb, setNuevoServicioWeb] = useState(true);
-
-  // Edición de Servicio existente
-  const [editingServicioId, setEditingServicioId] = useState<string | null>(null);
-  const [servicioNombre, setServicioNombre] = useState("");
-  const [servicioPrecio, setServicioPrecio] = useState(85);
-  const [servicioDuracion, setServicioDuracion] = useState(45);
-  const [servicioTag, setServicioTag] = useState("DOLOR & MOVILIDAD");
-  const [servicioDesc, setServicioDesc] = useState("");
-  const [servicioPromo, setServicioPromo] = useState<number | undefined>(undefined);
-  const [servicioTextoPromo, setServicioTextoPromo] = useState("");
-  const [servicioMostrarWeb, setServicioMostrarWeb] = useState(true);
+  // Estados para Modal de Servicio (Crear y Editar)
+  const [isServicioModalOpen, setIsServicioModalOpen] = useState(false);
+  const [servicioParaEditar, setServicioParaEditar] = useState<ServicioItem | null>(null);
 
   // Estados de Testimonios
   const [isCreatingTestimonio, setIsCreatingTestimonio] = useState(false);
@@ -464,60 +447,51 @@ export function ConfigurationManager({
     }
   };
 
-  // ── SERVICIOS Y ARANCELES ───────────────────────────────────────────────────
-  const handleSaveServicio = async (servicioId: string) => {
-    const res = await modificarServicio(
-      servicioId, 
-      servicioPrecio, 
-      servicioDuracion,
-      {
-        nombre: servicioNombre,
-        categoriaTag: servicioTag,
-        descripcion: servicioDesc,
-        precioPromocional: servicioPromo,
-        textoPromocion: servicioTextoPromo,
-        mostrarEnWeb: servicioMostrarWeb,
+  // ── SERVICIOS Y ARANCELES (MANEJADOR UNIFICADO DE MODAL) ────────────────────
+  const handleSaveServicioModal = async (data: {
+    id?: string;
+    nombre: string;
+    categoriaTag: string;
+    descripcion: string;
+    duracionMinutos: number;
+    precioBase: number;
+    precioPromocional?: number;
+    textoPromocion?: string;
+    mostrarEnWeb: boolean;
+  }) => {
+    if (data.id) {
+      // Modificar servicio existente
+      const res = await modificarServicio(data.id, data.precioBase, data.duracionMinutos, {
+        nombre: data.nombre,
+        categoriaTag: data.categoriaTag,
+        descripcion: data.descripcion,
+        precioPromocional: data.precioPromocional,
+        textoPromocion: data.textoPromocion,
+        mostrarEnWeb: data.mostrarEnWeb,
+      });
+      if (res.success && res.data) {
+        const updated = res.data as any;
+        setServicios((prev) => prev.map((s) => (s.id === data.id ? { ...s, ...updated } : s)));
+        showToast("Servicio y aranceles actualizados con éxito.");
+      } else {
+        throw new Error(res.error || "No se pudo actualizar el servicio.");
       }
-    );
-    if (res.success && res.data) {
-      const updated = res.data as any;
-      setServicios((prev) =>
-        prev.map((s) => (s.id === servicioId ? { ...s, ...updated } : s))
-      );
-      setEditingServicioId(null);
-      showToast("Servicio y aranceles actualizados.");
-    }
-  };
-
-  const handleCreateServicio = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!nuevoServicioNombre.trim()) return;
-
-    const res = await crearNuevoServicio(
-      nuevoServicioNombre.trim(),
-      Number(nuevoServicioPrecio),
-      Number(nuevoServicioDuracion),
-      {
-        categoriaTag: nuevoServicioTag,
-        descripcion: nuevoServicioDesc,
-        precioPromocional: nuevoServicioPromo,
-        textoPromocion: nuevoServicioTextoPromo,
-        mostrarEnWeb: nuevoServicioWeb,
+    } else {
+      // Crear nuevo servicio
+      const res = await crearNuevoServicio(data.nombre, data.precioBase, data.duracionMinutos, {
+        categoriaTag: data.categoriaTag,
+        descripcion: data.descripcion,
+        precioPromocional: data.precioPromocional,
+        textoPromocion: data.textoPromocion,
+        mostrarEnWeb: data.mostrarEnWeb,
+      });
+      if (res.success && res.data) {
+        const nuevo = res.data as any;
+        setServicios((prev) => [...prev, nuevo]);
+        showToast(`Servicio "${nuevo.nombre || data.nombre}" agregado al catálogo.`);
+      } else {
+        throw new Error(res.error || "No se pudo registrar el nuevo servicio.");
       }
-    );
-    if (res.success && res.data) {
-      const nuevo = res.data as any;
-      setServicios((prev) => [...prev, nuevo]);
-      setNuevoServicioNombre("");
-      setNuevoServicioPrecio(85);
-      setNuevoServicioDuracion(45);
-      setNuevoServicioTag("DOLOR & MOVILIDAD");
-      setNuevoServicioDesc("");
-      setNuevoServicioPromo(undefined);
-      setNuevoServicioTextoPromo("");
-      setNuevoServicioWeb(true);
-      setIsCreatingServicio(false);
-      showToast(`Servicio "${nuevo.nombre || nuevoServicioNombre}" agregado.`);
     }
   };
 
@@ -1162,7 +1136,7 @@ export function ConfigurationManager({
       )}
 
       {/* ========================================================================= */}
-      {/* PESTAÑA 4: SERVICIOS Y ARANCELES                                          */}
+      {/* PESTAÑA 4: SERVICIOS Y ARANCELES (GESTIONADOS VÍA MODAL)                  */}
       {/* ========================================================================= */}
       {activeTab === "servicios" && (
         <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5">
@@ -1170,7 +1144,7 @@ export function ConfigurationManager({
             <div>
               <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
                 <DollarSign className="w-4 h-4 text-teal-600" />
-                <span>Catálogo de Servicios y Aranceles</span>
+                <span>Catálogo de Servicios y Aranceles ({servicios.length})</span>
               </h3>
               <p className="text-[11px] text-slate-500">
                 Define tarifas base, precios de promoción, etiquetas y duración para el agendamiento y la web.
@@ -1179,7 +1153,10 @@ export function ConfigurationManager({
 
             <button
               type="button"
-              onClick={() => setIsCreatingServicio(true)}
+              onClick={() => {
+                setServicioParaEditar(null);
+                setIsServicioModalOpen(true);
+              }}
               className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-xs flex items-center gap-1.5 transition cursor-pointer text-xs self-start sm:self-auto"
             >
               <Plus className="w-4 h-4" />
@@ -1187,244 +1164,74 @@ export function ConfigurationManager({
             </button>
           </div>
 
-          {/* Formulario Crear Servicio */}
-          {isCreatingServicio && (
-            <form onSubmit={handleCreateServicio} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-              <span className="text-xs font-bold text-slate-800 block">Nuevo Servicio Clínico</span>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                <div className="sm:col-span-2">
-                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Nombre</label>
-                  <input
-                    type="text"
-                    placeholder="Ej: Fisioterapia Deportiva"
-                    value={nuevoServicioNombre}
-                    onChange={(e) => setNuevoServicioNombre(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Categoría Tag</label>
-                  <input
-                    type="text"
-                    value={nuevoServicioTag}
-                    onChange={(e) => setNuevoServicioTag(e.target.value)}
-                    placeholder="DOLOR & MOVILIDAD"
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl uppercase font-bold text-rose-600"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Precio Base (S/)</label>
-                  <input
-                    type="number"
-                    value={nuevoServicioPrecio}
-                    onChange={(e) => setNuevoServicioPrecio(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Precio Promo (Opcional)</label>
-                  <input
-                    type="number"
-                    value={nuevoServicioPromo || ""}
-                    onChange={(e) => setNuevoServicioPromo(e.target.value ? Number(e.target.value) : undefined)}
-                    placeholder="Ej: 75"
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-emerald-700 font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Duración (minutos)</label>
-                  <input
-                    type="number"
-                    value={nuevoServicioDuracion}
-                    onChange={(e) => setNuevoServicioDuracion(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-600 mb-1">Descripción corta</label>
-                <textarea
-                  value={nuevoServicioDesc}
-                  onChange={(e) => setNuevoServicioDesc(e.target.value)}
-                  placeholder="Enfoque clínico y técnicas utilizadas..."
-                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs h-16"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsCreatingServicio(false)}
-                  className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-slate-600 text-xs font-semibold"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 bg-teal-600 text-white rounded-xl text-xs font-bold shadow-xs hover:bg-teal-700"
-                >
-                  Registrar Servicio
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* Lista de Servicios */}
+          {/* Lista Limpia de Servicios Sin Layout Shifts */}
           <div className="space-y-3">
-            {servicios.map((s) => {
-              const isEditing = editingServicioId === s.id;
-
-              return (
-                <div
-                  key={s.id}
-                  className="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs hover:border-slate-300 transition"
-                >
-                  {isEditing ? (
-                    <div className="space-y-3 text-xs">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div className="sm:col-span-2">
-                          <label className="font-semibold text-slate-600">Nombre del Servicio</label>
-                          <input
-                            type="text"
-                            value={servicioNombre}
-                            onChange={(e) => setServicioNombre(e.target.value)}
-                            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-bold mt-1"
-                          />
-                        </div>
-                        <div>
-                          <label className="font-semibold text-slate-600">Tag Categoría</label>
-                          <input
-                            type="text"
-                            value={servicioTag}
-                            onChange={(e) => setServicioTag(e.target.value)}
-                            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-rose-600 mt-1 uppercase"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div>
-                          <label className="font-semibold text-slate-600">Precio Regular (S/)</label>
-                          <input
-                            type="number"
-                            value={servicioPrecio}
-                            onChange={(e) => setServicioPrecio(Number(e.target.value))}
-                            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-bold mt-1"
-                          />
-                        </div>
-                        <div>
-                          <label className="font-semibold text-slate-600">Precio Promoción (S/)</label>
-                          <input
-                            type="number"
-                            value={servicioPromo || ""}
-                            onChange={(e) => setServicioPromo(e.target.value ? Number(e.target.value) : undefined)}
-                            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-emerald-700 mt-1"
-                          />
-                        </div>
-                        <div>
-                          <label className="font-semibold text-slate-600">Duración (min)</label>
-                          <input
-                            type="number"
-                            value={servicioDuracion}
-                            onChange={(e) => setServicioDuracion(Number(e.target.value))}
-                            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-bold mt-1"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="font-semibold text-slate-600">Descripción del tratamiento</label>
-                        <textarea
-                          value={servicioDesc}
-                          onChange={(e) => setServicioDesc(e.target.value)}
-                          className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs mt-1"
-                        />
-                      </div>
-
-                      <div className="flex justify-end gap-2 pt-2">
-                        <button
-                          type="button"
-                          onClick={() => setEditingServicioId(null)}
-                          className="px-3 py-1.5 bg-slate-100 rounded-xl text-slate-600 font-semibold"
-                        >
-                          Cancelar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSaveServicio(s.id)}
-                          className="px-4 py-1.5 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700"
-                        >
-                          Guardar Cambios
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-800 text-sm">{s.nombre}</span>
-                          <span className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full uppercase">
-                            {s.categoriaTag || "CLÍNICO"}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500 mt-1 max-w-xl">
-                          {s.descripcion || "Tratamiento personalizado enfocado en recuperación y movilidad."}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-4 self-end sm:self-auto shrink-0">
-                        <div className="text-right">
-                          <span className="text-xs font-semibold text-slate-400 block">{s.duracionMinutos} min</span>
-                          <span className="text-sm font-extrabold text-slate-800">
-                            {s.precioPromocional ? (
-                              <>
-                                <span className="line-through text-slate-400 text-xs mr-1">{formatCurrency(s.precioBase)}</span>
-                                <span className="text-emerald-700">{formatCurrency(s.precioPromocional)}</span>
-                              </>
-                            ) : (
-                              formatCurrency(s.precioBase)
-                            )}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-1 border-l border-slate-100 pl-3">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingServicioId(s.id);
-                              setServicioNombre(s.nombre);
-                              setServicioPrecio(s.precioBase);
-                              setServicioDuracion(s.duracionMinutos);
-                              setServicioTag(s.categoriaTag || "DOLOR & MOVILIDAD");
-                              setServicioDesc(s.descripcion || "");
-                              setServicioPromo(s.precioPromocional);
-                              setServicioTextoPromo(s.textoPromocion || "");
-                              setServicioMostrarWeb(s.mostrarEnWeb !== false);
-                            }}
-                            className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition"
-                            title="Editar"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteServicio(s.id, s.nombre)}
-                            className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                            title="Eliminar"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+            {servicios.map((s) => (
+              <div
+                key={s.id}
+                className="p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs hover:border-teal-500/30 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+              >
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-bold text-slate-800 text-sm">{s.nombre}</span>
+                    <span className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full uppercase">
+                      {s.categoriaTag || "CLÍNICO"}
+                    </span>
+                    {s.mostrarEnWeb === false && (
+                      <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">
+                        Oculto en web
+                      </span>
+                    )}
+                    {s.precioPromocional && (
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                        {s.textoPromocion || "Promoción activa"}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1 max-w-xl line-clamp-2">
+                    {s.descripcion || "Tratamiento personalizado enfocado en recuperación y movilidad."}
+                  </p>
                 </div>
-              );
-            })}
+
+                <div className="flex items-center gap-4 self-end sm:self-auto shrink-0">
+                  <div className="text-right">
+                    <span className="text-xs font-semibold text-slate-400 block">{s.duracionMinutos} min</span>
+                    <span className="text-sm font-extrabold text-slate-800">
+                      {s.precioPromocional ? (
+                        <>
+                          <span className="line-through text-slate-400 text-xs mr-1.5">{formatCurrency(s.precioBase)}</span>
+                          <span className="text-emerald-700">{formatCurrency(s.precioPromocional)}</span>
+                        </>
+                      ) : (
+                        formatCurrency(s.precioBase)
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1 border-l border-slate-100 pl-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setServicioParaEditar(s);
+                        setIsServicioModalOpen(true);
+                      }}
+                      className="p-1.5 text-slate-400 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition cursor-pointer"
+                      title="Editar servicio"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteServicio(s.id, s.nombre)}
+                      className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                      title="Eliminar servicio"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -1721,6 +1528,17 @@ export function ConfigurationManager({
           </div>
         </form>
       )}
+
+      {/* Modal Dedicado para Crear y Editar Servicios */}
+      <ServicioFormModal
+        isOpen={isServicioModalOpen}
+        onClose={() => {
+          setIsServicioModalOpen(false);
+          setServicioParaEditar(null);
+        }}
+        onSave={handleSaveServicioModal}
+        servicioParaEditar={servicioParaEditar}
+      />
     </div>
   );
 }
