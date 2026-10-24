@@ -6,11 +6,11 @@ import {
   guardarConfiguracionClinica, 
   cambiarEstadoSala, 
   modificarServicio, 
-  crearNuevaSala,
-  editarDatosSala,
-  eliminarSala,
-  crearNuevoServicio,
-  eliminarServicio
+  crearNuevaSala, 
+  editarDatosSala, 
+  eliminarSala, 
+  crearNuevoServicio, 
+  eliminarServicio 
 } from "@/server/actions/configuracion";
 import { formatCurrency } from "@/lib/utils";
 import { 
@@ -21,22 +21,26 @@ import {
   CheckCircle2, 
   Clock, 
   Save, 
-  Wrench,
-  Sparkles,
-  Upload,
-  RotateCcw,
-  Plus,
-  Trash2,
-  Edit3,
-  ArrowRight,
-  X,
-  ShieldCheck,
-  MapPin,
-  Phone,
-  FileText,
-  Star,
-  Quote,
-  Palette
+  Wrench, 
+  Sparkles, 
+  Upload, 
+  RotateCcw, 
+  Plus, 
+  Trash2, 
+  Edit3, 
+  ArrowRight, 
+  X, 
+  ShieldCheck, 
+  MapPin, 
+  Phone, 
+  FileText, 
+  Star, 
+  Quote, 
+  Palette,
+  Globe,
+  ExternalLink,
+  AlertCircle,
+  Check
 } from "lucide-react";
 import { HorariosManager } from "./HorariosManager";
 import { Switch } from "./Switch";
@@ -49,22 +53,90 @@ interface ConfigurationManagerProps {
   initialPersonal?: any[];
 }
 
-type TabType = "general" | "horarios" | "salas" | "servicios" | "testimonios" | "politicas";
+type TabType = "identidad" | "horarios" | "salas" | "servicios" | "marketing" | "politicas";
+
+// Función auxiliar de compresión rápida en cliente para evitar límites de tamaño en Server Actions
+async function compressImageFile(file: File): Promise<string> {
+  if (file.type === "image/svg+xml") {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target?.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 512;
+        let w = img.width;
+        let h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(e.target?.result as string);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, w, h);
+        const isPng = file.type === "image/png";
+        const dataUrl = canvas.toDataURL(isPng ? "image/png" : "image/webp", 0.9);
+        resolve(dataUrl);
+      };
+      img.onerror = reject;
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 export function ConfigurationManager({
   initialConfig,
   initialSalas,
   initialServicios,
 }: ConfigurationManagerProps) {
-  const [activeTab, setActiveTab] = useState<TabType>("general");
+  const [activeTab, setActiveTab] = useState<TabType>("identidad");
 
-  // State Configuración General y Políticas
-  const [config, setConfig] = useState(initialConfig);
-  const [savingConfig, setSavingConfig] = useState(false);
+  // Estado maestro de configuración
+  const [config, setConfig] = useState(initialConfig || {});
+  const [salas, setSalas] = useState(initialSalas || []);
+  const [servicios, setServicios] = useState(initialServicios || []);
+  const [testimonios, setTestimonios] = useState<TestimonioItem[]>(
+    initialConfig?.testimonios || [
+      {
+        id: "t1",
+        nombre: "Sarah M.",
+        calificacion: 5,
+        comentario: "Excelente recuperación de mi lesión de hombro. 100% recomendados.",
+        avatarUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80",
+      },
+    ]
+  );
 
-  // State Salas
-  const [salas, setSalas] = useState(initialSalas);
+  // Estados de carga por sección (Scoped Loading States)
+  const [savingLogo, setSavingLogo] = useState(false);
+  const [hasPendingLogo, setHasPendingLogo] = useState(false);
+  const [savingColors, setSavingColors] = useState(false);
+  const [savingDatos, setSavingDatos] = useState(false);
+  const [savingMarketing, setSavingMarketing] = useState(false);
+  const [savingPoliticas, setSavingPoliticas] = useState(false);
   const [updatingSalaId, setUpdatingSalaId] = useState<string | null>(null);
+
+  // Estados modales y formularios de Salas
   const [isCreatingSala, setIsCreatingSala] = useState(false);
   const [nuevaSalaNombre, setNuevaSalaNombre] = useState("");
   const [nuevaSalaEquip, setNuevaSalaEquip] = useState("");
@@ -72,68 +144,127 @@ export function ConfigurationManager({
   const [editSalaNombre, setEditSalaNombre] = useState("");
   const [editSalaEquip, setEditSalaEquip] = useState("");
 
-  // State Servicios
-  const [servicios, setServicios] = useState(initialServicios);
-  const [editingServicioId, setEditingServicioId] = useState<string | null>(null);
-  const [servicioNombre, setServicioNombre] = useState<string>("");
-  const [servicioPrecio, setServicioPrecio] = useState<number>(0);
-  const [servicioDuracion, setServicioDuracion] = useState<number>(45);
-  const [servicioTag, setServicioTag] = useState<string>("DOLOR & MOVILIDAD");
-  const [servicioDesc, setServicioDesc] = useState<string>("");
-  const [servicioPromo, setServicioPromo] = useState<number | undefined>(undefined);
-  const [servicioTextoPromo, setServicioTextoPromo] = useState<string>("");
-  const [servicioMostrarWeb, setServicioMostrarWeb] = useState<boolean>(true);
-
+  // Estados modales y formularios de Servicios
   const [isCreatingServicio, setIsCreatingServicio] = useState(false);
   const [nuevoServicioNombre, setNuevoServicioNombre] = useState("");
-  const [nuevoServicioPrecio, setNuevoServicioPrecio] = useState<number>(40);
-  const [nuevoServicioDuracion, setNuevoServicioDuracion] = useState<number>(45);
+  const [nuevoServicioPrecio, setNuevoServicioPrecio] = useState(85);
+  const [nuevoServicioDuracion, setNuevoServicioDuracion] = useState(45);
   const [nuevoServicioTag, setNuevoServicioTag] = useState("DOLOR & MOVILIDAD");
   const [nuevoServicioDesc, setNuevoServicioDesc] = useState("");
   const [nuevoServicioPromo, setNuevoServicioPromo] = useState<number | undefined>(undefined);
   const [nuevoServicioTextoPromo, setNuevoServicioTextoPromo] = useState("");
   const [nuevoServicioWeb, setNuevoServicioWeb] = useState(true);
 
-  // State Testimonios (Patient Stories)
-  const [testimonios, setTestimonios] = useState<TestimonioItem[]>(config.testimonios || []);
+  // Edición de Servicio existente
+  const [editingServicioId, setEditingServicioId] = useState<string | null>(null);
+  const [servicioNombre, setServicioNombre] = useState("");
+  const [servicioPrecio, setServicioPrecio] = useState(85);
+  const [servicioDuracion, setServicioDuracion] = useState(45);
+  const [servicioTag, setServicioTag] = useState("DOLOR & MOVILIDAD");
+  const [servicioDesc, setServicioDesc] = useState("");
+  const [servicioPromo, setServicioPromo] = useState<number | undefined>(undefined);
+  const [servicioTextoPromo, setServicioTextoPromo] = useState("");
+  const [servicioMostrarWeb, setServicioMostrarWeb] = useState(true);
+
+  // Estados de Testimonios
   const [isCreatingTestimonio, setIsCreatingTestimonio] = useState(false);
   const [nuevoTestNombre, setNuevoTestNombre] = useState("");
   const [nuevoTestCalif, setNuevoTestCalif] = useState(5);
   const [nuevoTestComent, setNuevoTestComent] = useState("");
   const [nuevoTestAvatar, setNuevoTestAvatar] = useState("");
 
-  // Feedback Toast
+  // Toast feedback
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const showToast = (msg: string) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(null), 3500);
   };
 
-  // Cargar logotipo
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // ── SECCIÓN 1: IDENTIDAD VISUAL (LOGOTIPO) ──────────────────────────────────
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert("El archivo excede el tamaño máximo permitido (2MB).");
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64 = event.target?.result as string;
-        setConfig((prev: any) => ({ ...prev, logoUrl: base64 }));
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    if (file.size > 4 * 1024 * 1024) {
+      alert("El archivo no debe exceder los 4MB.");
+      return;
+    }
+
+    try {
+      setSavingLogo(true);
+      const compressed = await compressImageFile(file);
+      setConfig((prev: any) => ({ ...prev, logoUrl: compressed }));
+      setHasPendingLogo(true);
+      setSavingLogo(false);
+      showToast("Logo procesado. Haz clic en 'Guardar Logotipo' para confirmar.");
+    } catch {
+      setSavingLogo(false);
+      alert("Error al procesar la imagen seleccionada.");
     }
   };
 
-  const handleResetLogo = () => {
-    setConfig((prev: any) => ({ ...prev, logoUrl: "/images/logo-clinica.svg" }));
+  const handleSaveLogoOnly = async () => {
+    if (!config.logoUrl) return;
+    setSavingLogo(true);
+    const res = await guardarConfiguracionClinica({ logoUrl: config.logoUrl });
+    setSavingLogo(false);
+
+    if (res.success && res.data) {
+      setHasPendingLogo(false);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("clinic_logo", res.data.logoUrl || "/images/logo-clinica.svg");
+        window.dispatchEvent(new Event("clinic-logo-change"));
+      }
+      showToast("Logotipo institucional guardado y sincronizado.");
+    } else {
+      alert("No se pudo guardar el logotipo: " + (res.error || "Error de red"));
+    }
   };
 
-  // Guardar datos generales de la clínica
-  const handleSaveGeneral = async (e: React.FormEvent) => {
+  const handleResetLogoOnly = async () => {
+    if (!confirm("¿Deseas restablecer el logotipo al isotipo institucional original?")) return;
+    setSavingLogo(true);
+    const defaultLogo = "/images/logo-clinica.svg";
+    setConfig((prev: any) => ({ ...prev, logoUrl: defaultLogo }));
+    const res = await guardarConfiguracionClinica({ logoUrl: defaultLogo });
+    setSavingLogo(false);
+
+    if (res.success) {
+      setHasPendingLogo(false);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("clinic_logo", defaultLogo);
+        window.dispatchEvent(new Event("clinic-logo-change"));
+      }
+      showToast("Logotipo restablecido al valor original.");
+    }
+  };
+
+  // ── SECCIÓN 2: PALETA DE COLORES ───────────────────────────────────────────
+  const handleSaveColorsOnly = async () => {
+    setSavingColors(true);
+    const res = await guardarConfiguracionClinica({
+      colorPrimario: config.colorPrimario || "#0C3E37",
+      colorSecundario: config.colorSecundario || "#E07052",
+      colorAcento: config.colorAcento || "#0D9488",
+    });
+    setSavingColors(false);
+
+    if (res.success && res.data) {
+      if (typeof window !== "undefined") {
+        document.documentElement.style.setProperty("--brand-primary", res.data.colorPrimario || "#0C3E37");
+        document.documentElement.style.setProperty("--brand-secondary", res.data.colorSecundario || "#E07052");
+        document.documentElement.style.setProperty("--brand-accent", res.data.colorAcento || "#0D9488");
+        localStorage.setItem("clinic_config", JSON.stringify(res.data));
+        window.dispatchEvent(new Event("clinic-config-change"));
+      }
+      showToast("Colores institucionales actualizados.");
+    }
+  };
+
+  // ── SECCIÓN 3: DATOS INSTITUCIONALES Y CONTACTO ─────────────────────────────
+  const handleSaveDatosClinica = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSavingConfig(true);
+    setSavingDatos(true);
 
     const dirCalculada = [
       [config.direccionAvenidaCalle, config.direccionNumero].filter(Boolean).join(" "),
@@ -141,58 +272,38 @@ export function ConfigurationManager({
       config.direccionCiudad,
     ].filter(Boolean).join(", ") + (config.direccionReferencia ? ` (Ref: ${config.direccionReferencia})` : "") || config.direccion;
 
-    const payload = {
+    const res = await guardarConfiguracionClinica({
       razonSocial: config.razonSocial,
       nombreComercial: config.nombreComercial,
       slogan: config.slogan || "REHABILITACIÓN & BIENESTAR",
-      tituloHero: config.tituloHero || "Vuelve a moverte.",
-      subtituloHero: config.subtituloHero || "Vuelve a sentirte tú.",
-      descripcionHero: config.descripcionHero || "Fisioterapia especializada y humana para recuperar tu bienestar, paso a paso.",
-      ratingPromedio: Number(config.ratingPromedio || 4.9),
-      totalPacientesMes: config.totalPacientesMes || "+1,100",
-      googleMapsUrl: config.googleMapsUrl,
       ruc: config.ruc,
+      telefono: config.telefono,
+      whatsapp: config.whatsapp,
+      googleMapsUrl: config.googleMapsUrl,
       direccionAvenidaCalle: config.direccionAvenidaCalle,
       direccionNumero: config.direccionNumero,
       direccionDistrito: config.direccionDistrito,
       direccionCiudad: config.direccionCiudad,
       direccionReferencia: config.direccionReferencia,
       direccion: dirCalculada,
-      telefono: config.telefono,
-      whatsapp: config.whatsapp,
-      logoUrl: config.logoUrl || "/images/logo-clinica.svg",
-      faviconUrl: config.faviconUrl || "/favicon.ico",
-      heroImageUrl: config.heroImageUrl || "/images/hero-physio.jpg",
-      colorPrimario: config.colorPrimario || "#0C3E37",
-      colorSecundario: config.colorSecundario || "#E07052",
-      colorAcento: config.colorAcento || "#0D9488",
-      testimonios: testimonios,
-    };
-
-    const res = await guardarConfiguracionClinica(payload);
-    setSavingConfig(false);
+    });
+    setSavingDatos(false);
 
     if (res.success && res.data) {
-      setConfig((prev: any) => ({ ...prev, ...res.data }));
+      setConfig((prev: any) => ({ ...prev, ...res.data, direccion: dirCalculada }));
       if (typeof window !== "undefined") {
-        localStorage.setItem("clinic_logo", res.data.logoUrl || "/images/logo-clinica.svg");
         localStorage.setItem("clinic_config", JSON.stringify(res.data));
-        document.documentElement.style.setProperty("--brand-primary", res.data.colorPrimario || "#0C3E37");
-        document.documentElement.style.setProperty("--brand-secondary", res.data.colorSecundario || "#E07052");
-        document.documentElement.style.setProperty("--brand-accent", res.data.colorAcento || "#0D9488");
-        window.dispatchEvent(new Event("clinic-logo-change"));
         window.dispatchEvent(new Event("clinic-config-change"));
       }
-      showToast("Datos de la clínica y marca guardados correctamente.");
+      showToast("Datos de la clínica y canales de contacto actualizados.");
     }
   };
 
-  // Guardar horarios de atención desde HorariosManager
+  // ── SECCIÓN 4: HORARIOS Y AGENDA ───────────────────────────────────────────
   const handleSaveHorarios = async (
     horariosSemana: HorariosSemanaConfig,
     intervaloMinutos: number
   ): Promise<boolean> => {
-    // Calcular apertura más temprana y cierre más tardío para retrocompatibilidad
     const diasActivos = Object.values(horariosSemana).filter((d) => d.activo);
     const horaApertura = diasActivos.length > 0 
       ? diasActivos.reduce((min, d) => d.apertura < min ? d.apertura : min, diasActivos[0].apertura)
@@ -214,160 +325,34 @@ export function ConfigurationManager({
         localStorage.setItem("clinic_config", JSON.stringify(res.data));
         window.dispatchEvent(new Event("clinic-config-change"));
       }
-      showToast("Horarios semanales e intervalos sincronizados.");
+      showToast("Horarios semanales y turnos sincronizados con la web.");
       return true;
     }
     return false;
   };
 
-  // Guardar políticas clínicas
-  const handleSavePoliticas = async (e: React.FormEvent) => {
+  // ── SECCIÓN 5: MARKETING & PORTADA WEB ───────────────────────────────────────
+  const handleSaveMarketing = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSavingConfig(true);
+    setSavingMarketing(true);
 
     const res = await guardarConfiguracionClinica({
-      frecuenciaReevaluacion: Number(config.frecuenciaReevaluacion),
-      bloqueoAltaReevaluacion: Boolean(config.bloqueoAltaReevaluacion),
+      tituloHero: config.tituloHero || "Vuelve a moverte.",
+      subtituloHero: config.subtituloHero || "Vuelve a sentirte tú.",
+      descripcionHero: config.descripcionHero || "Fisioterapia especializada y humana para recuperar tu bienestar, paso a paso.",
+      heroImageUrl: config.heroImageUrl || "/images/hero-physio.jpg",
+      totalPacientesMes: config.totalPacientesMes || "+1,100",
+      ratingPromedio: Number(config.ratingPromedio || 4.9),
     });
+    setSavingMarketing(false);
 
-    setSavingConfig(false);
     if (res.success && res.data) {
       setConfig((prev: any) => ({ ...prev, ...res.data }));
-      showToast("Políticas médicas y reglas de alta guardadas.");
+      showToast("Textos y portada de la página web actualizados.");
     }
   };
 
-  // Salas: Alternar disponibilidad
-  const handleToggleSala = async (salaId: string, currentEstado: string) => {
-    const nuevoEstado = currentEstado === "DISPONIBLE" ? "MANTENIMIENTO" : "DISPONIBLE";
-    setUpdatingSalaId(salaId);
-
-    const res = await cambiarEstadoSala(salaId, nuevoEstado);
-    setUpdatingSalaId(null);
-
-    if (res.success) {
-      setSalas((prev) =>
-        prev.map((s) => (s.id === salaId ? { ...s, estado: nuevoEstado } : s))
-      );
-      showToast(`Sala ahora en estado ${nuevoEstado}.`);
-    }
-  };
-
-  // Salas: Crear nueva
-  const handleCreateSala = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!nuevaSalaNombre.trim()) return;
-
-    const res = await crearNuevaSala(nuevaSalaNombre.trim(), nuevaSalaEquip.trim());
-    if (res.success && res.data) {
-      const nueva = res.data as any;
-      setSalas((prev) => [...prev, nueva]);
-      setNuevaSalaNombre("");
-      setNuevaSalaEquip("");
-      setIsCreatingSala(false);
-      showToast(`"${nueva.nombre || nuevaSalaNombre}" registrada con éxito.`);
-    }
-  };
-
-  // Salas: Editar existente
-  const handleSaveEditSala = async (salaId: string) => {
-    if (!editSalaNombre.trim()) return;
-
-    const res = await editarDatosSala(salaId, editSalaNombre.trim(), editSalaEquip.trim());
-    if (res.success) {
-      setSalas((prev) =>
-        prev.map((s) =>
-          s.id === salaId
-            ? { ...s, nombre: editSalaNombre.trim(), equipamiento: editSalaEquip.trim() }
-            : s
-        )
-      );
-      setEditingSalaId(null);
-      showToast("Datos de sala actualizados.");
-    }
-  };
-
-  // Salas: Eliminar
-  const handleDeleteSala = async (salaId: string, nombre: string) => {
-    if (!confirm(`¿Eliminar la "${nombre}"? Esta acción no se puede deshacer.`)) return;
-
-    const res = await eliminarSala(salaId);
-    if (res.success) {
-      setSalas((prev) => prev.filter((s) => s.id !== salaId));
-      showToast(`"${nombre}" eliminada correctamente.`);
-    }
-  };
-
-  // Servicios: Modificar existente con todos los campos comerciales
-  const handleSaveServicio = async (servicioId: string) => {
-    const res = await modificarServicio(
-      servicioId, 
-      servicioPrecio, 
-      servicioDuracion,
-      {
-        nombre: servicioNombre,
-        categoriaTag: servicioTag,
-        descripcion: servicioDesc,
-        precioPromocional: servicioPromo,
-        textoPromocion: servicioTextoPromo,
-        mostrarEnWeb: servicioMostrarWeb,
-      }
-    );
-    if (res.success && res.data) {
-      const updated = res.data as any;
-      setServicios((prev) =>
-        prev.map((s) => (s.id === servicioId ? { ...s, ...updated } : s))
-      );
-      setEditingServicioId(null);
-      showToast("Servicio y promociones actualizadas.");
-    }
-  };
-
-  // Servicios: Crear nuevo con categorías y descuentos
-  const handleCreateServicio = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!nuevoServicioNombre.trim()) return;
-
-    const res = await crearNuevoServicio(
-      nuevoServicioNombre.trim(),
-      Number(nuevoServicioPrecio),
-      Number(nuevoServicioDuracion),
-      {
-        categoriaTag: nuevoServicioTag,
-        descripcion: nuevoServicioDesc,
-        precioPromocional: nuevoServicioPromo,
-        textoPromocion: nuevoServicioTextoPromo,
-        mostrarEnWeb: nuevoServicioWeb,
-      }
-    );
-    if (res.success && res.data) {
-      const nuevo = res.data as any;
-      setServicios((prev) => [...prev, nuevo]);
-      setNuevoServicioNombre("");
-      setNuevoServicioPrecio(40);
-      setNuevoServicioDuracion(45);
-      setNuevoServicioTag("DOLOR & MOVILIDAD");
-      setNuevoServicioDesc("");
-      setNuevoServicioPromo(undefined);
-      setNuevoServicioTextoPromo("");
-      setNuevoServicioWeb(true);
-      setIsCreatingServicio(false);
-      showToast(`Servicio "${nuevo.nombre || nuevoServicioNombre}" agregado al catálogo.`);
-    }
-  };
-
-  // Servicios: Eliminar
-  const handleDeleteServicio = async (servicioId: string, nombre: string) => {
-    if (!confirm(`¿Eliminar el servicio "${nombre}" del catálogo?`)) return;
-
-    const res = await eliminarServicio(servicioId);
-    if (res.success) {
-      setServicios((prev) => prev.filter((s) => s.id !== servicioId));
-      showToast(`Servicio "${nombre}" eliminado del catálogo.`);
-    }
-  };
-
-  // Testimonios: Guardar lista
+  // Testimonios Web
   const handleSaveTestimonios = async (updatedList: TestimonioItem[]) => {
     setTestimonios(updatedList);
     const res = await guardarConfiguracionClinica({ testimonios: updatedList });
@@ -376,7 +361,6 @@ export function ConfigurationManager({
     }
   };
 
-  // Testimonios: Crear nuevo
   const handleAddTestimonio = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nuevoTestNombre.trim() || !nuevoTestComent.trim()) return;
@@ -398,18 +382,162 @@ export function ConfigurationManager({
     setIsCreatingTestimonio(false);
   };
 
-  // Testimonios: Eliminar
   const handleDeleteTestimonio = async (id: string) => {
     const updated = testimonios.filter((t) => t.id !== id);
     await handleSaveTestimonios(updated);
   };
 
+  // ── SECCIÓN 6: POLÍTICAS MÉDICAS ───────────────────────────────────────────
+  const handleSavePoliticas = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingPoliticas(true);
+
+    const res = await guardarConfiguracionClinica({
+      frecuenciaReevaluacion: Number(config.frecuenciaReevaluacion),
+      bloqueoAltaReevaluacion: Boolean(config.bloqueoAltaReevaluacion),
+    });
+
+    setSavingPoliticas(false);
+    if (res.success && res.data) {
+      setConfig((prev: any) => ({ ...prev, ...res.data }));
+      showToast("Reglas de reevaluación EVA y alta médica guardadas.");
+    }
+  };
+
+  // ── SALAS Y BOXES ───────────────────────────────────────────────────────────
+  const handleToggleSala = async (salaId: string, currentEstado: string) => {
+    const nuevoEstado = currentEstado === "DISPONIBLE" ? "MANTENIMIENTO" : "DISPONIBLE";
+    setUpdatingSalaId(salaId);
+
+    const res = await cambiarEstadoSala(salaId, nuevoEstado);
+    setUpdatingSalaId(null);
+
+    if (res.success) {
+      setSalas((prev) =>
+        prev.map((s) => (s.id === salaId ? { ...s, estado: nuevoEstado } : s))
+      );
+      showToast(`Box físico en estado: ${nuevoEstado}.`);
+    }
+  };
+
+  const handleCreateSala = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nuevaSalaNombre.trim()) return;
+
+    const res = await crearNuevaSala(nuevaSalaNombre.trim(), nuevaSalaEquip.trim());
+    if (res.success && res.data) {
+      const nueva = res.data as any;
+      setSalas((prev) => [...prev, nueva]);
+      setNuevaSalaNombre("");
+      setNuevaSalaEquip("");
+      setIsCreatingSala(false);
+      showToast(`"${nueva.nombre || nuevaSalaNombre}" registrada con éxito.`);
+    }
+  };
+
+  const handleSaveEditSala = async (salaId: string) => {
+    if (!editSalaNombre.trim()) return;
+
+    const res = await editarDatosSala(salaId, editSalaNombre.trim(), editSalaEquip.trim());
+    if (res.success) {
+      setSalas((prev) =>
+        prev.map((s) =>
+          s.id === salaId
+            ? { ...s, nombre: editSalaNombre.trim(), equipamiento: editSalaEquip.trim() }
+            : s
+        )
+      );
+      setEditingSalaId(null);
+      showToast("Datos del box actualizados.");
+    }
+  };
+
+  const handleDeleteSala = async (salaId: string, nombre: string) => {
+    if (!confirm(`¿Eliminar la "${nombre}"? Esta acción inhabilitará el box.`)) return;
+
+    const res = await eliminarSala(salaId);
+    if (res.success) {
+      setSalas((prev) => prev.filter((s) => s.id !== salaId));
+      showToast(`"${nombre}" eliminada correctamente.`);
+    } else {
+      alert(res.error || "No se pudo eliminar la sala.");
+    }
+  };
+
+  // ── SERVICIOS Y ARANCELES ───────────────────────────────────────────────────
+  const handleSaveServicio = async (servicioId: string) => {
+    const res = await modificarServicio(
+      servicioId, 
+      servicioPrecio, 
+      servicioDuracion,
+      {
+        nombre: servicioNombre,
+        categoriaTag: servicioTag,
+        descripcion: servicioDesc,
+        precioPromocional: servicioPromo,
+        textoPromocion: servicioTextoPromo,
+        mostrarEnWeb: servicioMostrarWeb,
+      }
+    );
+    if (res.success && res.data) {
+      const updated = res.data as any;
+      setServicios((prev) =>
+        prev.map((s) => (s.id === servicioId ? { ...s, ...updated } : s))
+      );
+      setEditingServicioId(null);
+      showToast("Servicio y aranceles actualizados.");
+    }
+  };
+
+  const handleCreateServicio = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nuevoServicioNombre.trim()) return;
+
+    const res = await crearNuevoServicio(
+      nuevoServicioNombre.trim(),
+      Number(nuevoServicioPrecio),
+      Number(nuevoServicioDuracion),
+      {
+        categoriaTag: nuevoServicioTag,
+        descripcion: nuevoServicioDesc,
+        precioPromocional: nuevoServicioPromo,
+        textoPromocion: nuevoServicioTextoPromo,
+        mostrarEnWeb: nuevoServicioWeb,
+      }
+    );
+    if (res.success && res.data) {
+      const nuevo = res.data as any;
+      setServicios((prev) => [...prev, nuevo]);
+      setNuevoServicioNombre("");
+      setNuevoServicioPrecio(85);
+      setNuevoServicioDuracion(45);
+      setNuevoServicioTag("DOLOR & MOVILIDAD");
+      setNuevoServicioDesc("");
+      setNuevoServicioPromo(undefined);
+      setNuevoServicioTextoPromo("");
+      setNuevoServicioWeb(true);
+      setIsCreatingServicio(false);
+      showToast(`Servicio "${nuevo.nombre || nuevoServicioNombre}" agregado.`);
+    }
+  };
+
+  const handleDeleteServicio = async (servicioId: string, nombre: string) => {
+    if (!confirm(`¿Eliminar el servicio "${nombre}" del catálogo?`)) return;
+
+    const res = await eliminarServicio(servicioId);
+    if (res.success) {
+      setServicios((prev) => prev.filter((s) => s.id !== servicioId));
+      showToast(`Servicio "${nombre}" eliminado del catálogo.`);
+    }
+  };
+
+  // Definición de Pestañas
   const TABS: { id: TabType; label: string; icon: any; badge?: string }[] = [
-    { id: "general", label: "Marca e Identidad", icon: Building2 },
+    { id: "identidad", label: "Marca e Identidad", icon: Building2 },
     { id: "horarios", label: "Horarios y Agenda", icon: Clock },
     { id: "salas", label: "Salas y Boxes", icon: Layers, badge: `${salas.length}` },
-    { id: "servicios", label: "Servicios y Promociones", icon: DollarSign, badge: `${servicios.length}` },
-    { id: "testimonios", label: "Testimonios Web", icon: Star, badge: `${testimonios.length}` },
+    { id: "servicios", label: "Servicios y Precios", icon: DollarSign, badge: `${servicios.length}` },
+    { id: "marketing", label: "Página Web & Reseñas", icon: Globe, badge: `${testimonios.length}` },
     { id: "politicas", label: "Políticas Clínicas", icon: ShieldCheck },
   ];
 
@@ -417,14 +545,14 @@ export function ConfigurationManager({
     <div className="space-y-6">
       {/* Toast Feedback */}
       {toastMsg && (
-        <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl flex items-center gap-2.5 text-xs font-semibold shadow-xs animate-in fade-in slide-in-from-top-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>{toastMsg}</span>
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 border border-slate-800 animate-in fade-in slide-in-from-bottom-4 duration-200">
+          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+          <span className="text-xs font-semibold">{toastMsg}</span>
         </div>
       )}
 
-      {/* Navegación Modular por Pestañas */}
-      <div className="flex border-b border-slate-200 bg-white px-2 sm:px-6 rounded-2xl shadow-xs overflow-x-auto">
+      {/* Pestañas de Navegación de Configuración */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-slate-200/80 scrollbar-none">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -432,16 +560,22 @@ export function ConfigurationManager({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 py-4 px-3 sm:px-4 text-xs font-bold border-b-2 transition whitespace-nowrap -mb-[1px] cursor-pointer ${
+              className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 whitespace-nowrap transition cursor-pointer ${
                 isActive
-                  ? "border-teal-600 text-teal-700 bg-teal-50/40"
-                  : "border-transparent text-slate-500 hover:text-slate-800"
+                  ? "bg-teal-600 text-white shadow-xs"
+                  : "bg-white text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 border border-slate-200/80"
               }`}
             >
               <Icon className="w-4 h-4" />
               <span>{tab.label}</span>
               {tab.badge && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                <span
+                  className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                    isActive
+                      ? "bg-teal-700/60 text-white"
+                      : "bg-slate-100 text-slate-600 border border-slate-200"
+                  }`}
+                >
                   {tab.badge}
                 </span>
               )}
@@ -450,51 +584,38 @@ export function ConfigurationManager({
         })}
       </div>
 
-      {/* Atajo Rápido al Módulo Equipo (Limpio y Discreto) */}
-      <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-3.5 px-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 bg-white text-teal-700 rounded-xl border border-slate-200 shadow-2xs">
-            <Users className="w-4 h-4" />
-          </div>
-          <div>
-            <span className="font-bold text-slate-800">
-              ¿Deseas gestionar terapeutas, recepcionistas o accesos?
-            </span>
-            <span className="text-slate-500 text-[11px] block">
-              El personal clínico y credenciales de usuario se gestionan en el módulo dedicado.
-            </span>
-          </div>
-        </div>
-        <Link
-          href="/dashboard/usuarios"
-          className="px-3 py-1.5 bg-white hover:bg-slate-100 text-teal-700 font-bold rounded-xl border border-slate-200 shadow-2xs flex items-center gap-1.5 transition shrink-0 cursor-pointer text-xs"
-        >
-          <span>Ir a Equipo</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </Link>
-      </div>
-
       {/* ========================================================================= */}
-      {/* PESTAÑA 1: DATOS DE LA CLÍNICA                                             */}
+      {/* PESTAÑA 1: MARCA E IDENTIDAD (CON GUARDADO INDEPENDIENTE POR TARJETA)       */}
       {/* ========================================================================= */}
-      {activeTab === "general" && (
-        <form onSubmit={handleSaveGeneral} className="space-y-5">
-          {/* Tarjeta 1: Identidad y Logotipo */}
+      {activeTab === "identidad" && (
+        <div className="space-y-6">
+          {/* Tarjeta 1: Identidad Visual y Logotipo */}
           <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
-                <h3 className="font-extrabold text-slate-800 text-sm">Identidad Visual</h3>
-                <p className="text-[11px] text-slate-500">Logotipo oficial que aparece en el menú, navbar y comprobantes.</p>
+                <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-teal-600" />
+                  <span>Identidad Visual & Logotipo</span>
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  Logotipo oficial visible en el menú lateral, navbar, comprobantes y landing pública.
+                </p>
               </div>
+
+              {hasPendingLogo && (
+                <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full animate-pulse">
+                  Cambio sin guardar
+                </span>
+              )}
             </div>
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-200 shadow-xs flex items-center justify-center p-2 overflow-hidden shrink-0">
+                <div className="w-18 h-18 rounded-2xl bg-slate-50 border border-slate-200 shadow-xs flex items-center justify-center p-2.5 overflow-hidden shrink-0">
                   {config.logoUrl ? (
                     <img
                       src={config.logoUrl}
-                      alt="Logo Empresa"
+                      alt="Logo Clínica"
                       className="w-full h-full object-contain"
                     />
                   ) : (
@@ -508,32 +629,47 @@ export function ConfigurationManager({
                     Logotipo Institucional
                   </span>
                   <span className="text-[11px] text-slate-400 block mt-0.5">
-                    PNG transparente o SVG (Máx. 2MB)
+                    PNG transparente o SVG (Optimización automática)
+                  </span>
+                  <span className="text-[10px] text-teal-600 font-medium block mt-1">
+                    ✓ Se sincroniza con la web y todos los dispositivos
                   </span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <label
                   htmlFor="clinic-logo-input"
-                  className="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-xl border border-slate-200 shadow-2xs flex items-center gap-2 cursor-pointer transition text-xs"
+                  className="flex-1 sm:flex-initial px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-xl border border-slate-200 shadow-2xs flex items-center justify-center gap-2 cursor-pointer transition text-xs"
                 >
                   <Upload className="w-3.5 h-3.5 text-teal-600" />
-                  <span>Subir Logo</span>
+                  <span>Seleccionar Archivo</span>
                 </label>
                 <input
                   id="clinic-logo-input"
                   type="file"
-                  accept="image/*"
+                  accept="image/png, image/jpeg, image/svg+xml, image/webp"
                   onChange={handleLogoUpload}
                   className="hidden"
                 />
 
                 <button
                   type="button"
-                  onClick={handleResetLogo}
-                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer"
-                  title="Restablecer logo original"
+                  onClick={handleSaveLogoOnly}
+                  disabled={savingLogo || !hasPendingLogo}
+                  className="px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold rounded-xl shadow-xs flex items-center gap-1.5 transition cursor-pointer text-xs"
+                  title="Guardar el nuevo logotipo en la base de datos"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{savingLogo ? "Guardando..." : "Guardar Logotipo"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleResetLogoOnly}
+                  disabled={savingLogo}
+                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer border border-slate-200"
+                  title="Restablecer logotipo al original"
                 >
                   <RotateCcw className="w-4 h-4" />
                 </button>
@@ -541,242 +677,145 @@ export function ConfigurationManager({
             </div>
           </div>
 
-          {/* Tarjeta de Marca Blanca: Paleta de Colores y Personalización Dinámica */}
+          {/* Tarjeta 2: Paleta de Colores y Marca Blanca */}
           <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
                 <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
                   <Palette className="w-4 h-4 text-teal-600" />
-                  Paleta de Colores y Marca Blanca
+                  <span>Paleta de Colores y Marca Blanca</span>
                 </h3>
                 <p className="text-[11px] text-slate-500">
-                  Modifica los colores corporativos de la clínica. El portal web público, botones, menús y portales de pacientes se adaptarán en tiempo real sin modificar código.
+                  Personaliza los tonos corporativos para adaptar el portal y la landing page a tu imagen.
                 </p>
               </div>
-              <span className="px-2.5 py-1 bg-purple-50 text-purple-700 border border-purple-200 rounded-lg text-[10px] font-bold shrink-0">
-                Marca Blanca Multiclínica
-              </span>
+
+              <button
+                type="button"
+                onClick={handleSaveColorsOnly}
+                disabled={savingColors}
+                className="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-1.5 transition cursor-pointer"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>{savingColors ? "Aplicando..." : "Guardar Colores"}</span>
+              </button>
             </div>
 
-            {/* Paletas Predefinidas para Clínicas (1 Clic) */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-2">
-                Paletas Recomendadas de Clínicas (Aplica en 1 Clic):
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-                {[
-                  { name: "Esmeralda & Coral (AJ)", p: "#0C3E37", s: "#E07052", a: "#0D9488" },
-                  { name: "Azul Médico & Cyan", p: "#0F2D59", s: "#2563EB", a: "#06B6D4" },
-                  { name: "Verde Salud & Menta", p: "#064E3B", s: "#059669", a: "#10B981" },
-                  { name: "Púrpura & Oro Clínico", p: "#3B1D54", s: "#8B5CF6", a: "#F59E0B" },
-                  { name: "Grafito & Azul Royal", p: "#1E293B", s: "#3B82F6", a: "#6366F1" },
-                ].map((palette) => (
-                  <button
-                    key={palette.name}
-                    type="button"
-                    onClick={() => {
-                      setConfig((prev: any) => ({
-                        ...prev,
-                        colorPrimario: palette.p,
-                        colorSecundario: palette.s,
-                        colorAcento: palette.a,
-                      }));
-                      if (typeof window !== "undefined") {
-                        document.documentElement.style.setProperty("--brand-primary", palette.p);
-                        document.documentElement.style.setProperty("--brand-secondary", palette.s);
-                        document.documentElement.style.setProperty("--brand-accent", palette.a);
-                      }
-                      showToast(`Paleta "${palette.name}" aplicada provisionalmente. Haz clic en Guardar para confirmar.`);
-                    }}
-                    className="p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300 text-left transition cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <span className="w-3.5 h-3.5 rounded-full shadow-2xs border border-white" style={{ backgroundColor: palette.p }} />
-                      <span className="w-3.5 h-3.5 rounded-full shadow-2xs border border-white" style={{ backgroundColor: palette.s }} />
-                      <span className="w-3.5 h-3.5 rounded-full shadow-2xs border border-white" style={{ backgroundColor: palette.a }} />
-                    </div>
-                    <span className="text-[11px] font-bold text-slate-700 block truncate group-hover:text-slate-900">
-                      {palette.name}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Selectores de Color Personalizados */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-4 text-xs pt-1">
-              {/* Color Primario */}
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                <label className="block font-bold text-slate-800">Color Primario</label>
-                <p className="text-[10px] text-slate-500">Navbar, botones principales y títulos clave.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Color Primario</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="color"
                     value={config.colorPrimario || "#0C3E37"}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setConfig({ ...config, colorPrimario: val });
-                      if (typeof window !== "undefined") {
-                        document.documentElement.style.setProperty("--brand-primary", val);
-                      }
-                    }}
-                    className="w-9 h-9 rounded-lg border border-slate-300 cursor-pointer p-0.5 bg-white"
+                    onChange={(e) => setConfig({ ...config, colorPrimario: e.target.value })}
+                    className="w-10 h-10 rounded-xl border border-slate-200 cursor-pointer p-0.5 shrink-0"
                   />
                   <input
                     type="text"
                     value={config.colorPrimario || "#0C3E37"}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setConfig({ ...config, colorPrimario: val });
-                      if (typeof window !== "undefined") {
-                        document.documentElement.style.setProperty("--brand-primary", val);
-                      }
-                    }}
-                    className="flex-1 px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-mono font-bold text-xs uppercase"
+                    onChange={(e) => setConfig({ ...config, colorPrimario: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold"
                   />
                 </div>
               </div>
 
-              {/* Color Secundario */}
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                <label className="block font-bold text-slate-800">Color Secundario</label>
-                <p className="text-[10px] text-slate-500">Etiquetas de descuento, promociones y acentos.</p>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Color Secundario (Acento Cálido)</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="color"
                     value={config.colorSecundario || "#E07052"}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setConfig({ ...config, colorSecundario: val });
-                      if (typeof window !== "undefined") {
-                        document.documentElement.style.setProperty("--brand-secondary", val);
-                      }
-                    }}
-                    className="w-9 h-9 rounded-lg border border-slate-300 cursor-pointer p-0.5 bg-white"
+                    onChange={(e) => setConfig({ ...config, colorSecundario: e.target.value })}
+                    className="w-10 h-10 rounded-xl border border-slate-200 cursor-pointer p-0.5 shrink-0"
                   />
                   <input
                     type="text"
                     value={config.colorSecundario || "#E07052"}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setConfig({ ...config, colorSecundario: val });
-                      if (typeof window !== "undefined") {
-                        document.documentElement.style.setProperty("--brand-secondary", val);
-                      }
-                    }}
-                    className="flex-1 px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-mono font-bold text-xs uppercase"
+                    onChange={(e) => setConfig({ ...config, colorSecundario: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold"
                   />
                 </div>
               </div>
 
-              {/* Color de Acento */}
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                <label className="block font-bold text-slate-800">Color de Acento</label>
-                <p className="text-[10px] text-slate-500">Insignias secundarias, estados y elementos activos.</p>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Color Terciario (Detalles)</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="color"
                     value={config.colorAcento || "#0D9488"}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setConfig({ ...config, colorAcento: val });
-                      if (typeof window !== "undefined") {
-                        document.documentElement.style.setProperty("--brand-accent", val);
-                      }
-                    }}
-                    className="w-9 h-9 rounded-lg border border-slate-300 cursor-pointer p-0.5 bg-white"
+                    onChange={(e) => setConfig({ ...config, colorAcento: e.target.value })}
+                    className="w-10 h-10 rounded-xl border border-slate-200 cursor-pointer p-0.5 shrink-0"
                   />
                   <input
                     type="text"
                     value={config.colorAcento || "#0D9488"}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setConfig({ ...config, colorAcento: val });
-                      if (typeof window !== "undefined") {
-                        document.documentElement.style.setProperty("--brand-accent", val);
-                      }
-                    }}
-                    className="flex-1 px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-mono font-bold text-xs uppercase"
+                    onChange={(e) => setConfig({ ...config, colorAcento: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold"
                   />
                 </div>
-              </div>
-
-              {/* Favicon URL */}
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                <label className="block font-bold text-slate-800">Favicon Web (URL)</label>
-                <p className="text-[10px] text-slate-500">Ícono en la pestaña del navegador (.ico o .png).</p>
-                <input
-                  type="text"
-                  placeholder="/favicon.ico"
-                  value={config.faviconUrl || "/favicon.ico"}
-                  onChange={(e) => setConfig({ ...config, faviconUrl: e.target.value })}
-                  className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg text-xs"
-                />
               </div>
             </div>
 
-            {/* Vista Previa Interactiva en Vivo */}
-            <div className="p-4 rounded-2xl border border-slate-200 bg-slate-900 text-white space-y-3">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-400">
-                <span>VISTA PREVIA DE LA MARCA EN VIVO:</span>
-                <span className="text-[10px] text-emerald-400 font-normal">Reactivo e instantáneo</span>
-              </div>
-              <div className="p-4 rounded-xl bg-white text-stone-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-xs"
-                    style={{ backgroundColor: config.colorPrimario || "#0C3E37" }}
-                  >
-                    {(config.nombreComercial || "AJ").substring(0, 2).toUpperCase()}
-                  </div>
-                  <div>
-                    <span className="font-extrabold text-sm block leading-tight text-slate-900">
-                      {config.nombreComercial || "Tu Clínica de Fisioterapia"}
-                    </span>
-                    <span
-                      className="text-[10px] font-bold uppercase tracking-wider block"
-                      style={{ color: config.colorSecundario || "#E07052" }}
-                    >
-                      {config.slogan || "REHABILITACIÓN & BIENESTAR"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span
-                    className="px-2.5 py-1 rounded-full text-[10px] font-bold text-white shadow-2xs"
-                    style={{ backgroundColor: config.colorAcento || "#0D9488" }}
-                  >
-                    Atención Activa
-                  </span>
-                  <button
-                    type="button"
-                    className="px-4 py-2 rounded-full text-xs font-bold text-white shadow-xs transition"
-                    style={{ backgroundColor: config.colorPrimario || "#0C3E37" }}
-                  >
-                    Reservar Cita
-                  </button>
-                </div>
-              </div>
+            {/* Presets de 1 Clic */}
+            <div className="pt-2 flex items-center gap-2">
+              <span className="text-[11px] font-bold text-slate-500">Estilos predefinidos:</span>
+              <button
+                type="button"
+                onClick={() => setConfig({ ...config, colorPrimario: "#0C3E37", colorSecundario: "#E07052", colorAcento: "#0D9488" })}
+                className="px-2.5 py-1 text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition cursor-pointer"
+              >
+                Esmeralda Clínico
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfig({ ...config, colorPrimario: "#0F3E6D", colorSecundario: "#F27A54", colorAcento: "#1084B9" })}
+                className="px-2.5 py-1 text-[11px] font-semibold bg-blue-50 text-blue-800 border border-blue-200 rounded-lg hover:bg-blue-100 transition cursor-pointer"
+              >
+                Océano Médico
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfig({ ...config, colorPrimario: "#1E293B", colorSecundario: "#0EA5E9", colorAcento: "#10B981" })}
+                className="px-2.5 py-1 text-[11px] font-semibold bg-slate-100 text-slate-800 border border-slate-300 rounded-lg hover:bg-slate-200 transition cursor-pointer"
+              >
+                Modern Slate
+              </button>
             </div>
           </div>
 
-          {/* Tarjeta 2: Datos Fiscales e Institucionales */}
-          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-            <div className="pb-3 border-b border-slate-100">
-              <h3 className="font-extrabold text-slate-800 text-sm">Datos Institucionales</h3>
-              <p className="text-[11px] text-slate-500">Información comercial y tributaria de la clínica.</p>
+          {/* Tarjeta 3: Datos de la Clínica y Ubicación */}
+          <form onSubmit={handleSaveDatosClinica} className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-teal-600" />
+                  <span>Datos Institucionales, Canales y Ubicación</span>
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  Información legal, dirección física para comprobantes y medios de contacto para pacientes.
+                </p>
+              </div>
+
+              <button
+                type="submit"
+                disabled={savingDatos}
+                className="px-5 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold rounded-xl shadow-xs flex items-center gap-1.5 transition cursor-pointer text-xs"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>{savingDatos ? "Guardando..." : "Guardar Datos Institucionales"}</span>
+              </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Nombre Comercial</label>
                 <input
                   type="text"
-                  value={config.nombreComercial}
+                  value={config.nombreComercial || ""}
                   onChange={(e) => setConfig({ ...config, nombreComercial: e.target.value })}
+                  placeholder="AJ Fisioterapia"
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-bold"
-                  required
                 />
               </div>
 
@@ -784,242 +823,156 @@ export function ConfigurationManager({
                 <label className="block font-bold text-slate-700 mb-1">Razón Social</label>
                 <input
                   type="text"
-                  value={config.razonSocial}
+                  value={config.razonSocial || ""}
                   onChange={(e) => setConfig({ ...config, razonSocial: e.target.value })}
+                  placeholder="AJ Fisioterapia S.A.C."
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                  required
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">RUC (11 dígitos)</label>
+                <label className="block font-bold text-slate-700 mb-1">RUC Tributario</label>
                 <input
                   type="text"
-                  maxLength={11}
-                  value={config.ruc}
+                  value={config.ruc || ""}
                   onChange={(e) => setConfig({ ...config, ruc: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-mono font-bold"
-                  required
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Tarjeta 3: Dirección y Canales de Contacto */}
-          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-            <div className="pb-3 border-b border-slate-100">
-              <h3 className="font-extrabold text-slate-800 text-sm">Ubicación y Canales de Contacto</h3>
-              <p className="text-[11px] text-slate-500">Dirección para los pacientes y canales oficiales de atención.</p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-              <div className="sm:col-span-2">
-                <label className="block font-bold text-slate-700 mb-1">Avenida / Calle</label>
-                <input
-                  type="text"
-                  placeholder="Ej. Av. Guardia Civil"
-                  value={config.direccionAvenidaCalle || ""}
-                  onChange={(e) => setConfig({ ...config, direccionAvenidaCalle: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                  required
+                  placeholder="20608912345"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-mono"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Número / Interior</label>
+                <label className="block font-bold text-slate-700 mb-1">Slogan</label>
                 <input
                   type="text"
-                  placeholder="Ej. 520"
-                  value={config.direccionNumero || ""}
-                  onChange={(e) => setConfig({ ...config, direccionNumero: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Distrito</label>
-                <input
-                  type="text"
-                  placeholder="Ej. San Borja"
-                  value={config.direccionDistrito || ""}
-                  onChange={(e) => setConfig({ ...config, direccionDistrito: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-bold"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Ciudad</label>
-                <input
-                  type="text"
-                  placeholder="Ej. Lima"
-                  value={config.direccionCiudad || ""}
-                  onChange={(e) => setConfig({ ...config, direccionCiudad: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                  required
-                />
-              </div>
-
-              <div className="sm:col-span-3">
-                <label className="block font-bold text-slate-700 mb-1">Referencia</label>
-                <input
-                  type="text"
-                  placeholder="Ej. Cerca al Óvalo Quiñones"
-                  value={config.direccionReferencia || ""}
-                  onChange={(e) => setConfig({ ...config, direccionReferencia: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="block font-bold text-slate-700 mb-1">Central Telefónica</label>
-                <input
-                  type="text"
-                  value={config.telefono}
-                  onChange={(e) => setConfig({ ...config, telefono: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="block font-bold text-slate-700 mb-1">WhatsApp de Recepción</label>
-                <input
-                  type="text"
-                  value={config.whatsapp}
-                  onChange={(e) => setConfig({ ...config, whatsapp: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-bold text-teal-800"
-                />
-              </div>
-
-              <div className="sm:col-span-4">
-                <label className="block font-bold text-slate-700 mb-1">Enlace o Mapa de Google Maps (Ubicación)</label>
-                <input
-                  type="text"
-                  placeholder="https://maps.google.com/?q=..."
-                  value={config.googleMapsUrl || ""}
-                  onChange={(e) => setConfig({ ...config, googleMapsUrl: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Tarjeta 4: Textos y Promoción en Landing Page (Marca Blanca) */}
-          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-            <div className="pb-3 border-b border-slate-100 flex items-center justify-between">
-              <div>
-                <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-teal-600" />
-                  Textos y Branding de la Landing Page Pública
-                </h3>
-                <p className="text-[11px] text-slate-500">
-                  Personaliza cómo se presenta la clínica al público y pacientes sin tocar código.
-                </p>
-              </div>
-              <span className="px-2.5 py-1 bg-teal-50 text-teal-700 border border-teal-200 rounded-lg text-[10px] font-bold">
-                100% Dinámico
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Slogan / Categoría Superior</label>
-                <input
-                  type="text"
-                  placeholder="Ej. REHABILITACIÓN & BIENESTAR"
                   value={config.slogan || ""}
                   onChange={(e) => setConfig({ ...config, slogan: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-semibold uppercase tracking-wider"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Título Hero (Línea 1)</label>
-                <input
-                  type="text"
-                  placeholder="Ej. Vuelve a moverte."
-                  value={config.tituloHero || ""}
-                  onChange={(e) => setConfig({ ...config, tituloHero: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-bold"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Subtítulo Hero (Cursiva Elegante)</label>
-                <input
-                  type="text"
-                  placeholder="Ej. Vuelve a sentirte tú."
-                  value={config.subtituloHero || ""}
-                  onChange={(e) => setConfig({ ...config, subtituloHero: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-serif italic"
-                />
-              </div>
-
-              <div className="sm:col-span-3">
-                <label className="block font-bold text-slate-700 mb-1">Descripción del Hero</label>
-                <textarea
-                  rows={2}
-                  placeholder="Ej. Fisioterapia especializada y humana para recuperar tu bienestar, paso a paso."
-                  value={config.descripcionHero || ""}
-                  onChange={(e) => setConfig({ ...config, descripcionHero: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Calificación Promedio (Google/Web)</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="1"
-                  max="5"
-                  placeholder="4.9"
-                  value={config.ratingPromedio || 4.9}
-                  onChange={(e) => setConfig({ ...config, ratingPromedio: Number(e.target.value) })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-bold"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Métrica de Pacientes Atendidos</label>
-                <input
-                  type="text"
-                  placeholder="+1,100 pacientes"
-                  value={config.totalPacientesMes || "+1,100"}
-                  onChange={(e) => setConfig({ ...config, totalPacientesMes: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-bold"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Imagen Principal de Portada (URL)</label>
-                <input
-                  type="text"
-                  placeholder="/images/hero-physio.jpg"
-                  value={config.heroImageUrl || "/images/hero-physio.jpg"}
-                  onChange={(e) => setConfig({ ...config, heroImageUrl: e.target.value })}
+                  placeholder="REHABILITACIÓN & BIENESTAR"
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none"
                 />
               </div>
             </div>
-          </div>
 
-          <div className="flex justify-end pt-2">
-            <button
-              type="submit"
-              disabled={savingConfig}
-              className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-md shadow-teal-600/25 flex items-center gap-2 transition disabled:opacity-50 cursor-pointer text-xs"
-            >
-              <Save className="w-4 h-4" />
-              <span>{savingConfig ? "Guardando..." : "Guardar Cambios"}</span>
-            </button>
-          </div>
-        </form>
+            {/* Canales de Contacto */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-100 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 text-teal-600" />
+                  <span>Central Telefónica</span>
+                </label>
+                <input
+                  type="text"
+                  value={config.telefono || ""}
+                  onChange={(e) => setConfig({ ...config, telefono: e.target.value })}
+                  placeholder="(01) 475-2010"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>WhatsApp de Admisión</span>
+                </label>
+                <input
+                  type="text"
+                  value={config.whatsapp || ""}
+                  onChange={(e) => setConfig({ ...config, whatsapp: e.target.value })}
+                  placeholder="+51 987 654 321"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-bold text-emerald-800"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-rose-500" />
+                  <span>Enlace Google Maps (URL)</span>
+                </label>
+                <input
+                  type="text"
+                  value={config.googleMapsUrl || ""}
+                  onChange={(e) => setConfig({ ...config, googleMapsUrl: e.target.value })}
+                  placeholder="https://maps.app.goo.gl/..."
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none text-[11px]"
+                />
+              </div>
+            </div>
+
+            {/* Dirección Desglosada */}
+            <div className="pt-2 border-t border-slate-100 space-y-3">
+              <span className="text-[11px] font-bold text-slate-700 block">Dirección de la Sede Física</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+                <div className="lg:col-span-2">
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Avenida / Calle</label>
+                  <input
+                    type="text"
+                    value={config.direccionAvenidaCalle || ""}
+                    onChange={(e) => setConfig({ ...config, direccionAvenidaCalle: e.target.value })}
+                    placeholder="Av. Guardia Civil"
+                    className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Número / Int.</label>
+                  <input
+                    type="text"
+                    value={config.direccionNumero || ""}
+                    onChange={(e) => setConfig({ ...config, direccionNumero: e.target.value })}
+                    placeholder="520"
+                    className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Distrito</label>
+                  <input
+                    type="text"
+                    value={config.direccionDistrito || ""}
+                    onChange={(e) => setConfig({ ...config, direccionDistrito: e.target.value })}
+                    placeholder="San Borja"
+                    className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Ciudad</label>
+                  <input
+                    type="text"
+                    value={config.direccionCiudad || ""}
+                    onChange={(e) => setConfig({ ...config, direccionCiudad: e.target.value })}
+                    placeholder="Lima"
+                    className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">Referencia</label>
+                <input
+                  type="text"
+                  value={config.direccionReferencia || ""}
+                  onChange={(e) => setConfig({ ...config, direccionReferencia: e.target.value })}
+                  placeholder="A dos cuadras de Av. Javier Prado Este"
+                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                />
+              </div>
+
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 text-[11px] text-slate-600 flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-teal-600 shrink-0" />
+                <span>
+                  <strong>Dirección armada para comprobantes:</strong>{" "}
+                  {[
+                    [config.direccionAvenidaCalle, config.direccionNumero].filter(Boolean).join(" "),
+                    config.direccionDistrito,
+                    config.direccionCiudad,
+                  ].filter(Boolean).join(", ") + (config.direccionReferencia ? ` (Ref: ${config.direccionReferencia})` : "") || config.direccion || "No definida"}
+                </span>
+              </div>
+            </div>
+          </form>
+        </div>
       )}
 
       {/* ========================================================================= */}
-      {/* PESTAÑA 2: HORARIOS Y AGENDA (NUEVO COMPONENTE DEDICADO)                   */}
+      {/* PESTAÑA 2: HORARIOS Y AGENDA (COMPONENTE HORARIOSMANAGER)                  */}
       {/* ========================================================================= */}
       {activeTab === "horarios" && (
         <HorariosManager
@@ -1030,202 +983,176 @@ export function ConfigurationManager({
       )}
 
       {/* ========================================================================= */}
-      {/* PESTAÑA 3: SALAS Y BOXES                                                  */}
+      {/* PESTAÑA 3: SALAS Y BOXES FÍSICOS                                          */}
       {/* ========================================================================= */}
       {activeTab === "salas" && (
         <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-100">
             <div>
-              <h3 className="font-extrabold text-slate-800 text-sm">Capacidad Operativa de Salas</h3>
+              <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                <Layers className="w-4 h-4 text-teal-600" />
+                <span>Infraestructura Física: Salas y Boxes Clínicos</span>
+              </h3>
               <p className="text-[11px] text-slate-500">
-                Gestiona la disponibilidad y mantenimiento de las salas y boxes físicos.
+                Camillas y espacios físicos para agendamiento simultáneo. Poner en mantenimiento inactiva el agendamiento sin borrar historias.
               </p>
             </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <button
-                onClick={() => setIsCreatingSala(true)}
-                className="flex items-center justify-center gap-2 px-3.5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Nueva Sala</span>
-              </button>
-              <span className="px-3 py-1.5 bg-slate-100 text-slate-700 text-xs font-bold rounded-xl border border-slate-200">
-                {salas.filter((s) => s.estado === "DISPONIBLE").length} / {salas.length} Activas
-              </span>
-            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsCreatingSala(true)}
+              className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-xs flex items-center gap-1.5 transition cursor-pointer text-xs self-start sm:self-auto"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Registrar Nueva Sala</span>
+            </button>
           </div>
 
-          {/* Formulario para crear nueva sala */}
+          {/* Formulario Nueva Sala */}
           {isCreatingSala && (
-            <form onSubmit={handleCreateSala} className="p-4 bg-teal-50/60 border border-teal-200 rounded-2xl space-y-3 animate-in fade-in duration-150">
-              <div className="flex items-center justify-between">
-                <span className="font-extrabold text-teal-900 text-xs flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-teal-600" />
-                  Agregar Sala o Box Clínico
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setIsCreatingSala(false)}
-                  className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
+            <form onSubmit={handleCreateSala} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+              <span className="text-xs font-bold text-slate-800 block">Alta de Nueva Sala Física</span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Nombre de la Sala *</label>
-                  <input
-                    type="text"
-                    required
-                    value={nuevaSalaNombre}
-                    onChange={(e) => setNuevaSalaNombre(e.target.value)}
-                    placeholder="Ej. Sala 7 - Magnetoterapia & Láser"
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Equipamiento Asignado</label>
-                  <input
-                    type="text"
-                    value={nuevaSalaEquip}
-                    onChange={(e) => setNuevaSalaEquip(e.target.value)}
-                    placeholder="Ej. Camilla eléctrica, presoterapia"
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                  />
-                </div>
+                <input
+                  type="text"
+                  placeholder="Nombre de la Sala (Ej: Sala 7)"
+                  value={nuevaSalaNombre}
+                  onChange={(e) => setNuevaSalaNombre(e.target.value)}
+                  className="px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Equipamiento (Ej: Camilla electroterapia, ultrasonido)"
+                  value={nuevaSalaEquip}
+                  onChange={(e) => setNuevaSalaEquip(e.target.value)}
+                  className="px-3 py-2 bg-white border border-slate-200 rounded-xl"
+                />
               </div>
-
-              <div className="flex justify-end gap-2 pt-1">
+              <div className="flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setIsCreatingSala(false)}
-                  className="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-600 text-xs font-semibold rounded-xl border border-slate-200 cursor-pointer"
+                  className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-slate-600 text-xs font-semibold"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer"
+                  className="px-4 py-1.5 bg-teal-600 text-white rounded-xl text-xs font-bold shadow-xs hover:bg-teal-700"
                 >
-                  Guardar Sala
+                  Confirmar Sala
                 </button>
               </div>
             </form>
           )}
 
-          {/* Grid de Salas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Lista de Salas */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {salas.map((sala) => {
               const isEditing = editingSalaId === sala.id;
+              const isUpdating = updatingSalaId === sala.id;
+              const isDisponible = sala.estado === "DISPONIBLE";
 
               return (
                 <div
                   key={sala.id}
-                  className={`p-4 rounded-2xl border transition-all ${
-                    sala.estado === "DISPONIBLE"
-                      ? "bg-slate-50/70 border-slate-200 hover:border-slate-300"
-                      : "bg-amber-50/60 border-amber-300"
+                  className={`p-4 rounded-2xl border transition flex flex-col justify-between gap-3 ${
+                    isDisponible
+                      ? "bg-white border-slate-200/90 shadow-2xs"
+                      : "bg-amber-50/40 border-amber-200/70"
                   }`}
                 >
-                  {isEditing ? (
-                    <div className="space-y-2 text-xs">
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Nombre</label>
+                  <div>
+                    {isEditing ? (
+                      <div className="space-y-2">
                         <input
                           type="text"
                           value={editSalaNombre}
                           onChange={(e) => setEditSalaNombre(e.target.value)}
-                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl font-bold"
+                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold"
                         />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Equipamiento</label>
                         <input
                           type="text"
                           value={editSalaEquip}
                           onChange={(e) => setEditSalaEquip(e.target.value)}
-                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl"
+                          placeholder="Equipamiento"
+                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
                         />
-                      </div>
-                      <div className="flex justify-end gap-1.5 pt-1">
-                        <button
-                          type="button"
-                          onClick={() => setEditingSalaId(null)}
-                          className="px-2.5 py-1 bg-slate-200 text-slate-700 rounded-lg text-xs"
-                        >
-                          Cancelar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSaveEditSala(sala.id)}
-                          className="px-3 py-1 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg text-xs shadow-2xs"
-                        >
-                          Guardar
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-extrabold text-sm text-slate-800">{sala.nombre}</span>
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                            sala.estado === "DISPONIBLE"
-                              ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
-                              : "bg-amber-100 text-amber-900 border border-amber-300"
-                          }`}
-                        >
-                          {sala.estado}
-                        </span>
-                      </div>
-
-                      <p className="text-[11px] text-slate-500 mb-3 min-h-[32px]">
-                        <strong className="text-slate-700">Equipamiento:</strong>{" "}
-                        {sala.equipamiento || "Camilla clínica estándar"}
-                      </p>
-
-                      <div className="space-y-1.5 pt-1 border-t border-slate-200/60">
-                        <button
-                          onClick={() => handleToggleSala(sala.id, sala.estado)}
-                          disabled={updatingSalaId === sala.id}
-                          className={`w-full py-2 text-xs font-bold rounded-xl border transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                            sala.estado === "DISPONIBLE"
-                              ? "bg-white text-amber-800 border-amber-300 hover:bg-amber-100"
-                              : "bg-teal-600 text-white border-teal-600 hover:bg-teal-700"
-                          }`}
-                        >
-                          <Wrench className="w-3.5 h-3.5" />
-                          <span>
-                            {sala.estado === "DISPONIBLE"
-                              ? "Poner en Mantenimiento"
-                              : "Habilitar Sala"}
-                          </span>
-                        </button>
-
-                        <div className="grid grid-cols-2 gap-1.5">
+                        <div className="flex justify-end gap-1.5 pt-1">
                           <button
-                            onClick={() => {
-                              setEditingSalaId(sala.id);
-                              setEditSalaNombre(sala.nombre);
-                              setEditSalaEquip(sala.equipamiento || "");
-                            }}
-                            className="py-1.5 px-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
+                            type="button"
+                            onClick={() => setEditingSalaId(null)}
+                            className="px-2 py-1 text-[11px] bg-slate-100 rounded-lg font-semibold"
                           >
-                            <Edit3 className="w-3.5 h-3.5 text-slate-500" />
-                            <span>Editar</span>
+                            Cancelar
                           </button>
-
                           <button
-                            onClick={() => handleDeleteSala(sala.id, sala.nombre)}
-                            className="py-1.5 px-2 bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
+                            type="button"
+                            onClick={() => handleSaveEditSala(sala.id)}
+                            className="px-2.5 py-1 text-[11px] bg-teal-600 text-white rounded-lg font-bold"
                           >
-                            <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-                            <span>Eliminar</span>
+                            Guardar
                           </button>
                         </div>
                       </div>
-                    </>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-slate-800 text-sm">{sala.nombre}</span>
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              isDisponible
+                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                : "bg-amber-100 text-amber-800 border border-amber-200"
+                            }`}
+                          >
+                            {isDisponible ? "Disponible" : "Mantenimiento"}
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-slate-500 block mt-1">
+                          {sala.equipamiento || "Camilla clínica estándar"}
+                        </span>
+                      </>
+                    )}
+                  </div>
+
+                  {!isEditing && (
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <Switch
+                          checked={isDisponible}
+                          onChange={() => handleToggleSala(sala.id, sala.estado)}
+                          disabled={isUpdating}
+                        />
+                        <span className="text-[10px] text-slate-500 font-semibold">
+                          {isDisponible ? "Activa" : "Pausada"}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingSalaId(sala.id);
+                            setEditSalaNombre(sala.nombre);
+                            setEditSalaEquip(sala.equipamiento || "");
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition"
+                          title="Editar nombre"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteSala(sala.id, sala.nombre)}
+                          className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                          title="Eliminar sala"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
               );
@@ -1235,312 +1162,238 @@ export function ConfigurationManager({
       )}
 
       {/* ========================================================================= */}
-      {/* PESTAÑA 4: SERVICIOS Y TARIFAS                                            */}
+      {/* PESTAÑA 4: SERVICIOS Y ARANCELES                                          */}
       {/* ========================================================================= */}
       {activeTab === "servicios" && (
-        <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
+        <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-100">
             <div>
-              <h3 className="font-extrabold text-slate-800 text-sm">Catálogo de Procedimientos y Promociones</h3>
+              <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-teal-600" />
+                <span>Catálogo de Servicios y Aranceles</span>
+              </h3>
               <p className="text-[11px] text-slate-500">
-                Precios regulares, descuentos promocionales y visibilidad pública en el Landing Page.
+                Define tarifas base, precios de promoción, etiquetas y duración para el agendamiento y la web.
               </p>
             </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <button
-                onClick={() => setIsCreatingServicio(true)}
-                className="flex items-center justify-center gap-2 px-3.5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Nuevo Servicio</span>
-              </button>
-              <span className="px-3 py-1.5 bg-slate-100 text-slate-700 text-xs font-bold rounded-xl border border-slate-200">
-                {servicios.length} Procedimientos
-              </span>
-            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsCreatingServicio(true)}
+              className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-xs flex items-center gap-1.5 transition cursor-pointer text-xs self-start sm:self-auto"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Nuevo Servicio</span>
+            </button>
           </div>
 
-          {/* Formulario nuevo servicio */}
+          {/* Formulario Crear Servicio */}
           {isCreatingServicio && (
-            <form onSubmit={handleCreateServicio} className="p-4 bg-teal-50/60 border border-teal-200 rounded-2xl space-y-3 animate-in fade-in duration-150">
-              <div className="flex items-center justify-between">
-                <span className="font-extrabold text-teal-900 text-xs flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-teal-600" />
-                  Agregar Procedimiento Clínico & Promoción
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setIsCreatingServicio(false)}
-                  className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
+            <form onSubmit={handleCreateServicio} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+              <span className="text-xs font-bold text-slate-800 block">Nuevo Servicio Clínico</span>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Nombre del Servicio *</label>
+                <div className="sm:col-span-2">
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Nombre</label>
                   <input
                     type="text"
-                    required
+                    placeholder="Ej: Fisioterapia Deportiva"
                     value={nuevoServicioNombre}
                     onChange={(e) => setNuevoServicioNombre(e.target.value)}
-                    placeholder="Ej. Terapia física"
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-bold"
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold"
+                    required
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Categoría / Etiqueta Web</label>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Categoría Tag</label>
                   <input
                     type="text"
                     value={nuevoServicioTag}
                     onChange={(e) => setNuevoServicioTag(e.target.value)}
-                    placeholder="Ej. DOLOR & MOVILIDAD"
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none uppercase font-semibold text-orange-700"
+                    placeholder="DOLOR & MOVILIDAD"
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl uppercase font-bold text-rose-600"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Duración (Minutos) *</label>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Precio Base (S/)</label>
                   <input
                     type="number"
-                    min={15}
-                    max={180}
-                    step={15}
-                    required
-                    value={nuevoServicioDuracion}
-                    onChange={(e) => setNuevoServicioDuracion(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                  />
-                </div>
-
-                <div className="sm:col-span-3">
-                  <label className="block font-semibold text-slate-700 mb-1">Descripción Breve (para Landing)</label>
-                  <input
-                    type="text"
-                    value={nuevoServicioDesc}
-                    onChange={(e) => setNuevoServicioDesc(e.target.value)}
-                    placeholder="Ej. Alivia dolores agudos y crónicos, recupera la movilidad articular y muscular."
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Precio Base / Regular (S/.) *</label>
-                  <input
-                    type="number"
-                    min={1}
-                    required
                     value={nuevoServicioPrecio}
                     onChange={(e) => setNuevoServicioPrecio(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-mono font-bold"
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold"
+                    required
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Precio Promocional (S/.) (Opcional)</label>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Precio Promo (Opcional)</label>
                   <input
                     type="number"
-                    min={0}
                     value={nuevoServicioPromo || ""}
                     onChange={(e) => setNuevoServicioPromo(e.target.value ? Number(e.target.value) : undefined)}
-                    placeholder="Ej. 30"
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-mono font-bold text-emerald-700"
+                    placeholder="Ej: 75"
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-emerald-700 font-bold"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Texto de Promoción (Etiqueta Roja)</label>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Duración (minutos)</label>
                   <input
-                    type="text"
-                    value={nuevoServicioTextoPromo}
-                    onChange={(e) => setNuevoServicioTextoPromo(e.target.value)}
-                    placeholder="Ej. PROMOCION DSCTO S/ 30 por sesión"
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none text-rose-600 font-bold"
+                    type="number"
+                    value={nuevoServicioDuracion}
+                    onChange={(e) => setNuevoServicioDuracion(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold"
+                    required
                   />
-                </div>
-
-                <div className="sm:col-span-3 flex items-center gap-2 pt-1">
-                  <input
-                    type="checkbox"
-                    id="nuevo-servicio-web"
-                    checked={nuevoServicioWeb}
-                    onChange={(e) => setNuevoServicioWeb(e.target.checked)}
-                    className="rounded text-teal-600 focus:ring-teal-500 w-4 h-4 cursor-pointer"
-                  />
-                  <label htmlFor="nuevo-servicio-web" className="text-xs font-bold text-slate-700 cursor-pointer">
-                    Mostrar este servicio públicamente en el Landing Page
-                  </label>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-1">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">Descripción corta</label>
+                <textarea
+                  value={nuevoServicioDesc}
+                  onChange={(e) => setNuevoServicioDesc(e.target.value)}
+                  placeholder="Enfoque clínico y técnicas utilizadas..."
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs h-16"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setIsCreatingServicio(false)}
-                  className="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-600 text-xs font-semibold rounded-xl border border-slate-200 cursor-pointer"
+                  className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-slate-600 text-xs font-semibold"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer"
+                  className="px-4 py-1.5 bg-teal-600 text-white rounded-xl text-xs font-bold shadow-xs hover:bg-teal-700"
                 >
-                  Crear Servicio
+                  Registrar Servicio
                 </button>
               </div>
             </form>
           )}
 
           {/* Lista de Servicios */}
-          <div className="divide-y divide-slate-100">
+          <div className="space-y-3">
             {servicios.map((s) => {
               const isEditing = editingServicioId === s.id;
 
               return (
-                <div key={s.id} className="py-4 space-y-3">
+                <div
+                  key={s.id}
+                  className="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs hover:border-slate-300 transition"
+                >
                   {isEditing ? (
-                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 text-xs">
-                      <div className="font-bold text-slate-800">Editando {s.nombre}</div>
+                    <div className="space-y-3 text-xs">
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div>
-                          <label className="text-[10px] font-bold text-slate-500 block mb-1">Nombre</label>
+                        <div className="sm:col-span-2">
+                          <label className="font-semibold text-slate-600">Nombre del Servicio</label>
                           <input
                             type="text"
                             value={servicioNombre}
                             onChange={(e) => setServicioNombre(e.target.value)}
-                            className="w-full px-2.5 py-1.5 border rounded-xl bg-white font-bold"
+                            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-bold mt-1"
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] font-bold text-slate-500 block mb-1">Categoría Tag</label>
+                          <label className="font-semibold text-slate-600">Tag Categoría</label>
                           <input
                             type="text"
                             value={servicioTag}
                             onChange={(e) => setServicioTag(e.target.value)}
-                            className="w-full px-2.5 py-1.5 border rounded-xl bg-white uppercase font-semibold text-orange-700"
+                            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-rose-600 mt-1 uppercase"
                           />
                         </div>
-                        <div>
-                          <label className="text-[10px] font-bold text-slate-500 block mb-1">Duración (min)</label>
-                          <input
-                            type="number"
-                            value={servicioDuracion}
-                            onChange={(e) => setServicioDuracion(Number(e.target.value))}
-                            className="w-full px-2.5 py-1.5 border rounded-xl bg-white"
-                          />
-                        </div>
+                      </div>
 
-                        <div className="sm:col-span-3">
-                          <label className="text-[10px] font-bold text-slate-500 block mb-1">Descripción</label>
-                          <input
-                            type="text"
-                            value={servicioDesc}
-                            onChange={(e) => setServicioDesc(e.target.value)}
-                            className="w-full px-2.5 py-1.5 border rounded-xl bg-white"
-                          />
-                        </div>
-
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
-                          <label className="text-[10px] font-bold text-slate-500 block mb-1">Precio Base (S/.)</label>
+                          <label className="font-semibold text-slate-600">Precio Regular (S/)</label>
                           <input
                             type="number"
                             value={servicioPrecio}
                             onChange={(e) => setServicioPrecio(Number(e.target.value))}
-                            className="w-full px-2.5 py-1.5 border rounded-xl bg-white font-mono font-bold"
+                            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-bold mt-1"
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] font-bold text-slate-500 block mb-1">Precio Promo (S/.)</label>
+                          <label className="font-semibold text-slate-600">Precio Promoción (S/)</label>
                           <input
                             type="number"
                             value={servicioPromo || ""}
                             onChange={(e) => setServicioPromo(e.target.value ? Number(e.target.value) : undefined)}
-                            className="w-full px-2.5 py-1.5 border rounded-xl bg-white font-mono font-bold text-emerald-700"
+                            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-emerald-700 mt-1"
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] font-bold text-slate-500 block mb-1">Texto Promoción (Rojo)</label>
+                          <label className="font-semibold text-slate-600">Duración (min)</label>
                           <input
-                            type="text"
-                            value={servicioTextoPromo}
-                            onChange={(e) => setServicioTextoPromo(e.target.value)}
-                            className="w-full px-2.5 py-1.5 border rounded-xl bg-white text-rose-600 font-bold"
+                            type="number"
+                            value={servicioDuracion}
+                            onChange={(e) => setServicioDuracion(Number(e.target.value))}
+                            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl font-bold mt-1"
                           />
                         </div>
+                      </div>
 
-                        <div className="sm:col-span-3 flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            id={`edit-web-${s.id}`}
-                            checked={servicioMostrarWeb}
-                            onChange={(e) => setServicioMostrarWeb(e.target.checked)}
-                            className="rounded text-teal-600"
-                          />
-                          <label htmlFor={`edit-web-${s.id}`} className="font-semibold text-slate-700">
-                            Mostrar en el Landing Page público
-                          </label>
-                        </div>
+                      <div>
+                        <label className="font-semibold text-slate-600">Descripción del tratamiento</label>
+                        <textarea
+                          value={servicioDesc}
+                          onChange={(e) => setServicioDesc(e.target.value)}
+                          className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs mt-1"
+                        />
                       </div>
 
                       <div className="flex justify-end gap-2 pt-2">
                         <button
                           type="button"
                           onClick={() => setEditingServicioId(null)}
-                          className="px-3 py-1.5 bg-slate-200 text-slate-700 rounded-xl font-semibold cursor-pointer"
+                          className="px-3 py-1.5 bg-slate-100 rounded-xl text-slate-600 font-semibold"
                         >
                           Cancelar
                         </button>
                         <button
                           type="button"
                           onClick={() => handleSaveServicio(s.id)}
-                          className="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-xs cursor-pointer"
+                          className="px-4 py-1.5 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700"
                         >
                           Guardar Cambios
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="font-extrabold text-slate-800 text-sm">{s.nombre}</h4>
-                          {s.categoriaTag && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                              {s.categoriaTag}
-                            </span>
-                          )}
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                            s.mostrarEnWeb !== false
-                              ? "bg-teal-50 text-teal-700 border border-teal-200"
-                              : "bg-slate-100 text-slate-500 border border-slate-200"
-                          }`}>
-                            {s.mostrarEnWeb !== false ? "Visible en Web" : "Oculto en Web"}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-800 text-sm">{s.nombre}</span>
+                          <span className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full uppercase">
+                            {s.categoriaTag || "CLÍNICO"}
                           </span>
                         </div>
-                        {s.descripcion && (
-                          <p className="text-xs text-slate-500 max-w-xl">{s.descripcion}</p>
-                        )}
-                        <div className="flex items-center gap-2 text-[11px] text-slate-400">
-                          <span>Duración: <strong className="text-slate-600">{s.duracionMinutos} min</strong></span>
-                          {s.textoPromocion && (
-                            <span className="text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded-md border border-rose-100">
-                              {s.textoPromocion}
-                            </span>
-                          )}
-                        </div>
+                        <p className="text-xs text-slate-500 mt-1 max-w-xl">
+                          {s.descripcion || "Tratamiento personalizado enfocado en recuperación y movilidad."}
+                        </p>
                       </div>
 
-                      <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                      <div className="flex items-center gap-4 self-end sm:self-auto shrink-0">
                         <div className="text-right">
-                          <span className="text-base font-black text-slate-800 block">
-                            {formatCurrency(s.precioBase)}
+                          <span className="text-xs font-semibold text-slate-400 block">{s.duracionMinutos} min</span>
+                          <span className="text-sm font-extrabold text-slate-800">
+                            {s.precioPromocional ? (
+                              <>
+                                <span className="line-through text-slate-400 text-xs mr-1">{formatCurrency(s.precioBase)}</span>
+                                <span className="text-emerald-700">{formatCurrency(s.precioPromocional)}</span>
+                              </>
+                            ) : (
+                              formatCurrency(s.precioBase)
+                            )}
                           </span>
-                          {s.precioPromocional ? (
-                            <span className="text-xs font-bold text-rose-600">
-                              Promo: {formatCurrency(s.precioPromocional)}
-                            </span>
-                          ) : null}
                         </div>
-                        <div className="flex items-center gap-1.5">
+
+                        <div className="flex items-center gap-1 border-l border-slate-100 pl-3">
                           <button
+                            type="button"
                             onClick={() => {
                               setEditingServicioId(s.id);
                               setServicioNombre(s.nombre);
@@ -1552,14 +1405,16 @@ export function ConfigurationManager({
                               setServicioTextoPromo(s.textoPromocion || "");
                               setServicioMostrarWeb(s.mostrarEnWeb !== false);
                             }}
-                            className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-lg border border-slate-200 cursor-pointer transition"
+                            className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition"
+                            title="Editar"
                           >
-                            Editar
+                            <Edit3 className="w-3.5 h-3.5" />
                           </button>
                           <button
+                            type="button"
                             onClick={() => handleDeleteServicio(s.id, s.nombre)}
-                            className="p-1.5 hover:bg-rose-50 text-rose-600 rounded-lg border border-rose-200 cursor-pointer transition"
-                            title="Eliminar procedimiento"
+                            className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                            title="Eliminar"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -1575,212 +1430,294 @@ export function ConfigurationManager({
       )}
 
       {/* ========================================================================= */}
-      {/* PESTAÑA 5: TESTIMONIOS (PATIENT STORIES)                                   */}
+      {/* PESTAÑA 5: PÁGINA WEB & TESTIMONIOS (MARKETING UNIFICADO)                  */}
       {/* ========================================================================= */}
-      {activeTab === "testimonios" && (
-        <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
-            <div>
-              <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-1.5">
-                <Quote className="w-4 h-4 text-teal-600" />
-                Historias y Testimonios de Pacientes (Patient Stories)
-              </h3>
-              <p className="text-[11px] text-slate-500">
-                Reseñas mostradas con 5 estrellas en la sección pública para generar confianza inmediata.
-              </p>
-            </div>
-            <button
-              onClick={() => setIsCreatingTestimonio(true)}
-              className="flex items-center justify-center gap-2 px-3.5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Nuevo Testimonio</span>
-            </button>
-          </div>
-
-          {/* Formulario nuevo testimonio */}
-          {isCreatingTestimonio && (
-            <form onSubmit={handleAddTestimonio} className="p-4 bg-teal-50/60 border border-teal-200 rounded-2xl space-y-3 animate-in fade-in duration-150">
-              <div className="flex items-center justify-between">
-                <span className="font-extrabold text-teal-900 text-xs flex items-center gap-1.5">
-                  <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                  Agregar Testimonio de Paciente
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setIsCreatingTestimonio(false)}
-                  className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+      {activeTab === "marketing" && (
+        <div className="space-y-6">
+          {/* Tarjeta de Portada y Títulos Hero */}
+          <form onSubmit={handleSaveMarketing} className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-teal-600" />
+                  <span>Portada Principal de la Página Web (Hero Section)</span>
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  Modifica los títulos, subtítulos, métricas sociales e imagen principal de bienvenida.
+                </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Nombre del Paciente *</label>
-                  <input
-                    type="text"
-                    required
-                    value={nuevoTestNombre}
-                    onChange={(e) => setNuevoTestNombre(e.target.value)}
-                    placeholder="Ej. Sarah M."
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-bold"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Calificación (Estrellas 1-5)</label>
-                  <select
-                    value={nuevoTestCalif}
-                    onChange={(e) => setNuevoTestCalif(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-bold"
-                  >
-                    <option value={5}>⭐⭐⭐⭐⭐ (5 Estrellas)</option>
-                    <option value={4}>⭐⭐⭐⭐ (4 Estrellas)</option>
-                    <option value={3}>⭐⭐⭐ (3 Estrellas)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Avatar / Foto URL (Opcional)</label>
-                  <input
-                    type="text"
-                    value={nuevoTestAvatar}
-                    onChange={(e) => setNuevoTestAvatar(e.target.value)}
-                    placeholder="https://..."
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none text-xs"
-                  />
-                </div>
-
-                <div className="sm:col-span-3">
-                  <label className="block font-semibold text-slate-700 mb-1">Comentario del Paciente *</label>
-                  <textarea
-                    rows={3}
-                    required
-                    value={nuevoTestComent}
-                    onChange={(e) => setNuevoTestComent(e.target.value)}
-                    placeholder="Ej. Llegué con un dolor lumbar severo que me impedía trabajar. En solo 4 sesiones el progreso fue extraordinario..."
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none text-xs"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setIsCreatingTestimonio(false)}
-                  className="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-600 text-xs font-semibold rounded-xl border border-slate-200 cursor-pointer"
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/"
+                  target="_blank"
+                  className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold rounded-xl border border-slate-200 text-xs flex items-center gap-1.5 transition"
                 >
-                  Cancelar
-                </button>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Ver Web en Vivo</span>
+                </Link>
+
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer"
+                  disabled={savingMarketing}
+                  className="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-xs text-xs flex items-center gap-1.5 transition cursor-pointer"
                 >
-                  Guardar Testimonio
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{savingMarketing ? "Guardando..." : "Guardar Portada"}</span>
                 </button>
               </div>
-            </form>
-          )}
+            </div>
 
-          {/* Grid de Testimonios */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
-            {testimonios.map((t) => (
-              <div key={t.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col justify-between space-y-3">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <img
-                        src={t.avatarUrl || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80"}
-                        alt={t.nombre}
-                        className="w-9 h-9 rounded-full object-cover border border-slate-200"
-                      />
-                      <div>
-                        <h4 className="font-bold text-slate-800 text-xs">{t.nombre}</h4>
-                        <div className="flex items-center text-amber-500 text-[10px]">
-                          {Array.from({ length: t.calificacion }).map((_, i) => (
-                            <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
-                          ))}
-                        </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Título Principal (H1)</label>
+                <input
+                  type="text"
+                  value={config.tituloHero || ""}
+                  onChange={(e) => setConfig({ ...config, tituloHero: e.target.value })}
+                  placeholder="Vuelve a moverte."
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-black text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Subtítulo Cursivo (H2)</label>
+                <input
+                  type="text"
+                  value={config.subtituloHero || ""}
+                  onChange={(e) => setConfig({ ...config, subtituloHero: e.target.value })}
+                  placeholder="Vuelve a sentirte tú."
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-serif text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="text-xs">
+              <label className="block font-bold text-slate-700 mb-1">Párrafo Descriptivo</label>
+              <textarea
+                value={config.descripcionHero || ""}
+                onChange={(e) => setConfig({ ...config, descripcionHero: e.target.value })}
+                placeholder="Fisioterapia especializada y humana para recuperar tu bienestar..."
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl h-20"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-100 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Rating Promedio (Estrellas)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="1"
+                  max="5"
+                  value={config.ratingPromedio || 4.9}
+                  onChange={(e) => setConfig({ ...config, ratingPromedio: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Métrica Pacientes al Mes</label>
+                <input
+                  type="text"
+                  value={config.totalPacientesMes || "+1,100"}
+                  onChange={(e) => setConfig({ ...config, totalPacientesMes: e.target.value })}
+                  placeholder="+1,100 pacientes"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Imagen Hero Portada (URL)</label>
+                <input
+                  type="text"
+                  value={config.heroImageUrl || "/images/hero-physio.jpg"}
+                  onChange={(e) => setConfig({ ...config, heroImageUrl: e.target.value })}
+                  placeholder="/images/hero-physio.jpg"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                />
+              </div>
+            </div>
+          </form>
+
+          {/* Tarjeta de Testimonios de Pacientes */}
+          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                  <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                  <span>Testimonios y Reseñas Web ({testimonios.length})</span>
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  Reseñas de pacientes visibles en el carrusel interactivo de la página de inicio.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsCreatingTestimonio(true)}
+                className="px-3.5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Agregar Reseña</span>
+              </button>
+            </div>
+
+            {/* Formulario Nuevo Testimonio */}
+            {isCreatingTestimonio && (
+              <form onSubmit={handleAddTestimonio} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                <span className="text-xs font-bold text-slate-800 block">Nueva Reseña de Paciente</span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div className="sm:col-span-2">
+                    <input
+                      type="text"
+                      placeholder="Nombre del Paciente (Ej: Carlos V. • San Borja)"
+                      value={nuevoTestNombre}
+                      onChange={(e) => setNuevoTestNombre(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <select
+                      value={nuevoTestCalif}
+                      onChange={(e) => setNuevoTestCalif(Number(e.target.value))}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold"
+                    >
+                      <option value="5">⭐⭐⭐⭐⭐ (5 Estrellas)</option>
+                      <option value="4">⭐⭐⭐⭐ (4 Estrellas)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <textarea
+                  placeholder="Comentario sobre su recuperación y experiencia clínica..."
+                  value={nuevoTestComent}
+                  onChange={(e) => setNuevoTestComent(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs h-20"
+                  required
+                />
+
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreatingTestimonio(false)}
+                    className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-slate-600 text-xs font-semibold"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-1.5 bg-teal-600 text-white rounded-xl text-xs font-bold shadow-xs hover:bg-teal-700"
+                  >
+                    Guardar Testimonio
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Lista de Testimonios */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {testimonios.map((t) => (
+                <div
+                  key={t.id}
+                  className="p-4 bg-slate-50/60 rounded-2xl border border-slate-200/90 flex flex-col justify-between gap-3 text-xs"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-bold text-slate-800">{t.nombre}</span>
+                      <div className="flex text-amber-500">
+                        {Array.from({ length: t.calificacion || 5 }).map((_, i) => (
+                          <Star key={i} className="w-3 h-3 fill-amber-500" />
+                        ))}
                       </div>
                     </div>
+                    <p className="text-slate-600 text-[11px] leading-relaxed italic">
+                      "{t.comentario}"
+                    </p>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-200/60 flex justify-end">
                     <button
+                      type="button"
                       onClick={() => handleDeleteTestimonio(t.id)}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                      className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition"
                       title="Eliminar testimonio"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                  <p className="text-xs text-slate-600 italic">"{t.comentario}"</p>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* PESTAÑA 5: POLÍTICAS CLÍNICAS                                             */}
+      {/* PESTAÑA 6: POLÍTICAS MÉDICAS Y REGLAS CLÍNICAS                           */}
       {/* ========================================================================= */}
       {activeTab === "politicas" && (
         <form onSubmit={handleSavePoliticas} className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5">
-          <div className="pb-3 border-b border-slate-100">
-            <h3 className="font-extrabold text-slate-800 text-sm">Políticas Médicas y Reglas de Alta</h3>
-            <p className="text-[11px] text-slate-500">
-              Reglas de evolución biomecánica y control de calidad clínica.
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/90 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="max-w-xl">
-                <span className="font-bold text-slate-800 text-xs block">
-                  Frecuencia de Reevaluación Biomecánica
-                </span>
-                <span className="text-[11px] text-slate-500 block mt-0.5">
-                  Número de sesiones consecutivas tras las cuales se exige un test de progreso para el paciente.
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min={1}
-                  max={20}
-                  value={config.frecuenciaReevaluacion}
-                  onChange={(e) => setConfig({ ...config, frecuenciaReevaluacion: Number(e.target.value) })}
-                  className="w-20 px-3 py-1.5 bg-white border border-slate-200 rounded-xl font-bold text-xs text-center focus:ring-2 focus:ring-teal-500"
-                />
-                <span className="text-xs font-semibold text-slate-600">sesiones</span>
-              </div>
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div>
+              <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-teal-600" />
+                <span>Reglas Médicas y Políticas Clínicas Institucionales</span>
+              </h3>
+              <p className="text-[11px] text-slate-500">
+                Parámetros médico-legales de reevaluación EVA y control estricto de alta de tratamiento.
+              </p>
             </div>
 
-            <div className="p-4 bg-amber-50/60 rounded-2xl border border-amber-200/80 flex items-center justify-between gap-4">
-              <div>
-                <span className="font-bold text-amber-950 text-xs block">
-                  Bloqueo de Alta Médica sin Reevaluación
-                </span>
-                <span className="text-[11px] text-amber-800 block mt-0.5">
-                  Impide cerrar el expediente médico si el paciente no tiene acreditada su evaluación periódica.
-                </span>
-              </div>
-              <Switch
-                checked={Boolean(config.bloqueoAltaReevaluacion)}
-                onChange={(checked) => setConfig({ ...config, bloqueoAltaReevaluacion: checked })}
-                id="switch-bloqueo-alta"
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end pt-2">
             <button
               type="submit"
-              disabled={savingConfig}
-              className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-md shadow-teal-600/25 flex items-center gap-2 transition disabled:opacity-50 cursor-pointer text-xs"
+              disabled={savingPoliticas}
+              className="px-5 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold rounded-xl shadow-xs text-xs flex items-center gap-1.5 transition cursor-pointer"
             >
-              <Save className="w-4 h-4" />
-              <span>{savingConfig ? "Guardando..." : "Guardar Políticas"}</span>
+              <Save className="w-3.5 h-3.5" />
+              <span>{savingPoliticas ? "Guardando..." : "Guardar Políticas"}</span>
             </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs">
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+              <label className="block font-bold text-slate-800">
+                Frecuencia Obligatoria de Reevaluación (Sesiones)
+              </label>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Cada cuántas sesiones de evolución el sistema exige al terapeuta registrar una ficha de reevaluación clínica obligatoria con escala EVA.
+              </p>
+              <input
+                type="number"
+                min="1"
+                max="20"
+                value={config.frecuenciaReevaluacion || 5}
+                onChange={(e) => setConfig({ ...config, frecuenciaReevaluacion: Number(e.target.value) })}
+                className="w-32 px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold text-sm"
+              />
+            </div>
+
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3 flex flex-col justify-between">
+              <div>
+                <label className="block font-bold text-slate-800">
+                  Bloqueo de Alta sin Reevaluación Final
+                </label>
+                <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
+                  Impide emitir el alta terapéutica final si el paciente no cuenta con su última reevaluación registrada, protegiendo a la clínica ante auditorías.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                <Switch
+                  checked={config.bloqueoAltaReevaluacion !== false}
+                  onChange={(val) => setConfig({ ...config, bloqueoAltaReevaluacion: val })}
+                />
+                <span className="font-bold text-xs text-slate-700">
+                  {config.bloqueoAltaReevaluacion !== false ? "Bloqueo Activo (Recomendado)" : "Permitir Alta Directa"}
+                </span>
+              </div>
+            </div>
           </div>
         </form>
       )}

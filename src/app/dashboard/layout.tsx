@@ -1,5 +1,6 @@
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { obtenerSesionServidor } from "@/lib/auth-server";
+import { obtenerConfiguracionClinica } from "@/server/actions/configuracion";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -9,7 +10,10 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const sesion = await obtenerSesionServidor();
+  const [sesion, configuracion] = await Promise.all([
+    obtenerSesionServidor(),
+    obtenerConfiguracionClinica(),
+  ]);
 
   if (!sesion) {
     redirect("/login");
@@ -24,5 +28,9 @@ export default async function DashboardLayout({
     isPaciente: sesion.isPaciente,
   };
 
-  return <DashboardShell initialUser={initialUser}>{children}</DashboardShell>;
+  return (
+    <DashboardShell initialUser={initialUser} initialConfig={configuracion}>
+      {children}
+    </DashboardShell>
+  );
 }

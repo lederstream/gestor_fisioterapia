@@ -5,15 +5,18 @@ import { Bell, Clock, MapPin, Menu, Sparkles, HeartHandshake } from "lucide-reac
 import { RoleSwitcher } from "./RoleSwitcher";
 import { useAuth } from "@/lib/auth-context";
 
+import { ConfiguracionClinicaItem } from "@/lib/store";
+
 interface DashboardNavbarProps {
   onToggleMobileMenu?: () => void;
+  initialConfig?: ConfiguracionClinicaItem;
 }
 
-export function DashboardNavbar({ onToggleMobileMenu }: DashboardNavbarProps) {
+export function DashboardNavbar({ onToggleMobileMenu, initialConfig }: DashboardNavbarProps) {
   const { currentRole } = useAuth();
   const [clinicConfig, setClinicConfig] = useState({
-    nombreComercial: "AJ Fisioterapia",
-    direccion: "Av. Guardia Civil 520, San Borja, Lima",
+    nombreComercial: initialConfig?.nombreComercial || "AJ Fisioterapia",
+    direccion: initialConfig?.direccion || "Av. Guardia Civil 520, San Borja, Lima",
   });
 
   useEffect(() => {

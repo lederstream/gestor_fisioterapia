@@ -130,8 +130,11 @@ export async function guardarConfiguracionClinica(
 
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       try {
+        const existingConfig = await prisma.configuracionClinica.findFirst();
+        const targetId = existingConfig?.id || "config-principal";
+
         await prisma.configuracionClinica.upsert({
-          where: { id: "config-principal" },
+          where: { id: targetId },
           update: {
             ...(data.razonSocial !== undefined ? { razonSocial: data.razonSocial } : {}),
             ...(data.nombreComercial !== undefined ? { nombreComercial: data.nombreComercial } : {}),
@@ -167,7 +170,7 @@ export async function guardarConfiguracionClinica(
             ...(data.colorAcento !== undefined ? { colorAcento: data.colorAcento } : {}),
           },
           create: {
-            id: "config-principal",
+            id: targetId,
             razonSocial: data.razonSocial || "AJ Fisioterapia S.A.C.",
             nombreComercial: data.nombreComercial || "AJ Fisioterapia",
             slogan: data.slogan || "REHABILITACIÓN & BIENESTAR",
@@ -191,8 +194,10 @@ export async function guardarConfiguracionClinica(
     revalidatePath("/");
     revalidatePath("/dashboard/configuracion");
     revalidatePath("/dashboard");
+    revalidatePath("/dashboard", "layout");
     revalidatePath("/dashboard/agenda");
     revalidatePath("/reservas");
+    revalidatePath("/login");
 
     return { success: true, data: actualizada };
   } catch (err: unknown) {

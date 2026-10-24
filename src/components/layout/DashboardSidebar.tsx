@@ -26,10 +26,12 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import { Permission } from "@/lib/permissions";
+import { ConfiguracionClinicaItem } from "@/lib/store";
 
 interface DashboardSidebarProps {
   isOpenMobile?: boolean;
   onCloseMobile?: () => void;
+  initialConfig?: ConfiguracionClinicaItem;
 }
 
 interface NavItem {
@@ -57,16 +59,16 @@ const patientNavigation: NavItem[] = [
   { name: "Mis Pagos", href: "/dashboard/mis-pagos", icon: CreditCard },
 ];
 
-export function DashboardSidebar({ isOpenMobile = false, onCloseMobile }: DashboardSidebarProps) {
+export function DashboardSidebar({ isOpenMobile = false, onCloseMobile, initialConfig }: DashboardSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { currentRole, currentUser, hasPermission, roleDetails, logout } = useAuth();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [logoUrl, setLogoUrl] = useState<string>("/images/logo-clinica.svg");
+  const [logoUrl, setLogoUrl] = useState<string>(initialConfig?.logoUrl || "/images/logo-clinica.svg");
   const [clinicConfig, setClinicConfig] = useState({
-    nombreComercial: "AJ Fisioterapia",
-    whatsapp: "+51 987 654 321",
-    totalSalasFisicas: 6,
+    nombreComercial: initialConfig?.nombreComercial || "AJ Fisioterapia",
+    whatsapp: initialConfig?.whatsapp || "+51 987 654 321",
+    totalSalasFisicas: initialConfig?.totalSalasFisicas || 6,
   });
 
   const isPatient = currentRole === "PACIENTE";

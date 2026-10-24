@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { solicitarReservaPublica } from "@/server/actions/reservas";
-import { ServicioItem, ConfiguracionClinicaItem } from "@/lib/store";
+import { ServicioItem, ConfiguracionClinicaItem, HorariosSemanaConfig } from "@/lib/store";
 
 interface QuickPreBookingModalProps {
   isOpen: boolean;
@@ -85,13 +85,51 @@ export function QuickPreBookingModal({
       return;
     }
 
+    // Validar día activo según configuración clínica
+    const dayKeys: (keyof HorariosSemanaConfig)[] = [
+      "domingo",
+      "lunes",
+      "martes",
+      "miercoles",
+      "jueves",
+      "viernes",
+      "sabado",
+    ];
+    const dayNames = ["domingos", "lunes", "martes", "miércoles", "jueves", "viernes", "sábados"];
+    const selectedDate = new Date(`${fecha}T12:00:00`);
+    const dayIdx = selectedDate.getDay();
+    const diaConfig = config?.horariosSemana ? config.horariosSemana[dayKeys[dayIdx]] : undefined;
+
+    if (diaConfig && !diaConfig.activo) {
+      setErrorMsg(`La clínica no atiende los ${dayNames[dayIdx]}. Por favor selecciona otra fecha disponible.`);
+      return;
+    }
+
     // Dividir nombres y apellidos
     const parts = cleanNombres.split(" ");
     const primerNombre = parts[0] || "Paciente";
     const apellidoPaterno = parts.slice(1).join(" ") || "General";
 
-    // Horario según turno
-    const horario = turno === "MANANA" ? "09:00 - 09:45" : "15:00 - 15:45";
+    // Horario dinámico coherente con apertura/intervalos
+    const interval = config?.intervaloMinutos || 45;
+    let horario = turno === "MANANA" ? "09:00 - 09:45" : "15:00 - 15:45";
+    
+    if (turno === "MANANA") {
+      const startH = diaConfig?.apertura || config?.horaApertura || "08:30";
+      const partsA = startH.split(":");
+      const h = parseInt(partsA[0], 10);
+      const m = parseInt(partsA[1] || "0", 10);
+      const totalEnd = h * 60 + m + interval;
+      const eh = Math.floor(totalEnd / 60);
+      const em = totalEnd % 60;
+      horario = `${startH} - ${eh.toString().padStart(2, "0")}:${em.toString().padStart(2, "0")}`;
+    } else {
+      const pmHour = diaConfig?.pausaFin ? parseInt(diaConfig.pausaFin.split(":")[0], 10) : 15;
+      const totalEnd = pmHour * 60 + interval;
+      const eh = Math.floor(totalEnd / 60);
+      const em = totalEnd % 60;
+      horario = `${pmHour.toString().padStart(2, "0")}:00 - ${eh.toString().padStart(2, "0")}:${em.toString().padStart(2, "0")}`;
+    }
 
     setLoading(true);
 

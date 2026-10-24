@@ -1,7 +1,8 @@
+import Link from "next/link";
 import { obtenerConfiguracionCompleta } from "@/server/actions/configuracion";
 import { ConfigurationManager } from "@/components/configuracion/ConfigurationManager";
 import { PermissionGuard } from "@/components/layout/PermissionGuard";
-import { Settings } from "lucide-react";
+import { Settings, Users, Globe } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -25,9 +26,30 @@ export default async function ConfiguracionPage() {
             </p>
           </div>
 
-          <div className="bg-slate-100 text-slate-700 px-3.5 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold flex items-center gap-2">
-            <Settings className="w-4 h-4 text-teal-600" />
-            <span>Administración</span>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/dashboard/usuarios"
+              className="px-3.5 py-1.5 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-xl border border-slate-200 shadow-2xs text-xs flex items-center gap-1.5 transition"
+              title="Administrar fisioterapeutas, recepcionistas y accesos"
+            >
+              <Users className="w-3.5 h-3.5 text-teal-600" />
+              <span>Gestionar Equipo</span>
+            </Link>
+
+            <Link
+              href="/"
+              target="_blank"
+              className="px-3.5 py-1.5 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-xl border border-slate-200 shadow-2xs text-xs flex items-center gap-1.5 transition"
+              title="Abrir landing page pública"
+            >
+              <Globe className="w-3.5 h-3.5 text-slate-500" />
+              <span>Ver Web</span>
+            </Link>
+
+            <div className="bg-slate-100 text-slate-700 px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold flex items-center gap-1.5">
+              <Settings className="w-3.5 h-3.5 text-teal-600" />
+              <span>Administración</span>
+            </div>
           </div>
         </div>
 

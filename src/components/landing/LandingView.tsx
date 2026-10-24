@@ -154,6 +154,131 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
     setTestimonialIndex((prev) => (prev - 1 + testimoniosList.length) % testimoniosList.length);
   };
 
+  // Cálculo inteligente del estado operativo de la clínica en tiempo real (Zona Horaria Perú)
+  const clinicStatus = (() => {
+    const dayKeys = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
+    const dayNames = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+    const now = new Date();
+    // Convertir a fecha/hora local de Lima, Perú
+    const peruDateStr = now.toLocaleString("en-US", { timeZone: "America/Lima" });
+    const peruTime = new Date(peruDateStr);
+    const currentDayKey = dayKeys[peruTime.getDay()];
+    const currentHour = peruTime.getHours();
+    const currentMinutes = peruTime.getMinutes();
+    const currentTimeStr = `${currentHour.toString().padStart(2, "0")}:${currentMinutes.toString().padStart(2, "0")}`;
+
+    const hs = config.horariosSemana;
+    const diaHoy = hs ? hs[currentDayKey as keyof typeof hs] : null;
+
+    const isOpenToday = diaHoy ? diaHoy.activo : (currentDayKey !== "domingo");
+    const horaAperturaHoy = diaHoy?.apertura || config.horaApertura || "08:00";
+    const horaCierreHoy = diaHoy?.cierre || config.horaCierre || "20:00";
+
+    if (isOpenToday && currentTimeStr < horaCierreHoy) {
+      if (currentTimeStr < horaAperturaHoy) {
+        return {
+          titulo: "AGENDA DE HOY",
+          subtitulo: `Abre hoy a las ${horaAperturaHoy}`,
+          statusText: "Cupos libres",
+        };
+      }
+      return {
+        titulo: "HORARIO DE HOY",
+        subtitulo: `Atención hasta ${horaCierreHoy}`,
+        statusText: "Turnos disponibles",
+      };
+    }
+
+    // Si ya cerró hoy o el día está inactivo, buscar el próximo día abierto
+    let nextDayLabel = "Mañana";
+    let nextDayApertura = config.horaApertura || "08:00";
+
+    for (let i = 1; i <= 7; i++) {
+      const nextIdx = (peruTime.getDay() + i) % 7;
+      const nextKey = dayKeys[nextIdx];
+      const nextConf = hs ? hs[nextKey as keyof typeof hs] : null;
+      const nextIsOpen = nextConf ? nextConf.activo : (nextKey !== "domingo");
+      if (nextIsOpen) {
+        nextDayLabel = i === 1 ? "Mañana" : dayNames[nextIdx];
+        nextDayApertura = nextConf?.apertura || config.horaApertura || "08:00";
+        break;
+      }
+    }
+
+    return {
+      titulo: "PRÓXIMA ATENCIÓN",
+      subtitulo: `${nextDayLabel} desde ${nextDayApertura}`,
+      statusText: "Reserva 24/7",
+    };
+  })();
+
+  // Renderizador dinámico de horarios semanales
+  const renderHorariosList = () => {
+    if (!config.horariosSemana) {
+      return (
+        <>
+          <li>Lun – Vie: {config.horaApertura || "08:00"} – {config.horaCierre || "20:00"}</li>
+          <li>Sábados: 08:00 – 14:00</li>
+          <li className="text-stone-400">Domingos: Cerrado</li>
+        </>
+      );
+    }
+
+    const hs = config.horariosSemana;
+    const weekdays = ["lunes", "martes", "miercoles", "jueves", "viernes"].map((k) => hs[k as keyof typeof hs]);
+    const lvEqual = weekdays.every(
+      (d) => d && d.activo === weekdays[0]?.activo && d.apertura === weekdays[0]?.apertura && d.cierre === weekdays[0]?.cierre
+    );
+
+    const items: { label: string; text: string; isClosed: boolean }[] = [];
+
+    if (lvEqual && weekdays[0]) {
+      if (weekdays[0].activo) {
+        items.push({ label: "Lun – Vie", text: `${weekdays[0].apertura} – ${weekdays[0].cierre}`, isClosed: false });
+      } else {
+        items.push({ label: "Lun – Vie", text: "Cerrado", isClosed: true });
+      }
+    } else {
+      const diasNombres: Record<string, string> = {
+        lunes: "Lunes",
+        martes: "Martes",
+        miercoles: "Miércoles",
+        jueves: "Jueves",
+        viernes: "Viernes",
+      };
+      for (const [k, name] of Object.entries(diasNombres)) {
+        const conf = hs[k as keyof typeof hs];
+        if (conf?.activo) {
+          items.push({ label: name, text: `${conf.apertura} – ${conf.cierre}`, isClosed: false });
+        } else {
+          items.push({ label: name, text: "Cerrado", isClosed: true });
+        }
+      }
+    }
+
+    // Sábado
+    const sab = hs.sabado;
+    if (sab?.activo) {
+      items.push({ label: "Sábados", text: `${sab.apertura} – ${sab.cierre}`, isClosed: false });
+    } else {
+      items.push({ label: "Sábados", text: "Cerrado", isClosed: true });
+    }
+
+    // Domingo
+    const dom = hs.domingo;
+    if (dom?.activo) {
+      items.push({ label: "Domingos", text: `${dom.apertura} – ${dom.cierre}`, isClosed: false });
+    } else {
+      items.push({ label: "Domingos", text: "Cerrado", isClosed: true });
+    }
+
+    return items.map((it, idx) => (
+      <li key={idx} className={it.isClosed ? "text-stone-400" : ""}>
+        {it.label}: {it.text}
+      </li>
+    ));
+  };
+
   return (
     <div className="min-h-screen bg-[#FAF9F5] text-stone-800 selection:bg-[#0C3E37] selection:text-white flex flex-col justify-between font-sans">
       {/* ── HEADER / NAVBAR (100% DINÁMICO) ─────────────────────────── */}
@@ -165,10 +290,10 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
               className="w-11 h-11 rounded-2xl text-white flex items-center justify-center font-bold text-base shadow-sm group-hover:scale-105 transition-transform overflow-hidden p-1.5"
               style={{ backgroundColor: brandPrimary }}
             >
-              {config.logoUrl && config.logoUrl !== "/images/logo-clinica.svg" ? (
+              {config.logoUrl ? (
                 <img
                   src={config.logoUrl}
-                  alt={config.nombreComercial}
+                  alt={config.nombreComercial || "Logo"}
                   className="w-full h-full object-contain"
                 />
               ) : (
@@ -443,23 +568,29 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
                   </span>
                 </div>
 
-                {/* Floating Card: Próxima Cita (Bottom Left - Adaptive Mobile) */}
-                <div className="absolute -bottom-3 sm:-bottom-5 left-2 sm:-left-6 bg-white/95 backdrop-blur-sm rounded-2xl p-2.5 sm:p-4 shadow-xl border border-stone-100/90 z-10 flex items-center gap-2.5 sm:gap-3.5 hover:-translate-y-0.5 transition-transform max-w-[90%] sm:max-w-none">
-                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-[#E2EEE7] text-[#145347] flex items-center justify-center shrink-0">
+                {/* Floating Card: Disponibilidad Dinámica de la Clínica */}
+                <button
+                  type="button"
+                  onClick={() => handleOpenQuickBooking()}
+                  className="absolute -bottom-3 sm:-bottom-5 left-2 sm:-left-6 bg-white/95 backdrop-blur-sm rounded-2xl p-2.5 sm:p-4 shadow-xl border border-stone-100/90 z-10 flex items-center gap-2.5 sm:gap-3.5 hover:-translate-y-0.5 transition-transform max-w-[90%] sm:max-w-none text-left cursor-pointer group"
+                  title="Haz clic para consultar disponibilidad y agendar tu cita"
+                >
+                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-[#E2EEE7] text-[#145347] flex items-center justify-center shrink-0 group-hover:bg-[#145347] group-hover:text-white transition-colors">
                     <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                   <div>
                     <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-stone-400">
-                      PRÓXIMA CITA
+                      {clinicStatus.titulo}
                     </div>
                     <div className="text-xs sm:text-sm font-bold text-[#0B2E28]">
-                      Hoy, 4:30 pm
+                      {clinicStatus.subtitulo}
                     </div>
                   </div>
-                  <div className="ml-1 sm:ml-2 bg-[#E7F6EC] text-[#166534] text-[10px] sm:text-xs font-semibold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full whitespace-nowrap">
-                    Confirmada
+                  <div className="ml-1 sm:ml-2 bg-[#E7F6EC] text-[#166534] text-[10px] sm:text-xs font-semibold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full whitespace-nowrap flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>{clinicStatus.statusText}</span>
                   </div>
-                </div>
+                </button>
               </div>
             </div>
 
@@ -520,7 +651,9 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
                 Horarios flexibles
               </h4>
               <p className="text-xs text-stone-500 leading-relaxed max-w-xs">
-                Atención continua de lunes a sábado de {config.horaApertura || "08:00"} a {config.horaCierre || "20:00"}.
+                {config.horariosSemana?.sabado?.activo
+                  ? `Atención de lunes a sábado desde las ${config.horaApertura || "08:00"} hasta las ${config.horaCierre || "20:00"}.`
+                  : `Atención clínica de lunes a viernes de ${config.horaApertura || "08:00"} a ${config.horaCierre || "20:00"}.`}
               </p>
             </div>
 
@@ -1050,10 +1183,10 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
                   className="w-10 h-10 rounded-2xl text-white flex items-center justify-center font-bold text-sm shadow-sm overflow-hidden p-1.5"
                   style={{ backgroundColor: brandSecondary }}
                 >
-                  {config.logoUrl && config.logoUrl !== "/images/logo-clinica.svg" ? (
+                  {config.logoUrl ? (
                     <img
                       src={config.logoUrl}
-                      alt={config.nombreComercial}
+                      alt={config.nombreComercial || "Logo"}
                       className="w-full h-full object-contain"
                     />
                   ) : (
@@ -1108,15 +1241,13 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
               </ul>
             </div>
 
-            {/* Col 3: Horarios */}
+            {/* Col 3: Horarios Dinámicos */}
             <div className="lg:col-span-3 space-y-3">
               <h4 className="font-bold text-white text-sm tracking-wide">
                 Horarios
               </h4>
               <ul className="space-y-2.5 text-xs sm:text-sm text-stone-300">
-                <li>Lun – Vie: {config.horaApertura || "08:00"} – {config.horaCierre || "20:00"}</li>
-                <li>Sábados: 08:00 – 14:00</li>
-                <li className="text-stone-400">Domingos: Cerrado</li>
+                {renderHorariosList()}
               </ul>
             </div>
 
