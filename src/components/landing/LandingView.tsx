@@ -358,14 +358,15 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
               )}
             </button>
 
-            <Link
-              href="/reservas"
-              className="rounded-full text-white px-5 py-2.5 text-sm font-semibold flex items-center gap-2 shadow-xs transition-all hover:gap-2.5 hover:opacity-95"
+            <button
+              type="button"
+              onClick={() => handleOpenQuickBooking()}
+              className="rounded-full text-white px-5 py-2.5 text-sm font-semibold flex items-center gap-2 shadow-xs transition-all hover:gap-2.5 hover:opacity-95 cursor-pointer"
               style={{ backgroundColor: brandPrimary }}
             >
               <span>Reservar cita</span>
               <ArrowRight className="w-4 h-4" />
-            </Link>
+            </button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -447,15 +448,18 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
                   <span className="w-2 h-2 rounded-full bg-emerald-500" />
                 )}
               </button>
-              <Link
-                href="/reservas"
-                onClick={() => setMobileMenuOpen(false)}
-                className="rounded-full text-white text-center py-3 font-semibold text-sm flex items-center justify-center gap-2 shadow-xs"
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleOpenQuickBooking();
+                }}
+                className="rounded-full text-white text-center py-3 font-semibold text-sm flex items-center justify-center gap-2 shadow-xs cursor-pointer"
                 style={{ backgroundColor: brandPrimary }}
               >
                 <span>Reservar cita</span>
                 <ArrowRight className="w-4 h-4" />
-              </Link>
+              </button>
             </div>
           </div>
         )}
@@ -491,14 +495,15 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
 
               {/* CTA Row */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-3">
-                <Link
-                  href="/reservas"
-                  className="rounded-full text-white font-semibold text-base px-7 py-3.5 shadow-md hover:shadow-lg flex items-center justify-center gap-2 transition-all hover:gap-3 hover:opacity-95"
+                <button
+                  type="button"
+                  onClick={() => handleOpenQuickBooking()}
+                  className="rounded-full text-white font-semibold text-base px-7 py-3.5 shadow-md hover:shadow-lg flex items-center justify-center gap-2 transition-all hover:gap-3 hover:opacity-95 cursor-pointer"
                   style={{ backgroundColor: brandPrimary }}
                 >
                   <span>Reservar evaluación</span>
                   <ArrowRight className="w-4 h-4" />
-                </Link>
+                </button>
 
                 <a
                   href={whatsappHref}
@@ -765,25 +770,17 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
                       </span>
                     </div>
 
-                    {/* Botón de Reserva Rápida (Modal) + Link */}
-                    <div className="pt-1 flex items-center gap-2">
+                    {/* Botón Principal Unificado de Reserva */}
+                    <div className="pt-1">
                       <button
                         type="button"
                         onClick={() => handleOpenQuickBooking(servicio.id)}
-                        className="flex-1 py-2 px-3 rounded-xl text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition hover:opacity-95 cursor-pointer"
+                        className="w-full py-2.5 px-4 rounded-xl text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all hover:opacity-95 hover:shadow-md cursor-pointer"
                         style={{ backgroundColor: brandPrimary }}
                       >
-                        <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
-                        <span>Reserva Rápida</span>
+                        <Calendar className="w-3.5 h-3.5 text-emerald-300" />
+                        <span>Reservar este Servicio</span>
                       </button>
-
-                      <Link
-                        href={`/reservas?servicio=${servicio.id}`}
-                        className="py-2 px-3 rounded-xl border border-stone-200 text-stone-600 hover:bg-stone-50 text-xs font-semibold transition"
-                        title="Ver formulario completo"
-                      >
-                        Ver más
-                      </Link>
                     </div>
                   </div>
                 </div>
@@ -1158,15 +1155,16 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
 
               {/* Lado derecho: Botón y Dirección en San Borja */}
               <div className="flex flex-col items-center lg:items-end gap-3 shrink-0 w-full sm:w-auto">
-                <Link
-                  href="/reservas"
-                  className="rounded-full bg-white hover:bg-stone-50 font-bold text-sm sm:text-base px-8 py-4 shadow-lg hover:shadow-xl flex items-center justify-center gap-2.5 transition-all hover:gap-3.5 shrink-0 w-full sm:w-auto active:scale-95"
+                <button
+                  type="button"
+                  onClick={() => handleOpenQuickBooking()}
+                  className="rounded-full bg-white hover:bg-stone-50 font-bold text-sm sm:text-base px-8 py-4 shadow-lg hover:shadow-xl flex items-center justify-center gap-2.5 transition-all hover:gap-3.5 shrink-0 w-full sm:w-auto active:scale-95 cursor-pointer"
                   style={{ color: brandPrimary }}
                 >
                   <Calendar className="w-5 h-5" style={{ color: brandPrimary }} />
                   <span>Reservar mi evaluación</span>
                   <ArrowRight className="w-5 h-5" style={{ color: brandPrimary }} />
-                </Link>
+                </button>
 
                 <div className="flex items-center gap-2 text-xs text-[#A8D3C4]">
                   <MapPin className="w-4 h-4 text-[#84CCB5] shrink-0" />
@@ -1304,6 +1302,33 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
           </div>
         </div>
       </footer>
+
+      {/* ── BARRA FLOTANTE MÓVIL (STICKY BOTTOM BAR) ────────────────── */}
+      <div className="md:hidden fixed bottom-4 inset-x-3 z-40 animate-in fade-in slide-in-from-bottom-4 duration-300">
+        <div className="bg-stone-900/95 backdrop-blur-md text-white p-2.5 rounded-2xl shadow-2xl border border-white/10 flex items-center justify-between gap-3">
+          <div className="pl-2">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[10px] font-extrabold text-stone-200 uppercase tracking-wider">
+                Sede San Borja
+              </span>
+            </div>
+            <p className="text-[11px] font-semibold text-stone-300">
+              {salasDisponibles} salas disponibles
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => handleOpenQuickBooking()}
+            className="py-2.5 px-4 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 shadow-md transition active:scale-95 cursor-pointer shrink-0"
+            style={{ backgroundColor: brandSecondary || "#E07052" }}
+          >
+            <Calendar className="w-3.5 h-3.5" />
+            <span>Reservar Cita</span>
+          </button>
+        </div>
+      </div>
 
       {/* ── MODAL DE ACCESO UNIFICADO ─────────────────────────────── */}
       <LoginPortalModal
