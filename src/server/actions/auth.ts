@@ -94,13 +94,29 @@ export async function iniciarSesion(
         return { success: false, error: "Contraseña incorrecta. Por favor verifica tus credenciales." };
       }
 
+      // Si el usuario es de tipo PACIENTE, enlazar su ID de paciente correspondiente si existe
+      let effectiveUserId = usuario.id;
+      if (usuario.rol === "PACIENTE") {
+        try {
+          const pac = await prisma.paciente.findFirst({
+            where: {
+              OR: [
+                { email: { equals: usuario.email, mode: "insensitive" } },
+                { id: usuario.id }
+              ]
+            }
+          });
+          if (pac) effectiveUserId = pac.id;
+        } catch {}
+      }
+
       const sessionData: SessionPayload = {
-        userId: usuario.id,
+        userId: effectiveUserId,
         nombre: usuario.nombre,
         email: usuario.email,
         rol: usuario.rol as UserRole,
         especialidad: usuario.especialidad || undefined,
-        isPaciente: false,
+        isPaciente: usuario.rol === "PACIENTE",
       };
 
       await establecerCookieSesion(sessionData);

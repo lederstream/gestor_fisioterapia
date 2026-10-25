@@ -138,6 +138,9 @@ export async function agendarCita(
         revalidatePath(`/dashboard/pacientes/${validated.pacienteId}`);
         revalidatePath("/dashboard/auditoria");
         revalidatePath("/dashboard");
+        revalidatePath("/dashboard/mis-citas");
+        revalidatePath("/dashboard/tratamiento");
+        revalidatePath("/dashboard/mis-pagos");
 
         return { success: true, data: resultadoTx };
       } catch (dbErr: any) {
@@ -165,6 +168,9 @@ export async function agendarCita(
     revalidatePath(`/dashboard/pacientes/${validated.pacienteId}`);
     revalidatePath("/dashboard/auditoria");
     revalidatePath("/dashboard");
+    revalidatePath("/dashboard/mis-citas");
+    revalidatePath("/dashboard/tratamiento");
+    revalidatePath("/dashboard/mis-pagos");
 
     return {
       success: true,
@@ -371,6 +377,9 @@ export async function actualizarEstadoCita(
     revalidatePath("/dashboard/agenda");
     revalidatePath("/dashboard/auditoria");
     revalidatePath("/dashboard");
+    revalidatePath("/dashboard/mis-citas");
+    revalidatePath("/dashboard/tratamiento");
+    revalidatePath("/dashboard/mis-pagos");
     return { success: true, data: actualizada };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Error al actualizar estado.";
@@ -429,6 +438,9 @@ export async function reprogramarCita(params: {
 
         revalidatePath("/dashboard/agenda");
         revalidatePath("/dashboard");
+        revalidatePath("/dashboard/mis-citas");
+        revalidatePath("/dashboard/tratamiento");
+        revalidatePath("/dashboard/mis-pagos");
         return { success: true, data: actualizadaDb };
       } catch (errDb: any) {
         console.warn("reprogramarCita db error:", errDb);
@@ -448,6 +460,9 @@ export async function reprogramarCita(params: {
     revalidatePath("/dashboard/agenda");
     revalidatePath("/dashboard/auditoria");
     revalidatePath("/dashboard");
+    revalidatePath("/dashboard/mis-citas");
+    revalidatePath("/dashboard/tratamiento");
+    revalidatePath("/dashboard/mis-pagos");
     return { success: true, data: reprogramada };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Error al reprogramar la cita.";

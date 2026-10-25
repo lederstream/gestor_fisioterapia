@@ -16,9 +16,13 @@ export default async function TratamientoPage() {
 
   if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
     try {
-      if (sesion?.userId) {
-        paciente = await prisma.paciente.findUnique({
-          where: { id: sesion.userId },
+      const searchCriteria: any[] = [];
+      if (sesion?.userId) searchCriteria.push({ id: sesion.userId });
+      if (sesion?.email) searchCriteria.push({ email: { equals: sesion.email, mode: "insensitive" } });
+
+      if (searchCriteria.length > 0) {
+        paciente = await prisma.paciente.findFirst({
+          where: { OR: searchCriteria },
           include: {
             tratamientos: {
               include: { servicio: true },
@@ -69,12 +73,28 @@ export default async function TratamientoPage() {
   }
 
   if (!paciente) {
-    paciente = dbStore.getPacientes()[0] || null;
+    const todosPacientes = dbStore.getPacientes();
+    paciente = todosPacientes.find(
+      (p) => p.id === sesion?.userId || (sesion?.email && p.email?.toLowerCase() === sesion.email.toLowerCase())
+    ) || todosPacientes[0] || null;
+
     if (paciente) {
       paquetes = dbStore.getPaquetes().filter((paq) => paq.pacienteId === paciente?.id);
       const citas = dbStore.getCitas().filter((c) => c.pacienteId === paciente?.id);
       historias = dbStore.getHistorias().filter((h) => citas.some((c) => c.id === h.citaId));
     }
+  }
+
+  // Garantía defensiva de objeto paciente
+  if (!paciente) {
+    paciente = {
+      id: sesion?.userId || "usr-pac-1",
+      nombres: sesion?.nombre?.split(" ")[0] || "Alexander",
+      apellidos: sesion?.nombre?.split(" ").slice(1).join(" ") || "Saavedra",
+      email: sesion?.email || "alexander.saavedra@gmail.com",
+      telefono: "987123456",
+      dni: "45892011",
+    };
   }
 
   return (

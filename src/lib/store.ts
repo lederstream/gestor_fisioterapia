@@ -258,11 +258,219 @@ const initialServicios: ServicioItem[] = [
   },
 ];
 
-const initialPacientes: PacienteItem[] = [];
-const initialPaquetes: TratamientoPaqueteItem[] = [];
-const initialCitas: CitaItem[] = [];
-const initialPagos: PagoItem[] = [];
-const initialHistorias: HistoriaEvolucionItem[] = [];
+const initialPacientes: PacienteItem[] = [
+  {
+    id: "usr-pac-1",
+    tipoDocumento: "DNI",
+    dni: "45892011",
+    primerNombre: "Alexander",
+    apellidoPaterno: "Saavedra",
+    apellidoMaterno: "Castillo",
+    nombres: "Alexander",
+    apellidos: "Saavedra Castillo",
+    telefono: "987123456",
+    email: "alexander.saavedra@gmail.com",
+    fechaNacimiento: "1991-04-12",
+    contactoEmergencia: "Esposa - 987999111",
+    contactoEmergenciaNombre: "Lucía Paredes",
+    contactoEmergenciaParentesco: "Esposa",
+    contactoEmergenciaTelefono: "987999111",
+    createdAt: new Date(Date.now() - 30 * 86400000).toISOString(),
+  },
+  {
+    id: "pac-2",
+    tipoDocumento: "DNI",
+    dni: "72109483",
+    primerNombre: "Camila",
+    apellidoPaterno: "Vargas",
+    apellidoMaterno: "Flores",
+    nombres: "Camila",
+    apellidos: "Vargas Flores",
+    telefono: "976543210",
+    email: "camila.vargas@hotmail.com",
+    fechaNacimiento: "1998-09-24",
+    contactoEmergencia: "Madre - 976000222",
+    contactoEmergenciaNombre: "Rosa Flores",
+    contactoEmergenciaParentesco: "Madre",
+    contactoEmergenciaTelefono: "976000222",
+    createdAt: new Date(Date.now() - 25 * 86400000).toISOString(),
+  },
+];
+
+const initialPaquetes: TratamientoPaqueteItem[] = [
+  {
+    id: "paq-1",
+    pacienteId: "usr-pac-1",
+    servicioId: "serv-1", // Terapia física
+    totalSesiones: 10,
+    sesionesConsumidas: 4,
+    montoTotal: 700,
+    montoPagado: 700,
+    estadoPago: "PAGADO",
+    createdAt: new Date(Date.now() - 20 * 86400000).toISOString(),
+  },
+  {
+    id: "paq-2",
+    pacienteId: "pac-2",
+    servicioId: "serv-2", // Rehabilitación deportiva
+    totalSesiones: 20,
+    sesionesConsumidas: 5,
+    montoTotal: 1400,
+    montoPagado: 700,
+    estadoPago: "PARCIAL",
+    createdAt: new Date(Date.now() - 15 * 86400000).toISOString(),
+  },
+];
+
+const initialCitas: CitaItem[] = [
+  {
+    id: "cita-1",
+    paqueteId: "paq-1",
+    terapeutaId: "usr-ter-1", // Lic. Jeiser Vasquez
+    salaId: "sala-1",
+    pacienteId: "usr-pac-1",
+    fechaHoraInicio: new Date(Date.now() + 86400000).toISOString(),
+    fechaHoraFin: new Date(Date.now() + 86400000 + 45 * 60000).toISOString(),
+    estado: "CONFIRMADA",
+    esReevaluacion: true,
+    creadoPorNombre: "Karin Palacios (Recepción)",
+    confirmadoPorNombre: "Lic. Jeiser Vasquez",
+    createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+  },
+  {
+    id: "cita-ant-4",
+    paqueteId: "paq-1",
+    terapeutaId: "usr-ter-1",
+    salaId: "sala-1",
+    pacienteId: "usr-pac-1",
+    fechaHoraInicio: new Date(Date.now() - 3 * 86400000).toISOString(),
+    fechaHoraFin: new Date(Date.now() - 3 * 86400000 + 45 * 60000).toISOString(),
+    estado: "ATENDIDA",
+    esReevaluacion: false,
+    creadoPorNombre: "Karin Palacios (Recepción)",
+    confirmadoPorNombre: "Lic. Jeiser Vasquez",
+    createdAt: new Date(Date.now() - 4 * 86400000).toISOString(),
+  },
+  {
+    id: "cita-ant-3",
+    paqueteId: "paq-1",
+    terapeutaId: "usr-ter-1",
+    salaId: "sala-1",
+    pacienteId: "usr-pac-1",
+    fechaHoraInicio: new Date(Date.now() - 7 * 86400000).toISOString(),
+    fechaHoraFin: new Date(Date.now() - 7 * 86400000 + 45 * 60000).toISOString(),
+    estado: "ATENDIDA",
+    esReevaluacion: false,
+    creadoPorNombre: "Karin Palacios (Recepción)",
+    confirmadoPorNombre: "Lic. Jeiser Vasquez",
+    createdAt: new Date(Date.now() - 8 * 86400000).toISOString(),
+  },
+  {
+    id: "cita-ant-2",
+    paqueteId: "paq-1",
+    terapeutaId: "usr-ter-2", // Lic. Andrea Rivas
+    salaId: "sala-2",
+    pacienteId: "usr-pac-1",
+    fechaHoraInicio: new Date(Date.now() - 11 * 86400000).toISOString(),
+    fechaHoraFin: new Date(Date.now() - 11 * 86400000 + 45 * 60000).toISOString(),
+    estado: "ATENDIDA",
+    esReevaluacion: false,
+    creadoPorNombre: "Karin Palacios (Recepción)",
+    confirmadoPorNombre: "Lic. Andrea Rivas",
+    createdAt: new Date(Date.now() - 12 * 86400000).toISOString(),
+  },
+  {
+    id: "cita-ant-1",
+    paqueteId: "paq-1",
+    terapeutaId: "usr-ter-1",
+    salaId: "sala-1",
+    pacienteId: "usr-pac-1",
+    fechaHoraInicio: new Date(Date.now() - 15 * 86400000).toISOString(),
+    fechaHoraFin: new Date(Date.now() - 15 * 86400000 + 45 * 60000).toISOString(),
+    estado: "ATENDIDA",
+    esReevaluacion: false,
+    creadoPorNombre: "Laura Peña (Recepción)",
+    confirmadoPorNombre: "Lic. Jeiser Vasquez",
+    createdAt: new Date(Date.now() - 16 * 86400000).toISOString(),
+  },
+  {
+    id: "cita-2",
+    paqueteId: "paq-2",
+    terapeutaId: "usr-ter-2", // Lic. Andrea Rivas
+    salaId: "sala-2",
+    pacienteId: "pac-2",
+    fechaHoraInicio: new Date(Date.now() + 2 * 86400000).toISOString(),
+    fechaHoraFin: new Date(Date.now() + 2 * 86400000 + 45 * 60000).toISOString(),
+    estado: "PROGRAMADA",
+    esReevaluacion: false,
+    creadoPorNombre: "Laura Peña (Recepción)",
+    createdAt: new Date(Date.now() - 1 * 86400000).toISOString(),
+  },
+];
+
+const initialPagos: PagoItem[] = [
+  {
+    id: "pago-1",
+    paqueteId: "paq-1",
+    monto: 700,
+    metodoPago: "YAPE",
+    numeroOperacion: "YAP-892104",
+    estado: "VERIFICADO",
+    fechaPago: new Date(Date.now() - 20 * 86400000).toISOString(),
+  },
+  {
+    id: "pago-2",
+    paqueteId: "paq-2",
+    monto: 700,
+    metodoPago: "POS",
+    numeroOperacion: "POS-339182",
+    estado: "VERIFICADO",
+    fechaPago: new Date(Date.now() - 15 * 86400000).toISOString(),
+  },
+];
+
+const initialHistorias: HistoriaEvolucionItem[] = [
+  {
+    id: "hist-1",
+    citaId: "cita-ant-4",
+    terapeutaId: "usr-ter-1",
+    evaDolorInicio: 5,
+    evaDolorFin: 3,
+    tratamientoAplicado: "Terapia manual miofascial y fortalecimiento de core para columna lumbar.",
+    bloqueaAlta: false,
+    createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+  },
+  {
+    id: "hist-2",
+    citaId: "cita-ant-3",
+    terapeutaId: "usr-ter-1",
+    evaDolorInicio: 6,
+    evaDolorFin: 4,
+    tratamientoAplicado: "Ultrasonido pulsátil terapéutico y ejercicios propioceptivos lumbopélvicos.",
+    bloqueaAlta: false,
+    createdAt: new Date(Date.now() - 7 * 86400000).toISOString(),
+  },
+  {
+    id: "hist-3",
+    citaId: "cita-ant-2",
+    terapeutaId: "usr-ter-2",
+    evaDolorInicio: 7,
+    evaDolorFin: 5,
+    tratamientoAplicado: "Terapia descompresiva articular y estiramientos neuromusculares.",
+    bloqueaAlta: false,
+    createdAt: new Date(Date.now() - 11 * 86400000).toISOString(),
+  },
+  {
+    id: "hist-4",
+    citaId: "cita-ant-1",
+    terapeutaId: "usr-ter-1",
+    evaDolorInicio: 8,
+    evaDolorFin: 6,
+    tratamientoAplicado: "Evaluación postural biomecánica, agentes físicos TENS y compresas húmedo-calientes.",
+    bloqueaAlta: false,
+    createdAt: new Date(Date.now() - 15 * 86400000).toISOString(),
+  },
+];
 
 const initialConfiguracion: ConfiguracionClinicaItem = {
   id: "config-principal",
@@ -554,11 +762,11 @@ class GestorFisioStore {
   getHistorias() { return [...this.historias]; }
 
   getPacienteById(id: string) {
-    const paciente = this.pacientes.find((p) => p.id === id);
+    const paciente = this.pacientes.find((p) => p.id === id || p.dni === id || (p.email && p.email.toLowerCase() === id.toLowerCase()));
     if (!paciente) return null;
 
     const paquetes = this.paquetes
-      .filter((paq) => paq.pacienteId === id)
+      .filter((paq) => paq.pacienteId === paciente.id || paq.pacienteId === id)
       .map((paq) => ({
         ...paq,
         servicio: this.servicios.find((s) => s.id === paq.servicioId)!,
@@ -566,7 +774,7 @@ class GestorFisioStore {
       }));
 
     const citas = this.citas
-      .filter((c) => c.pacienteId === id)
+      .filter((c) => c.pacienteId === paciente.id || c.pacienteId === id)
       .map((c) => ({
         ...c,
         sala: this.salas.find((s) => s.id === c.salaId)!,

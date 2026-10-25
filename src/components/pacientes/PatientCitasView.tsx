@@ -193,7 +193,7 @@ export function PatientCitasView({
 
           {/* Coordinar por WhatsApp */}
           <a
-            href={`https://wa.me/${cleanWhatsapp}?text=Hola,%20soy%20el%20paciente%20Alexander%20Saavedra%20y%20quisiera%20consultar%20sobre%20mi%20cita%20del%20${fechaTexto}%20a%20las%20${formatTime(cita.fechaHoraInicio)}.`}
+            href={`https://wa.me/${cleanWhatsapp}?text=Hola,%20soy%20el%20paciente%20${encodeURIComponent(paciente?.nombres ? `${paciente.nombres} ${paciente.apellidos}` : (paciente?.nombre || "Alexander Saavedra"))}%20y%20quisiera%20consultar%20sobre%20mi%20cita%20del%20${encodeURIComponent(fechaTexto)}%20a%20las%20${formatTime(cita.fechaHoraInicio)}.`}
             target="_blank"
             rel="noopener noreferrer"
             className="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl border border-emerald-200 transition flex items-center gap-1.5"

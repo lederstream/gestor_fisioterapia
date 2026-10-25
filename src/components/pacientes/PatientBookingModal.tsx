@@ -42,9 +42,24 @@ export function PatientBookingModal({
   servicios = [],
   onSuccess,
 }: PatientBookingModalProps) {
-  // Paciente objetivo
+  // Paciente objetivo con tipado defensivo total
   const pacienteData = useMemo(() => {
-    return paciente || null;
+    if (paciente) {
+      return {
+        ...paciente,
+        id: paciente.id || "usr-pac-1",
+        nombres: paciente.nombres || paciente.nombre?.split(" ")[0] || "Alexander",
+        apellidos: paciente.apellidos || paciente.nombre?.split(" ").slice(1).join(" ") || "Saavedra",
+      };
+    }
+    return {
+      id: "usr-pac-1",
+      nombres: "Alexander",
+      apellidos: "Saavedra",
+      dni: "45892011",
+      telefono: "987123456",
+      email: "alexander.saavedra@gmail.com",
+    };
   }, [paciente]);
 
   // Lista de terapeutas clínica con Lic. Jeiser Vasquez como predeterminado
@@ -86,27 +101,33 @@ export function PatientBookingModal({
     }
   }, []);
 
-  // Detectar paquete activo y saldo
+  // Detectar paquete activo y saldo de manera segura
   const paqueteActivo = useMemo(() => {
     if (paquetes && paquetes.length > 0) {
       return paquetes.find((p) => p.sesionesConsumidas < p.totalSesiones) || paquetes[0];
     }
-    return {
-      id: "paq-1",
-      totalSesiones: 10,
-      sesionesConsumidas: 4,
-      estadoPago: "PAGADO",
-      montoTotal: 700,
-    };
+    return null;
   }, [paquetes]);
 
-  const sesionesRestantes = paqueteActivo ? paqueteActivo.totalSesiones - paqueteActivo.sesionesConsumidas : 0;
+  const sesionesRestantes = paqueteActivo ? Math.max(0, paqueteActivo.totalSesiones - paqueteActivo.sesionesConsumidas) : 0;
   const sesionProyectada = paqueteActivo ? paqueteActivo.sesionesConsumidas + 1 : 1;
   const esHitoReevaluacion = sesionProyectada % 5 === 0;
 
   // Form State
   const [selectedTerapeutaId, setSelectedTerapeutaId] = useState(listaTerapeutas[0]?.id || "usr-ter-1");
   const [selectedSalaId, setSelectedSalaId] = useState(listaSalas[0]?.id || "sala-1");
+
+  useEffect(() => {
+    if (listaTerapeutas.length > 0 && !listaTerapeutas.some((t) => t.id === selectedTerapeutaId)) {
+      setSelectedTerapeutaId(listaTerapeutas[0].id);
+    }
+  }, [listaTerapeutas, selectedTerapeutaId]);
+
+  useEffect(() => {
+    if (listaSalas.length > 0 && !listaSalas.some((s) => s.id === selectedSalaId)) {
+      setSelectedSalaId(listaSalas[0].id);
+    }
+  }, [listaSalas, selectedSalaId]);
   
   // Fecha: Por defecto mañana si ya es tarde hoy, o hoy si es temprano
   const initialDateStr = useMemo(() => {
@@ -364,27 +385,50 @@ export function PatientBookingModal({
           ) : (
             /* Formulario de Reserva In-App */
             <form onSubmit={handleSubmit} className="space-y-5 text-xs">
-              {/* Tarjeta de Reconocimiento del Paquete Activo */}
-              <div className="p-4 bg-teal-50/70 rounded-2xl border border-teal-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-extrabold text-teal-900 text-xs sm:text-sm">
-                      Paquete de Fisioterapia Activo
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-600 text-white">
-                      {sesionesRestantes} sesiones disponibles
-                    </span>
+              {/* Tarjeta de Reconocimiento del Paquete Activo o Sesión Regular */}
+              {paqueteActivo ? (
+                <div className="p-4 bg-teal-50/70 rounded-2xl border border-teal-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-extrabold text-teal-900 text-xs sm:text-sm">
+                        Paquete de Fisioterapia Activo
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-600 text-white">
+                        {sesionesRestantes} sesiones disponibles
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-teal-800">
+                      Estás reservando tu <strong>Sesión {sesionProyectada} de {paqueteActivo.totalSesiones}</strong>. Esta sesión está cubierta al 100% por tu tratamiento.
+                    </p>
                   </div>
-                  <p className="text-[11px] text-teal-800">
-                    Estás reservando tu <strong>Sesión {sesionProyectada} de {paqueteActivo?.totalSesiones || 10}</strong>. Esta sesión está cubierta al 100% por tu tratamiento.
-                  </p>
-                </div>
 
-                <div className="text-left sm:text-right shrink-0">
-                  <span className="text-[10px] text-teal-600 font-bold block uppercase">Costo adicional</span>
-                  <span className="text-base font-black text-teal-900">S/. 0.00</span>
+                  <div className="text-left sm:text-right shrink-0">
+                    <span className="text-[10px] text-teal-600 font-bold block uppercase">Costo adicional</span>
+                    <span className="text-base font-black text-teal-900">S/. 0.00</span>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-extrabold text-slate-800 text-xs sm:text-sm">
+                        Sesión Individual de Terapia
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700">
+                        Atención Particular
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500">
+                      Esta sesión se agendará en la sala seleccionada y podrás regularizar el abono o paquete en recepción.
+                    </p>
+                  </div>
+
+                  <div className="text-left sm:text-right shrink-0">
+                    <span className="text-[10px] text-slate-500 font-bold block uppercase">Tarifa en clínica</span>
+                    <span className="text-base font-black text-slate-800">S/. 40.00</span>
+                  </div>
+                </div>
+              )}
 
               {/* Alerta de Hito Reevaluación */}
               {esHitoReevaluacion && (
