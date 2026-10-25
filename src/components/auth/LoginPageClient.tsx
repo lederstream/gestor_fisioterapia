@@ -230,6 +230,91 @@ export function LoginPageClient({ config }: LoginPageClientProps) {
             </button>
           </form>
 
+          {/* Cuentas registradas para evaluación y auditoría RBAC (Sin contraseñas en código cliente) */}
+          <div className="mt-5 pt-4 border-t border-stone-150">
+            <div className="flex items-center justify-between mb-2.5">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-stone-400">
+                Perfiles de Demostración (Seleccionar Usuario)
+              </span>
+              <span className="text-[9px] text-[#0C3E37] bg-emerald-50 px-2 py-0.5 rounded-full font-bold border border-emerald-200">
+                RBAC Auditado
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIdentifier("marco.yana@ajfisioterapia.pe");
+                  setErrorMessage(null);
+                }}
+                className="text-left p-2.5 rounded-xl border border-stone-200 bg-stone-50 hover:bg-white hover:border-[#0C3E37] transition text-xs cursor-pointer group shadow-2xs"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-stone-800 text-[11px] group-hover:text-[#0C3E37]">ADMIN</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                </div>
+                <span className="text-[10px] text-stone-500 block truncate mt-0.5">Marco Yana (Gerencia)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIdentifier("alexander.saavedra@gmail.com");
+                  setErrorMessage(null);
+                }}
+                className="text-left p-2.5 rounded-xl border border-emerald-200 bg-emerald-50/60 hover:bg-emerald-50 hover:border-emerald-500 transition text-xs cursor-pointer group shadow-2xs"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-emerald-950 text-[11px] group-hover:text-emerald-700">PACIENTE</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                </div>
+                <span className="text-[10px] text-emerald-800 block truncate mt-0.5">A. Saavedra (Portal Paciente)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIdentifier("karin.palacios@ajfisioterapia.pe");
+                  setErrorMessage(null);
+                }}
+                className="text-left p-2.5 rounded-xl border border-stone-200 bg-stone-50 hover:bg-white hover:border-[#0C3E37] transition text-xs cursor-pointer group shadow-2xs"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-stone-800 text-[11px] group-hover:text-[#0C3E37]">RECEPCIÓN</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                </div>
+                <span className="text-[10px] text-stone-500 block truncate mt-0.5">Karin P. (Caja / Agenda)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIdentifier("jeiser.vasquez@ajfisioterapia.pe");
+                  setErrorMessage(null);
+                }}
+                className="text-left p-2.5 rounded-xl border border-stone-200 bg-stone-50 hover:bg-white hover:border-[#0C3E37] transition text-xs cursor-pointer group shadow-2xs"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-stone-800 text-[11px] group-hover:text-[#0C3E37]">TERAPEUTA</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
+                </div>
+                <span className="text-[10px] text-stone-500 block truncate mt-0.5">Lic. Jeiser (Ficha EVA)</span>
+              </button>
+            </div>
+
+            {/* Enlace al Asistente de Inicialización Segura (Setup Bootstrap) */}
+            <div className="mt-3.5 pt-3 border-t border-stone-100 flex items-center justify-between text-[11px]">
+              <span className="text-stone-400">¿Nuevo despliegue?</span>
+              <Link
+                href="/setup"
+                className="font-bold text-[#0C3E37] hover:underline inline-flex items-center gap-1 transition"
+              >
+                <Sparkles className="w-3 h-3 text-amber-600" />
+                <span>Asistente de Inicialización de Administrador →</span>
+              </Link>
+            </div>
+          </div>
+
             {/* Indicador de Seguridad Institucional (Ciberseguridad OWASP) */}
             <div className="mt-5 p-3.5 bg-stone-50 border border-stone-200/80 rounded-2xl flex items-start gap-2.5 text-stone-600">
               <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />

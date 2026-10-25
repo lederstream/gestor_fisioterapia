@@ -25,9 +25,9 @@ export async function obtenerIpCliente(): Promise<string> {
     if (realIp) {
       return realIp.trim();
     }
-    return "127.0.0.1 (Terminal Local)";
+    return "127.0.0.1";
   } catch {
-    return "127.0.0.1 (Terminal Local)";
+    return "127.0.0.1";
   }
 }
 

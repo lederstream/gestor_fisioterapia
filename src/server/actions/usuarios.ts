@@ -45,6 +45,31 @@ export async function crearNuevoUsuario(data: {
   try {
     const sesion = await obtenerSesionServidor();
     const clientIp = await obtenerIpCliente();
+
+    // Verificación estricta de autorización RBAC en backend
+    if (!sesion || sesion.rol !== "ADMIN") {
+      return {
+        success: false,
+        error: "Acceso denegado: Solo el Administrador General dispone de autorización para dar de alta nuevo personal del centro.",
+      };
+    }
+
+    // Regla de integridad RBAC: Los pacientes no pertenecen al personal
+    if (data.rol === "PACIENTE") {
+      return {
+        success: false,
+        error: "Violación de seguridad RBAC: Los pacientes no se registran como personal. Utilice el módulo de Pacientes.",
+      };
+    }
+
+    const rawPass = data.password?.trim();
+    if (!rawPass || rawPass.length < 8) {
+      return {
+        success: false,
+        error: "La contraseña inicial debe contener al menos 8 caracteres. Utilice el generador criptográfico seguro.",
+      };
+    }
+
     const cleanEmail = data.email.trim().toLowerCase();
 
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
@@ -57,7 +82,6 @@ export async function crearNuevoUsuario(data: {
           return { success: false, error: `Ya existe un usuario registrado con el correo ${cleanEmail}.` };
         }
 
-        const rawPass = data.password?.trim() || "StaffFisio2026!";
         const passwordHash = await bcrypt.hash(rawPass, 10);
 
         const nuevoDb = await prisma.user.create({
@@ -134,8 +158,44 @@ export async function modificarRolUsuario(
     const sesion = await obtenerSesionServidor();
     const clientIp = await obtenerIpCliente();
 
+    // Verificación estricta de autorización RBAC en backend
+    if (!sesion || sesion.rol !== "ADMIN") {
+      return {
+        success: false,
+        error: "Acceso denegado: Solo el Administrador General dispone de autorización para reasignar roles.",
+      };
+    }
+
+    // BLINDAJE DE SEGURIDAD RBAC (Principio de Menor Privilegio - PoLP):
+    // 1. Una cuenta de PACIENTE jamás puede ser elevada a roles de personal administrativo o médico
+    // 2. El personal clínico o directivo no puede ser alterado a rol PACIENTE desde este módulo
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       try {
+        const usuarioTarget = await prisma.user.findUnique({
+          where: { id: usuarioId },
+        });
+
+        if (usuarioTarget) {
+          const esPacienteTarget = 
+            usuarioTarget.rol === "PACIENTE" || 
+            usuarioTarget.email.toLowerCase() === "alexander.saavedra@gmail.com" || 
+            usuarioTarget.especialidad?.toLowerCase().includes("paciente");
+
+          if (esPacienteTarget && nuevoRol !== "PACIENTE") {
+            return {
+              success: false,
+              error: "Violación de seguridad RBAC: Los pacientes no pueden ser promovidos a roles administrativos ni clínicos del centro.",
+            };
+          }
+
+          if (!esPacienteTarget && nuevoRol === "PACIENTE") {
+            return {
+              success: false,
+              error: "Violación de seguridad RBAC: El personal clínico o administrativo no puede ser reasignado a rol paciente.",
+            };
+          }
+        }
+
         const actualizadoDb = await prisma.user.update({
           where: { id: usuarioId },
           data: { rol: nuevoRol },
@@ -198,6 +258,11 @@ export async function cambiarEstadoUsuario(
   nuevoEstado: "ACTIVO" | "INACTIVO"
 ): Promise<ServerActionResult<UserItem>> {
   try {
+    const sesion = await obtenerSesionServidor();
+    if (!sesion || sesion.rol !== "ADMIN") {
+      return { success: false, error: "Acceso denegado: Solo el Administrador puede activar o suspender cuentas de usuario." };
+    }
+
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       try {
         const actualizadoDb = await prisma.user.update({
@@ -243,6 +308,10 @@ export async function eliminarUsuarioSistema(
 ): Promise<ServerActionResult<UserItem>> {
   try {
     const sesion = await obtenerSesionServidor();
+    if (!sesion || sesion.rol !== "ADMIN") {
+      return { success: false, error: "Acceso denegado: Solo el Administrador puede dar de baja cuentas de usuario." };
+    }
+
     const clientIp = await obtenerIpCliente();
 
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {

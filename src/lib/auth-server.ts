@@ -49,23 +49,30 @@ export async function verificarTokenSesion(token: string): Promise<SessionPayloa
  */
 export async function establecerCookieSesion(payload: SessionPayload): Promise<void> {
   const token = await crearTokenSesion(payload);
-  const cookieStore = await cookies();
-  
-  cookieStore.set(COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 7 * 24 * 60 * 60, // 7 días
-  });
+  try {
+    const cookieStore = await cookies();
+    cookieStore.set(COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60, // 7 días
+    });
+  } catch {
+    // Si se invoca fuera del request context de Next.js (ej. scripts o tests)
+  }
 }
 
 /**
  * Elimina la cookie de sesión
  */
 export async function eliminarCookieSesion(): Promise<void> {
-  const cookieStore = await cookies();
-  cookieStore.delete(COOKIE_NAME);
+  try {
+    const cookieStore = await cookies();
+    cookieStore.delete(COOKIE_NAME);
+  } catch {
+    // Si se invoca fuera del request context de Next.js
+  }
 }
 
 /**

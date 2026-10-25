@@ -32,8 +32,12 @@ import {
   Layers,
   Sparkles,
   Check,
-  X
+  X,
+  Copy,
+  CheckCheck,
+  Send
 } from "lucide-react";
+import { generarClaveAleatoriaSegura } from "@/lib/crypto";
 
 interface UserManagerProps {
   initialUsers: UserItem[];
@@ -58,6 +62,15 @@ export function UserManager({ initialUsers }: UserManagerProps) {
   const [nuevaEspecialidad, setNuevaEspecialidad] = useState("");
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState<{ tipo: "exito" | "error"; texto: string } | null>(null);
+
+  // Modal de entrega de credenciales recién creadas para el colaborador
+  const [credencialesCreadas, setCredencialesCreadas] = useState<{
+    nombre: string;
+    email: string;
+    rol: string;
+    passwordTemporal: string;
+  } | null>(null);
+  const [copiado, setCopiado] = useState(false);
 
   // Modal Cambiar Contraseña de Usuario por Admin
   const [passwordModalUser, setPasswordModalUser] = useState<UserItem | null>(null);
@@ -160,13 +173,15 @@ export function UserManager({ initialUsers }: UserManagerProps) {
       apellidosParts,
     ].filter(Boolean).join(" ");
 
+    const passwordFinal = nuevoPassword.trim() || generarClaveAleatoriaSegura(12);
+
     const res = await crearNuevoUsuario({
       nombre: nombreCompletoGenerado,
       email: nuevoEmail,
       rol: nuevoRol,
       especialidad: nuevaEspecialidad || undefined,
       estado: "ACTIVO",
-      password: nuevoPassword || undefined,
+      password: passwordFinal,
     });
 
     setLoading(false);
@@ -181,10 +196,13 @@ export function UserManager({ initialUsers }: UserManagerProps) {
       setNuevoEmail("");
       setNuevoPassword("");
       setNuevaEspecialidad("");
-      setMensaje({
-        tipo: "exito",
-        texto: `Usuario "${res.data.nombre}" registrado exitosamente con rol [${ROLE_DETAILS[res.data.rol].label}].`,
+      setCredencialesCreadas({
+        nombre: res.data.nombre,
+        email: res.data.email,
+        rol: ROLE_DETAILS[res.data.rol].label,
+        passwordTemporal: passwordFinal,
       });
+      setCopiado(false);
     } else {
       setMensaje({ tipo: "error", texto: res.error || "Error al registrar usuario." });
     }
@@ -380,19 +398,28 @@ export function UserManager({ initialUsers }: UserManagerProps) {
                           {u.email}
                         </td>
 
-                        {/* SELECTOR DE ROL DINÁMICO */}
+                        {/* SELECTOR DE ROL DINÁMICO (PROTEGIDO) */}
                         <td className="py-3 px-4">
-                          <select
-                            value={u.rol}
-                            disabled={loading}
-                            onChange={(e) => handleCambiarRol(u.id, e.target.value as UserRole)}
-                            className={`px-2.5 py-1 text-xs font-bold rounded-lg border focus:outline-none transition cursor-pointer ${roleInfo.badge}`}
-                          >
-                            <option value="ADMIN">ADMIN</option>
-                            <option value="RECEPCION">RECEPCIÓN</option>
-                            <option value="TERAPEUTA">TERAPEUTA</option>
-                            <option value="PACIENTE">PACIENTE</option>
-                          </select>
+                          {u.rol === "PACIENTE" ? (
+                            <span 
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg border bg-emerald-50 text-emerald-800 border-emerald-300 shadow-xs"
+                              title="Rol blindado por seguridad médica RBAC (No escalable a personal administrativo)"
+                            >
+                              <Lock className="w-3 h-3 text-emerald-600" />
+                              <span>PACIENTE</span>
+                            </span>
+                          ) : (
+                            <select
+                              value={u.rol}
+                              disabled={loading}
+                              onChange={(e) => handleCambiarRol(u.id, e.target.value as UserRole)}
+                              className={`px-2.5 py-1 text-xs font-bold rounded-lg border focus:outline-none transition cursor-pointer ${roleInfo.badge}`}
+                            >
+                              <option value="ADMIN">ADMIN</option>
+                              <option value="RECEPCION">RECEPCIÓN</option>
+                              <option value="TERAPEUTA">TERAPEUTA</option>
+                            </select>
+                          )}
                         </td>
 
                         <td className="py-3 px-4 text-slate-600 text-[11px]">
@@ -677,18 +704,32 @@ export function UserManager({ initialUsers }: UserManagerProps) {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Contraseña Inicial de Acceso (Opcional)
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-semibold text-slate-700">
+                    Contraseña Inicial de Acceso *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const pass = generarClaveAleatoriaSegura(12);
+                      setNuevoPassword(pass);
+                    }}
+                    className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-700 hover:text-teal-900 bg-teal-50 px-2 py-0.5 rounded-lg border border-teal-200 transition cursor-pointer"
+                  >
+                    <Sparkles className="w-3 h-3 text-teal-600" />
+                    <span>⚡ Generar Clave Segura</span>
+                  </button>
+                </div>
                 <input
-                  type="password"
-                  placeholder="Por defecto: StaffFisio2026!"
+                  type="text"
+                  required
+                  placeholder="Mínimo 8 caracteres (o haga clic en Generar Clave)"
                   value={nuevoPassword}
                   onChange={(e) => setNuevoPassword(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-mono text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none font-bold"
                 />
                 <span className="text-[10px] text-slate-400 block mt-1">
-                  Si se deja en blanco, el usuario podrá ingresar inicialmente con &quot;StaffFisio2026!&quot;.
+                  Cifrada irreversiblemente con bcrypt (factor 10). Podrá copiarla al completar el registro.
                 </span>
               </div>
 
@@ -701,10 +742,9 @@ export function UserManager({ initialUsers }: UserManagerProps) {
                   onChange={(e) => setNuevoRol(e.target.value as UserRole)}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-bold focus:ring-2 focus:ring-teal-500 focus:outline-none"
                 >
-                  <option value="ADMIN">ADMIN (Gerencia y Control Total)</option>
+                  <option value="TERAPEUTA">TERAPEUTA (Personal Clínico / Escala EVA)</option>
                   <option value="RECEPCION">RECEPCIÓN (Caja, Agenda y Admisión)</option>
-                  <option value="TERAPEUTA">TERAPEUTA (Atención Médica y Escala EVA)</option>
-                  <option value="PACIENTE">PACIENTE (Portal Privado de Consultas)</option>
+                  <option value="ADMIN">ADMIN (Co-Administrador / Gerencia)</option>
                 </select>
                 <span className="text-[10px] text-slate-500 block mt-1">
                   {ROLE_DETAILS[nuevoRol].description}
@@ -741,6 +781,76 @@ export function UserManager({ initialUsers }: UserManagerProps) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Entrega Segura de Credenciales al Colaborador */}
+      {credencialesCreadas && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-emerald-200 animate-in fade-in zoom-in-95 duration-150 space-y-5">
+            <div className="text-center space-y-2">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center mx-auto shadow-xs">
+                <CheckCircle2 className="w-8 h-8" />
+              </div>
+              <h3 className="text-lg font-black text-slate-900">
+                ¡Colaborador Registrado con Éxito!
+              </h3>
+              <p className="text-xs text-slate-500">
+                Entregue estas credenciales iniciales al colaborador para su primer ingreso.
+              </p>
+            </div>
+
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 font-medium">Nombre:</span>
+                <span className="font-bold text-slate-800">{credencialesCreadas.nombre}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 font-medium">Rol Asignado:</span>
+                <span className="font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
+                  {credencialesCreadas.rol}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 font-medium">Usuario / Correo:</span>
+                <span className="font-mono font-bold text-slate-800">{credencialesCreadas.email}</span>
+              </div>
+              <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
+                <span className="text-slate-500 font-medium">Contraseña Inicial:</span>
+                <span className="font-mono font-black text-emerald-800 bg-emerald-100/70 px-2.5 py-1 rounded-lg border border-emerald-300 text-sm tracking-wider select-all">
+                  {credencialesCreadas.passwordTemporal}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-slate-400 text-center leading-relaxed">
+              🔒 Por seguridad, la contraseña ha sido cifrada mediante hash criptográfico bcrypt y nunca se expone en texto plano en la base de datos.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  const texto = `¡Hola ${credencialesCreadas.nombre}! Se ha creado tu acceso al sistema clínico de AJ Fisioterapia:\n\n• Portal de Acceso: ${window.location.origin}/login\n• Usuario: ${credencialesCreadas.email}\n• Contraseña Inicial: ${credencialesCreadas.passwordTemporal}\n• Rol: ${credencialesCreadas.rol}\n\nPor seguridad médica y trazabilidad, podrás actualizar tu contraseña desde tu perfil al ingresar.`;
+                  navigator.clipboard.writeText(texto);
+                  setCopiado(true);
+                  setTimeout(() => setCopiado(false), 2500);
+                }}
+                className="flex-1 py-2.5 px-4 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition cursor-pointer shadow-md shadow-teal-600/20"
+              >
+                {copiado ? <CheckCheck className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4" />}
+                <span>{copiado ? "¡Credenciales Copiadas!" : "Copiar para el Colaborador"}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setCredencialesCreadas(null)}
+                className="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer"
+              >
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       )}

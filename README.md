@@ -44,15 +44,24 @@ Este sistema está concebido para ser adquirido por cualquier dueño de centro d
 
 ---
 
-## 🔐 Portal de Autenticación y Acceso (`/login`)
+## 🔐 Autenticación, Asistente de Inicialización y Ciberseguridad
 
-El sistema cuenta con una página dedicada de inicio de sesión en `/login` que admite:
-1. **Acceso con Credenciales**: DNI o correo institucional + Contraseña.
-2. **Acceso Rápido de Evaluación (1 Clic)** para los 4 perfiles del sistema:
-   - **ADMIN**: Marco Yana (`marco.yana@ajfisioterapia.pe`) → Redirige a `/dashboard` (Control Total).
-   - **RECEPCION**: Karin Palacios (`karin.palacios@ajfisioterapia.pe`) → Redirige a `/dashboard/agenda` (6 Salas y Caja).
-   - **TERAPEUTA**: Lic. Jeiser Vasquez (`jeiser.vasquez@ajfisioterapia.pe`) → Redirige a `/dashboard/agenda` (Ficha EVA).
-   - **PACIENTE**: Alexander Saavedra (`alexander.saavedra@gmail.com` / DNI: `45892011`) → Redirige a `/dashboard` (Portal Paciente).
+El sistema sigue los más estrictos estándares de la industria (OWASP ASVS 4.0, NIST SP 800-63B y Ley N.° 29733 de Protección de Datos Personales):
+
+### 1. Asistente de Arranque Inicial (`/setup`)
+* **Puerta de Enlace de Única Inicialización (Once-Only Bootstrap Gate)**: Al desplegar la clínica por primera vez, el sistema permite configurar al **Administrador Principal (Root Admin)** con nombre, correo institucional, cargo y contraseña maestra de alta entropía.
+* **Sellado Permanente Post-Inicialización**: Una vez creado el Administrador, la ruta `/setup` queda sellada irreversiblemente contra intrusos y cualquier intento posterior es bloqueado y auditado con IP y timestamp en la bitácora forense de PostgreSQL.
+
+### 2. Aprovisionamiento de Usuarios y Asignación de Roles por el Administrador
+* Únicamente el Administrador autenticado con permiso `usuarios:gestionar` puede dar de alta nuevos colaboradores médicos y administrativos desde `/dashboard/usuarios`.
+* **Generación Criptográfica de Claves**: El panel incluye un generador aleatorio de claves seguras (`crypto.randomBytes`) y una herramienta de copia formateada para entregar las credenciales directamente al colaborador sin exponerlas en texto plano en la base de datos.
+* **Separación Estricta de Funciones**: Los perfiles de Paciente están blindados y no pueden ser escalados a roles de personal clínico ni viceversa.
+
+### 3. Principios de Ciberseguridad Activa (Zero Plaintext Passwords)
+* **Hashing Unidireccional bcrypt**: Todas las contraseñas se almacenan con factor de costo 10 y sal criptográfica individualizada (`$2b$10$...`). Nadie que acceda o descargue un dump de la base de datos puede obtener contraseñas en texto plano.
+* **Cifrado en Reposo AES-256-GCM** ([src/lib/crypto.ts](file:///d:/PROYECTOS%20DEVELOPER/gestor_fisioterapia/src/lib/crypto.ts)): Cifrado simétrico de nivel militar para notas médicas confidenciales y datos sensibles.
+* **Tokens de Sesión HTTP-Only**: Tokens JWT firmados con HMAC-SHA256 y emitidos en cookies con atributos `httpOnly`, `sameSite: lax` y `secure` para mitigar ataques XSS y CSRF.
+* **Trazabilidad Forense Inmutable**: Todo intento de acceso (exitoso o fallido), cambio de rol o creación de usuario se registra en `audit_logs` con dirección IP validada.
 
 ---
 
