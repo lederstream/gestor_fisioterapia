@@ -177,11 +177,17 @@ export function BookingForm({ servicios, configuracion }: BookingFormProps) {
           </div>
         </div>
 
-        <div className="p-3 bg-teal-50 border border-teal-200 rounded-xl text-teal-900 text-xs text-left flex items-start gap-2">
-          <ShieldCheck className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
-          <span>
-            Hemos enviado una notificación al equipo de recepción de <strong>AJ Fisioterapia</strong>. Para cancelar o reprogramar, comuníquese al WhatsApp de atención.
-          </span>
+        <div className="p-3.5 bg-teal-50 border border-teal-200 rounded-xl text-teal-950 text-xs text-left space-y-2">
+          <div className="flex items-start gap-2">
+            <ShieldCheck className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
+            <span className="font-semibold text-teal-900 leading-snug">
+              Tu solicitud ha sido recibida por la central de <strong>AJ Fisioterapia</strong> en San Borja.
+            </span>
+          </div>
+          <div className="text-[11px] text-teal-800/90 pl-6 space-y-1">
+            <p>• <strong>Confirmación:</strong> Recepción verificará la sala y te contactará por WhatsApp para confirmar tu asistencia.</p>
+            <p>• <strong>Historia Clínica Oficial:</strong> Acude el día de tu cita con tu DNI físico. Tu evaluación funcional y expediente clínico serán aperturados por el terapeuta colegiado en sala.</p>
+          </div>
         </div>
 
         <button
@@ -278,9 +284,18 @@ export function BookingForm({ servicios, configuracion }: BookingFormProps) {
 
         {/* Step 2: Datos del Paciente */}
         <div className="space-y-3 pt-4 border-t border-slate-100">
-          <label className="font-bold text-slate-800 text-sm block">
-            2. Datos del Paciente
-          </label>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+            <label className="font-bold text-slate-800 text-sm block">
+              2. Datos del Paciente
+            </label>
+            <span className="text-[11px] font-semibold text-teal-700 bg-teal-50 px-2.5 py-1 rounded-lg border border-teal-200 inline-flex items-center gap-1.5 w-fit">
+              <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
+              Pre-reserva ágil sin contraseñas • HC oficial en clínica
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-500 leading-relaxed">
+            Solo requerimos tus datos de contacto para reservar la sala. Tu Historia Clínica oficial será aperturada por el fisioterapeuta colegiado durante tu primera atención presencial.
+          </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-slate-600 font-semibold mb-1">

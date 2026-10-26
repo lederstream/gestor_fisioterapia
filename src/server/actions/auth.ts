@@ -2,7 +2,7 @@
 
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
+import { prisma, isDatabaseAvailable, markDatabaseError } from "@/lib/prisma";
 import { dbStore } from "@/lib/store";
 import { 
   establecerCookieSesion, 
@@ -48,41 +48,43 @@ export async function iniciarSesion(
 
     const clientIp = await obtenerIpCliente();
 
-    // 1. Buscar en la tabla de personal y usuarios (users)
-    let usuario = await prisma.user.findFirst({
-      where: {
-        email: { equals: cleanIdentifier, mode: "insensitive" },
-      },
-    });
+    // 1. Si existe conexión configurada a Supabase / PostgreSQL y el circuito está sano
+    if (isDatabaseAvailable() && process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+      try {
+        let usuario = await prisma.user.findFirst({
+          where: {
+            email: { equals: cleanIdentifier, mode: "insensitive" },
+          },
+        });
 
-    // Soporte para alias de administrador universal ('admin', 'administrador', 'admin@ajfisioterapia.pe')
-    if (!usuario && (
-      cleanIdentifier === "admin" || 
-      cleanIdentifier === "administrador" || 
-      cleanIdentifier === "admin@ajfisioterapia.pe"
-    )) {
-      usuario = await prisma.user.findFirst({
-        where: {
-          rol: "ADMIN",
-        },
-      });
-    }
+        // Soporte para alias de administrador universal ('admin', 'administrador', 'admin@ajfisioterapia.pe')
+        if (!usuario && (
+          cleanIdentifier === "admin" || 
+          cleanIdentifier === "administrador" || 
+          cleanIdentifier === "admin@ajfisioterapia.pe"
+        )) {
+          usuario = await prisma.user.findFirst({
+            where: {
+              rol: "ADMIN",
+            },
+          });
+        }
 
-    // Soporte para alias de paciente universal ('paciente', 'paciente@ajfisioterapia.pe', 'paciente@gmail.com')
-    if (!usuario && (
-      cleanIdentifier === "paciente" || 
-      cleanIdentifier === "paciente@ajfisioterapia.pe" ||
-      cleanIdentifier === "paciente@gmail.com"
-    )) {
-      usuario = await prisma.user.findFirst({
-        where: {
-          OR: [
-            { rol: "PACIENTE" },
-            { email: { equals: "alexander.saavedra@gmail.com", mode: "insensitive" } },
-          ],
-        },
-      });
-    }
+        // Soporte para alias de paciente universal ('paciente', 'paciente@ajfisioterapia.pe', 'paciente@gmail.com')
+        if (!usuario && (
+          cleanIdentifier === "paciente" || 
+          cleanIdentifier === "paciente@ajfisioterapia.pe" ||
+          cleanIdentifier === "paciente@gmail.com"
+        )) {
+          usuario = await prisma.user.findFirst({
+            where: {
+              OR: [
+                { rol: "PACIENTE" },
+                { email: { equals: "alexander.saavedra@gmail.com", mode: "insensitive" } },
+              ],
+            },
+          });
+        }
 
     if (usuario) {
       if (usuario.estado === "INACTIVO") {
@@ -163,7 +165,7 @@ export async function iniciarSesion(
 
       const targetUrl = rolEfectivo === "PACIENTE" 
         ? "/dashboard" 
-        : rolEfectivo === "RECEPCION" || rolEfectivo === "TERAPEUTA" 
+        : rolEfectivo === "RECEPCION" || rolEfectivo === "TERAPEUTA" || rolEfectivo === "ASISTENTE"
           ? "/dashboard/agenda" 
           : "/dashboard";
 
@@ -239,18 +241,32 @@ export async function iniciarSesion(
         },
       };
     }
+  } catch (dbErr) {
+    markDatabaseError(dbErr);
+    console.warn("iniciarSesion db error, usando fallback dbStore:", dbErr);
+  }
+}
 
     // 3. Fallback resiliente en memoria (dbStore) para contingencias
     const storeUser = dbStore.getUsers().find(
       (u) =>
         u.email.toLowerCase() === cleanIdentifier ||
         (cleanIdentifier === "admin" && u.rol === "ADMIN") ||
-        (cleanIdentifier === "paciente" && u.rol === "PACIENTE")
+        (cleanIdentifier === "paciente" && u.rol === "PACIENTE") ||
+        (cleanIdentifier === "recepcion" && u.rol === "RECEPCION") ||
+        (cleanIdentifier === "terapeuta" && u.rol === "TERAPEUTA") ||
+        (cleanIdentifier === "asistente" && u.rol === "ASISTENTE")
     );
 
     if (storeUser) {
       const isStorePatient = storeUser.rol === "PACIENTE" || storeUser.email.toLowerCase() === "alexander.saavedra@gmail.com";
       const storeRole: UserRole = isStorePatient ? "PACIENTE" : (storeUser.rol as UserRole);
+
+      const targetUrl = storeRole === "PACIENTE"
+        ? "/dashboard"
+        : storeRole === "RECEPCION" || storeRole === "TERAPEUTA" || storeRole === "ASISTENTE"
+          ? "/dashboard/agenda"
+          : "/dashboard";
 
       const sessionData: SessionPayload = {
         userId: storeUser.id,
@@ -272,7 +288,38 @@ export async function iniciarSesion(
             email: storeUser.email,
             rol: storeRole,
             especialidad: storeUser.especialidad,
-            targetUrl: storeRole === "PACIENTE" ? "/dashboard" : storeRole === "RECEPCION" || storeRole === "TERAPEUTA" ? "/dashboard/agenda" : "/dashboard",
+            targetUrl,
+          },
+        },
+      };
+    }
+
+    // 4. Buscar en pacientes de dbStore (por DNI o Email)
+    const storePac = dbStore.getPacientes().find(
+      (p) => p.dni === cleanIdentifier || p.email?.toLowerCase() === cleanIdentifier
+    );
+    if (storePac) {
+      const sessionData: SessionPayload = {
+        userId: storePac.id,
+        nombre: `${storePac.nombres} ${storePac.apellidos}`,
+        email: storePac.email || `${storePac.dni}@paciente.clinica`,
+        rol: "PACIENTE",
+        especialidad: `Paciente Titular (DNI: ${storePac.dni})`,
+        isPaciente: true,
+      };
+
+      await establecerCookieSesion(sessionData);
+
+      return {
+        success: true,
+        data: {
+          user: {
+            id: storePac.id,
+            nombre: sessionData.nombre,
+            email: sessionData.email,
+            rol: "PACIENTE",
+            especialidad: sessionData.especialidad,
+            targetUrl: "/dashboard",
           },
         },
       };

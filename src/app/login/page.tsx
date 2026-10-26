@@ -1,12 +1,16 @@
 import { Metadata } from "next";
 import { obtenerConfiguracionClinica } from "@/server/actions/configuracion";
 import { LoginPageClient } from "@/components/auth/LoginPageClient";
+import { dbStore } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const config = await obtenerConfiguracionClinica();
-  const clinicName = config?.nombreComercial || "AJ Fisioterapia";
+  let clinicName = "AJ Fisioterapia";
+  try {
+    const config = await obtenerConfiguracionClinica();
+    if (config?.nombreComercial) clinicName = config.nombreComercial;
+  } catch {}
 
   return {
     title: `Iniciar Sesión | Portal Clínico ${clinicName}`,
@@ -15,7 +19,13 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function LoginPage() {
-  const config = await obtenerConfiguracionClinica();
+  let config = dbStore.getConfiguracion();
+  try {
+    const fetched = await obtenerConfiguracionClinica();
+    if (fetched) config = fetched;
+  } catch (err) {
+    console.warn("LoginPage: Error al cargar configuracion, usando dbStore:", err);
+  }
 
   return <LoginPageClient config={config} />;
 }

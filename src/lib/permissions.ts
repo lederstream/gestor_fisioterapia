@@ -1,7 +1,7 @@
 // Gestor Fisioterapia - Matriz de Permisos y Control de Acceso Basado en Roles (RBAC)
 // AJ Fisioterapia (San Borja) - Desarrollado por Marco Antonio
 
-export type UserRole = "ADMIN" | "RECEPCION" | "TERAPEUTA" | "PACIENTE";
+export type UserRole = "ADMIN" | "RECEPCION" | "TERAPEUTA" | "ASISTENTE" | "PACIENTE";
 
 export type Permission =
   // Agenda
@@ -57,6 +57,11 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "pacientes:ver",
     "clinica:ver", "clinica:evolucion", "clinica:reevaluacion", "clinica:reporte",
   ],
+  ASISTENTE: [
+    "agenda:ver",
+    "pacientes:ver",
+    "clinica:ver", "clinica:evolucion",
+  ],
   PACIENTE: [
     "portal:reservas", "portal:mis_citas", "portal:mi_progreso"
   ]
@@ -103,6 +108,16 @@ export const ROLE_DETAILS: Record<UserRole, RoleDetail> = {
     color: "bg-teal-50 text-teal-700 border-teal-200",
     badge: "bg-teal-100 text-teal-800 border-teal-300",
     dot: "bg-teal-600",
+  },
+  ASISTENTE: {
+    id: "ASISTENTE",
+    label: "Asistente / Técnico Clínico",
+    nameExample: "Tec. Miguel Torres",
+    title: "Técnico en Agentes Físicos y Apoyo en Sala",
+    description: "Apoyo en salas de terapia, colocación de agentes físicos (TENS, calor/frío) y supervisión de ejercicios. No autoriza altas ni reevaluaciones médicas.",
+    color: "bg-amber-50 text-amber-700 border-amber-200",
+    badge: "bg-amber-100 text-amber-800 border-amber-300",
+    dot: "bg-amber-600",
   },
   PACIENTE: {
     id: "PACIENTE",

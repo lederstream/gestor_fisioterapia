@@ -245,6 +245,12 @@ export function QuickPreBookingModal({
                     {turno === "MANANA" ? "Mañana (08:00 - 13:00)" : "Tarde (14:00 - 20:00)"}
                   </span>
                 </div>
+                <div className="pt-2 border-t border-stone-200/60 text-[11px] text-stone-600 flex items-start gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-teal-600 shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Protocolo Clínico:</strong> Acude con tu DNI físico. Tu Historia Clínica oficial y evaluación funcional serán aperturadas por el fisioterapeuta colegiado en sala.
+                  </span>
+                </div>
               </div>
 
               <div className="pt-2 flex flex-col sm:flex-row gap-2.5">
@@ -271,6 +277,17 @@ export function QuickPreBookingModal({
             </div>
           ) : (
             <form onSubmit={handleModalSubmit} className="space-y-4">
+              {/* Nota sobre protocolo clínico y agendamiento ágil */}
+              <div className="p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl flex items-start gap-2.5 text-[11px] text-emerald-950">
+                <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+                <div className="leading-snug">
+                  <span className="font-bold block text-emerald-900">Agendamiento rápido sin registro de contraseñas</span>
+                  <span className="text-emerald-800/90">
+                    Solo ingresa tus datos de contacto. Tu Historia Clínica oficial será aperturada en la clínica por tu fisioterapeuta colegiado.
+                  </span>
+                </div>
+              </div>
+
               {errorMsg && (
                 <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />

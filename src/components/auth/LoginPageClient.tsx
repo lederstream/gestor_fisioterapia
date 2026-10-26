@@ -240,11 +240,12 @@ export function LoginPageClient({ config }: LoginPageClientProps) {
                 RBAC Auditado
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => {
                   setIdentifier("marco.yana@ajfisioterapia.pe");
+                  setPassword("admin123");
                   setErrorMessage(null);
                 }}
                 className="text-left p-2.5 rounded-xl border border-stone-200 bg-stone-50 hover:bg-white hover:border-[#0C3E37] transition text-xs cursor-pointer group shadow-2xs"
@@ -259,22 +260,8 @@ export function LoginPageClient({ config }: LoginPageClientProps) {
               <button
                 type="button"
                 onClick={() => {
-                  setIdentifier("alexander.saavedra@gmail.com");
-                  setErrorMessage(null);
-                }}
-                className="text-left p-2.5 rounded-xl border border-emerald-200 bg-emerald-50/60 hover:bg-emerald-50 hover:border-emerald-500 transition text-xs cursor-pointer group shadow-2xs"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-black text-emerald-950 text-[11px] group-hover:text-emerald-700">PACIENTE</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                </div>
-                <span className="text-[10px] text-emerald-800 block truncate mt-0.5">A. Saavedra (Portal Paciente)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
                   setIdentifier("karin.palacios@ajfisioterapia.pe");
+                  setPassword("recepcion123");
                   setErrorMessage(null);
                 }}
                 className="text-left p-2.5 rounded-xl border border-stone-200 bg-stone-50 hover:bg-white hover:border-[#0C3E37] transition text-xs cursor-pointer group shadow-2xs"
@@ -283,13 +270,14 @@ export function LoginPageClient({ config }: LoginPageClientProps) {
                   <span className="font-black text-stone-800 text-[11px] group-hover:text-[#0C3E37]">RECEPCIÓN</span>
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
                 </div>
-                <span className="text-[10px] text-stone-500 block truncate mt-0.5">Karin P. (Caja / Agenda)</span>
+                <span className="text-[10px] text-stone-500 block truncate mt-0.5">Karin P. (Caja/Agenda)</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => {
                   setIdentifier("jeiser.vasquez@ajfisioterapia.pe");
+                  setPassword("terapeuta123");
                   setErrorMessage(null);
                 }}
                 className="text-left p-2.5 rounded-xl border border-stone-200 bg-stone-50 hover:bg-white hover:border-[#0C3E37] transition text-xs cursor-pointer group shadow-2xs"
@@ -298,7 +286,39 @@ export function LoginPageClient({ config }: LoginPageClientProps) {
                   <span className="font-black text-stone-800 text-[11px] group-hover:text-[#0C3E37]">TERAPEUTA</span>
                   <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
                 </div>
-                <span className="text-[10px] text-stone-500 block truncate mt-0.5">Lic. Jeiser (Ficha EVA)</span>
+                <span className="text-[10px] text-stone-500 block truncate mt-0.5">Lic. Jeiser (Colegiado)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIdentifier("miguel.torres@ajfisioterapia.pe");
+                  setPassword("asistente123");
+                  setErrorMessage(null);
+                }}
+                className="text-left p-2.5 rounded-xl border border-amber-200 bg-amber-50/60 hover:bg-amber-50 hover:border-amber-400 transition text-xs cursor-pointer group shadow-2xs"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-amber-950 text-[11px] group-hover:text-amber-800">ASISTENTE</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
+                </div>
+                <span className="text-[10px] text-amber-800 block truncate mt-0.5">Tec. Miguel (Salas)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIdentifier("alexander.saavedra@gmail.com");
+                  setPassword("45892011");
+                  setErrorMessage(null);
+                }}
+                className="text-left p-2.5 rounded-xl border border-emerald-200 bg-emerald-50/60 hover:bg-emerald-50 hover:border-emerald-500 transition text-xs cursor-pointer group shadow-2xs col-span-2 sm:col-span-1"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-emerald-950 text-[11px] group-hover:text-emerald-700">PACIENTE</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                </div>
+                <span className="text-[10px] text-emerald-800 block truncate mt-0.5">A. Saavedra (Portal)</span>
               </button>
             </div>
 

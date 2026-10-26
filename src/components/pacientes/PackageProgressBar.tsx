@@ -5,9 +5,10 @@ import { AlertTriangle, CheckCircle2, ShieldAlert, Sparkles, Layers } from "luci
 
 interface PackageProgressBarProps {
   paquetes: any[];
+  showFinancials?: boolean;
 }
 
-export function PackageProgressBar({ paquetes }: PackageProgressBarProps) {
+export function PackageProgressBar({ paquetes, showFinancials = true }: PackageProgressBarProps) {
   if (paquetes.length === 0) {
     return (
       <div className="bg-white p-6 rounded-2xl border border-slate-200 text-center text-slate-500 text-xs">
@@ -42,22 +43,30 @@ export function PackageProgressBar({ paquetes }: PackageProgressBarProps) {
                 </p>
               </div>
 
-              {/* Estado de Pago */}
+              {/* Estado de Pago / Clínico */}
               <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-500">
-                  {formatCurrency(paq.montoPagado)} de {formatCurrency(paq.montoTotal)}
-                </span>
-                <span
-                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                    paq.estadoPago === "PAGADO"
-                      ? "bg-emerald-50 text-emerald-700 border-emerald-300"
-                      : paq.estadoPago === "PARCIAL"
-                      ? "bg-amber-50 text-amber-700 border-amber-300"
-                      : "bg-rose-50 text-rose-700 border-rose-300"
-                  }`}
-                >
-                  {paq.estadoPago}
-                </span>
+                {showFinancials ? (
+                  <>
+                    <span className="text-xs text-slate-500">
+                      {formatCurrency(paq.montoPagado)} de {formatCurrency(paq.montoTotal)}
+                    </span>
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                        paq.estadoPago === "PAGADO"
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+                          : paq.estadoPago === "PARCIAL"
+                          ? "bg-amber-50 text-amber-700 border-amber-300"
+                          : "bg-rose-50 text-rose-700 border-rose-300"
+                      }`}
+                    >
+                      {paq.estadoPago}
+                    </span>
+                  </>
+                ) : (
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-teal-50 text-teal-700 border border-teal-200">
+                    {sesRestantes === 0 ? "Completado" : `${sesRestantes} Sesiones Restantes`}
+                  </span>
+                )}
               </div>
             </div>
 

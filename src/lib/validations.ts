@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-// Validación para agendar cita
 export const agendarCitaSchema = z.object({
   pacienteId: z.string().min(1, "Debe seleccionar un paciente"),
   paqueteId: z.string().optional().nullable(),
@@ -9,6 +8,7 @@ export const agendarCitaSchema = z.object({
   fechaHoraInicio: z.string().or(z.date()).transform((val) => new Date(val)),
   duracionMinutos: z.number().int().min(30).max(120).optional().default(45),
   esReevaluacion: z.boolean().optional().default(false),
+  notasCita: z.string().optional().nullable(),
 });
 
 export type AgendarCitaInput = z.infer<typeof agendarCitaSchema>;

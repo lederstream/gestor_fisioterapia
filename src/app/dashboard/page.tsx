@@ -37,7 +37,7 @@ export default async function DashboardPage() {
         prisma.pago.findMany({ orderBy: { fechaPago: "desc" } }),
         prisma.auditLog.findMany({ orderBy: { createdAt: "desc" }, take: 8 }),
         prisma.historiaEvolucion.findMany({ take: 20 }),
-        prisma.user.findMany({ where: { rol: "TERAPEUTA" } }),
+        prisma.user.findMany({ where: { rol: { in: ["TERAPEUTA", "ASISTENTE"] } } }),
         prisma.servicio.findMany({ orderBy: { orden: "asc" } }),
       ]);
 

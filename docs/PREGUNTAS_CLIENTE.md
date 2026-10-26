@@ -86,3 +86,31 @@ A continuación se detallan las preguntas recomendadas para la próxima reunión
    * ¿El centro trabaja exclusivamente con particulares o atiende pacientes con carta de garantía de Pacífico, Rímac o Mapfre? (Esto determinaría si solicitamos campo de aseguradora en el formulario de citas).
 4. **Asignación Automática de Terapeutas:**
    * Actualmente el sistema asigna automáticamente la primera sala física disponible y el terapeuta colegiado de turno. ¿Se prefiere que el paciente pueda elegir a su terapeuta de preferencia o que recepción asigne internamente según la especialidad del diagnóstico?
+
+---
+
+## 🏥 5. DECISIÓN DE ARQUITECTURA Y GOBERNANZA: USUARIOS VS. HISTORIA CLÍNICA
+
+Para dar cumplimiento a la **Norma Técnica de Salud NTS N° 139-MINSA** (Gestión de Historias Clínicas) y garantizar la mejor tasa de conversión en la web, se ratifican los siguientes 4 principios rectores:
+
+### 5.1 Creación Exclusiva de Usuarios por el Administrador (RBAC Estricto)
+* **Principio:** Ningún usuario externo puede auto-registrarse como operador del sistema.
+* **Personal Autorizado (`public.users`):** Administrador, Recepcionista y Fisioterapeutas Colegiados.
+* **Control:** El alta de personal, contraseñas criptográficas iniciales (bcrypt) y la asignación de permisos corresponden **únicamente al Administrador General** en `/dashboard/usuarios`.
+
+### 5.2 Modelo de Agendamiento Web sin Contraseñas (Pre-Reserva Ágil)
+* **Principio:** Eliminar el 70% de fricción y abandono en la web evitando registros forzados con contraseñas antes de sacar cita.
+* **Mecanismo:** El paciente ingresa a `/reservas` o al modal web, proporciona DNI, Nombres, WhatsApp y selecciona horario/servicio.
+* **Resultado:** Se genera una cita con estado `PROGRAMADA` y se guarda o actualiza su ficha de contacto en `public.pacientes`.
+
+### 5.3 Apertura y Gestión Presencial de la Historia Clínica (Médico-Legal)
+* **Principio:** La Historia Clínica es un documento médico-legal confidencial e inalterable; **el paciente nunca puede auto-generar su historia clínica**.
+* **Flujo en Clínica:**
+  1. **Admisión física:** El paciente llega a la sede San Borja y recepción valida su DNI físico.
+  2. **Atención en Sala:** El Fisioterapeuta Colegiado abre la consulta en el sistema y genera la primera evaluación (anamnesis, escala EVA de dolor inicial/final y plan de tratamiento en `public.historia_evolucion`).
+  3. **Hitos:** Cada 5 sesiones se bloquea el alta hasta completar la reevaluación clínica obligatoria.
+
+### 5.4 Portal del Paciente (Post-Atención)
+* **Principio:** Consulta y seguimiento de su tratamiento sin burocracia previa.
+* **Acceso:** Una vez atendido presencialmente en la clínica, el paciente puede ingresar a `/login` con su DNI para visualizar sus próximas citas, evolución de dolor EVA y comprobantes de pago.
+

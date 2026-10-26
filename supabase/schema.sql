@@ -16,7 +16,7 @@ CREATE EXTENSION IF NOT EXISTS "btree_gist";     -- Prevención estricta de sola
 -- ========================================================================================
 
 DO $$ BEGIN
-    CREATE TYPE rol_usuario AS ENUM ('ADMIN', 'RECEPCION', 'TERAPEUTA', 'PACIENTE');
+    CREATE TYPE rol_usuario AS ENUM ('ADMIN', 'RECEPCION', 'TERAPEUTA', 'ASISTENTE', 'PACIENTE');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN

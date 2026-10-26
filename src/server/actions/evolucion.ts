@@ -25,6 +25,15 @@ export async function registrarAsistenciaYEvolucion(
     const clientIp = await obtenerIpCliente();
     const sesion = await obtenerSesionServidor();
 
+    // Regla de Seguridad Médica Estricta:
+    // Solo un Fisioterapeuta Colegiado o Administrador puede validar la reevaluación diagnóstica
+    if (validated.completarReevaluacion && sesion?.rol === "ASISTENTE") {
+      return {
+        success: false,
+        error: "Violación de protocolo clínico: Los Asistentes / Técnicos no cuentan con facultad legal para validar la reevaluación médica diagnóstica ni levantar el bloqueo de alta médica.",
+      };
+    }
+
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       try {
         const txResult = await prisma.$transaction(async (tx: any) => {

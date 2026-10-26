@@ -174,6 +174,9 @@ export async function solicitarReservaPublica(
             fechaHoraInicio,
             duracionMinutos: 45,
             esReevaluacion: false,
+            notasCita: input.motivoConsulta
+              ? `Motivo: ${input.motivoConsulta.trim()} (Pre-reserva web - Apertura de HC física en primera cita)`
+              : "Pre-reserva web (Apertura de HC física en primera cita presencial)",
           },
           {
             id: "usr-portal-publico",

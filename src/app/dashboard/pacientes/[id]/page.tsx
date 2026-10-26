@@ -40,7 +40,7 @@ export default async function PacienteDetailPage({ params }: Props) {
         paciente={ficha.paciente}
         citas={ficha.citas}
         paquetes={ficha.paquetes}
-        terapeutas={configData.personal.filter((p) => p.rol === "TERAPEUTA")}
+        terapeutas={configData.personal.filter((p) => p.rol === "TERAPEUTA" || p.rol === "ASISTENTE")}
         servicios={configData.servicios}
         historialEva={ficha.historialEva}
         logsDelPaciente={logsDelPaciente}

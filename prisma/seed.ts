@@ -37,9 +37,9 @@ async function main() {
     { nombre: "Lic. Andrea Rivas", email: "andrea.rivas@ajfisioterapia.pe", rol: "TERAPEUTA" as const, especialidad: "Lic. Terapia Manual Ortopédica y Columna", estado: "ACTIVO" as const },
     { nombre: "Lic. Javier Ponce", email: "javier.ponce@ajfisioterapia.pe", rol: "TERAPEUTA" as const, especialidad: "Lic. Biomecánica y Reeducación Postural", estado: "ACTIVO" as const },
     { nombre: "Lic. Valeria Soto", email: "valeria.soto@ajfisioterapia.pe", rol: "TERAPEUTA" as const, especialidad: "Lic. Neurorehabilitación y Adulto Mayor", estado: "ACTIVO" as const },
-    // 2 Técnicos
-    { nombre: "Tec. Miguel Torres", email: "miguel.torres@ajfisioterapia.pe", rol: "TERAPEUTA" as const, especialidad: "Técnico en Agentes Físicos y Electroterapia", estado: "ACTIVO" as const },
-    { nombre: "Tec. Diana Paredes", email: "diana.paredes@ajfisioterapia.pe", rol: "TERAPEUTA" as const, especialidad: "Técnico en Masoterapia y Crioterapia", estado: "ACTIVO" as const },
+    // 2 Técnicos Asistentes
+    { nombre: "Tec. Miguel Torres", email: "miguel.torres@ajfisioterapia.pe", rol: "ASISTENTE" as const, especialidad: "Técnico en Agentes Físicos y Electroterapia", estado: "ACTIVO" as const },
+    { nombre: "Tec. Diana Paredes", email: "diana.paredes@ajfisioterapia.pe", rol: "ASISTENTE" as const, especialidad: "Técnico en Masoterapia y Crioterapia", estado: "ACTIVO" as const },
   ];
 
   for (const p of personal) {

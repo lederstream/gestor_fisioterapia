@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { registrarAsistenciaYEvolucion } from "@/server/actions/evolucion";
 import { Activity, AlertTriangle, CheckCircle2, ShieldAlert, Award, FileCheck } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
 interface AttendanceEvolutionModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export function AttendanceEvolutionModal({
   paciente,
   onEvolucionRegistrada,
 }: AttendanceEvolutionModalProps) {
+  const { currentRole } = useAuth();
   const [citaId, setCitaId] = useState(citasProgramadas[0]?.id || "");
   const [terapeutaId, setTerapeutaId] = useState(citasProgramadas[0]?.terapeutaId || terapeutas[0]?.id || "");
   const [evaDolorInicio, setEvaDolorInicio] = useState<number>(6);
@@ -32,7 +34,7 @@ export function AttendanceEvolutionModal({
   const [escalaDaniels, setEscalaDaniels] = useState("4/5 (Contra gravedad y resistencia moderada)");
   const [testFuncional, setTestFuncional] = useState("Test de movilidad negativo a dolor irradiado.");
   const [dictamenClinico, setDictamenClinico] = useState("Aprobado para pase a fase 2 de fortalecimiento.");
-  const [completarReevaluacion, setCompletarReevaluacion] = useState(true);
+  const [completarReevaluacion, setCompletarReevaluacion] = useState(currentRole !== "ASISTENTE");
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -297,17 +299,29 @@ export function AttendanceEvolutionModal({
                 />
               </div>
 
-              <label className="flex items-center gap-2 pt-1 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={completarReevaluacion}
-                  onChange={(e) => setCompletarReevaluacion(e.target.checked)}
-                  className="w-4 h-4 accent-teal-600 rounded cursor-pointer"
-                />
-                <span className="font-bold text-teal-800 text-[11px]">
-                  Acreditar cumplimiento formal de Reevaluación (Desbloquear Alta Médica)
-                </span>
-              </label>
+              {currentRole === "ASISTENTE" ? (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-[11px] flex items-start gap-2">
+                  <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <span className="font-bold block text-amber-950">Restricción de Autoridad Médica</span>
+                    <p className="text-amber-800 leading-snug">
+                      Como Asistente / Técnico no dispones de facultad médico-legal para validar la reevaluación diagnóstica ni desbloquear el alta médica. Esta acreditación debe ser realizada por el Fisioterapeuta Colegiado.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <label className="flex items-center gap-2 pt-1 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={completarReevaluacion}
+                    onChange={(e) => setCompletarReevaluacion(e.target.checked)}
+                    className="w-4 h-4 accent-teal-600 rounded cursor-pointer"
+                  />
+                  <span className="font-bold text-teal-800 text-[11px]">
+                    Acreditar cumplimiento formal de Reevaluación (Desbloquear Alta Médica)
+                  </span>
+                </label>
+              )}
             </div>
           )}
 

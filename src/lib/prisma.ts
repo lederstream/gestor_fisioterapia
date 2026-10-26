@@ -29,6 +29,13 @@ function createPrismaClient(): PrismaClient {
     const pool = new Pool({
       connectionString,
       ssl: isLocal ? false : { rejectUnauthorized: false },
+      connectionTimeoutMillis: 1500,
+      idleTimeoutMillis: 2000,
+      max: 10,
+    });
+    pool.on("error", (err) => {
+      console.warn("Postgres pool error:", err?.message || err);
+      markDatabaseError(err);
     });
     const adapter = new PrismaPg(pool);
     return new PrismaClient({ adapter } as any);
@@ -47,6 +54,28 @@ function createPrismaClient(): PrismaClient {
       }
     });
   }
+}
+
+// Circuit Breaker State (High Availability & Zero Lag)
+let dbUnavailableUntil = 0;
+
+export function markDatabaseError(error: any) {
+  const msg = String(error?.message || error?.driverAdapterError || error?.code || "");
+  if (
+    msg.includes("ConnectionClosed") ||
+    msg.includes("P1017") ||
+    msg.includes("ECONNREFUSED") ||
+    msg.includes("ETIMEDOUT") ||
+    msg.includes("timeout") ||
+    msg.includes("closed")
+  ) {
+    dbUnavailableUntil = Date.now() + 60000; // 60s circuit breaker
+    console.warn("⚡ Circuit Breaker activado: Base de datos no disponible. Atendiendo solicitudes instantáneamente desde dbStore.");
+  }
+}
+
+export function isDatabaseAvailable(): boolean {
+  return Date.now() >= dbUnavailableUntil;
 }
 
 // Instancia singleton de PrismaClient para Next.js en Vercel

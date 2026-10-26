@@ -303,7 +303,7 @@ export function NewAppointmentModal({
               >
                 {terapeutas.map((t) => (
                   <option key={t.id} value={t.id}>
-                    {t.nombre}
+                    {t.nombre} {t.rol === "ASISTENTE" ? "(Técnico Asistente)" : "(Lic. Terapeuta)"}
                   </option>
                 ))}
               </select>

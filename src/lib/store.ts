@@ -5,7 +5,7 @@ export interface UserItem {
   id: string;
   nombre: string;
   email: string;
-  rol: "ADMIN" | "RECEPCION" | "TERAPEUTA" | "PACIENTE";
+  rol: "ADMIN" | "RECEPCION" | "TERAPEUTA" | "ASISTENTE" | "PACIENTE";
   especialidad?: string;
   estado: "ACTIVO" | "INACTIVO";
 }
@@ -74,6 +74,7 @@ export interface CitaItem {
   fechaHoraFin: string;    // ISO string
   estado: "PROGRAMADA" | "CONFIRMADA" | "ATENDIDA" | "CANCELADA" | "NO_ASISTIO";
   esReevaluacion: boolean;
+  notasCita?: string | null;
   creadoPorNombre?: string;
   confirmadoPorNombre?: string;
   createdAt: string;
@@ -193,8 +194,8 @@ const initialUsers: UserItem[] = [
   { id: "usr-ter-2", nombre: "Lic. Andrea Rivas", email: "andrea.rivas@ajfisioterapia.pe", rol: "TERAPEUTA", especialidad: "Lic. Terapia Manual Ortopédica y Columna", estado: "ACTIVO" },
   { id: "usr-ter-3", nombre: "Lic. Javier Ponce", email: "javier.ponce@ajfisioterapia.pe", rol: "TERAPEUTA", especialidad: "Lic. Biomecánica y Reeducación Postural", estado: "ACTIVO" },
   { id: "usr-ter-4", nombre: "Lic. Valeria Soto", email: "valeria.soto@ajfisioterapia.pe", rol: "TERAPEUTA", especialidad: "Lic. Neurorehabilitación y Adulto Mayor", estado: "ACTIVO" },
-  { id: "usr-tec-1", nombre: "Tec. Miguel Torres", email: "miguel.torres@ajfisioterapia.pe", rol: "TERAPEUTA", especialidad: "Técnico en Agentes Físicos y Electroterapia", estado: "ACTIVO" },
-  { id: "usr-tec-2", nombre: "Tec. Diana Paredes", email: "diana.paredes@ajfisioterapia.pe", rol: "TERAPEUTA", especialidad: "Técnico en Masoterapia y Crioterapia", estado: "ACTIVO" },
+  { id: "usr-tec-1", nombre: "Tec. Miguel Torres", email: "miguel.torres@ajfisioterapia.pe", rol: "ASISTENTE", especialidad: "Técnico en Agentes Físicos y Electroterapia", estado: "ACTIVO" },
+  { id: "usr-tec-2", nombre: "Tec. Diana Paredes", email: "diana.paredes@ajfisioterapia.pe", rol: "ASISTENTE", especialidad: "Técnico en Masoterapia y Crioterapia", estado: "ACTIVO" },
   { id: "usr-pac-1", nombre: "Alexander Saavedra", email: "alexander.saavedra@gmail.com", rol: "PACIENTE", especialidad: "Paciente / Cliente Titular", estado: "ACTIVO" },
 ];
 
@@ -752,7 +753,8 @@ class GestorFisioStore {
 
   // Métodos de lectura
   getUsers() { return [...this.users]; }
-  getTerapeutas() { return this.users.filter((u) => u.rol === "TERAPEUTA" && u.estado === "ACTIVO"); }
+  getTerapeutas() { return this.users.filter((u) => (u.rol === "TERAPEUTA" || u.rol === "ASISTENTE") && u.estado === "ACTIVO"); }
+  getAsistentes() { return this.users.filter((u) => u.rol === "ASISTENTE" && u.estado === "ACTIVO"); }
   getSalas() { return [...this.salas]; }
   getServicios() { return [...this.servicios]; }
   getPacientes() { return [...this.pacientes]; }
@@ -1052,7 +1054,7 @@ class GestorFisioStore {
     data: {
       nombre: string;
       email: string;
-      rol: "ADMIN" | "RECEPCION" | "TERAPEUTA" | "PACIENTE";
+      rol: "ADMIN" | "RECEPCION" | "TERAPEUTA" | "ASISTENTE" | "PACIENTE";
       especialidad?: string;
       estado?: "ACTIVO" | "INACTIVO";
     },
@@ -1090,7 +1092,7 @@ class GestorFisioStore {
   // Actualizar Rol de Usuario Dinámicamente
   actualizarRolUsuario(
     usuarioId: string, 
-    nuevoRol: "ADMIN" | "RECEPCION" | "TERAPEUTA" | "PACIENTE",
+    nuevoRol: "ADMIN" | "RECEPCION" | "TERAPEUTA" | "ASISTENTE" | "PACIENTE",
     auditUser?: { id: string; nombre: string; rol: any }
   ) {
     const index = this.users.findIndex((u) => u.id === usuarioId);
@@ -1141,6 +1143,7 @@ class GestorFisioStore {
     fechaHoraInicio: Date;
     duracionMinutos?: number;
     esReevaluacion?: boolean;
+    notasCita?: string | null;
     usuarioAuditoria?: { id?: string; nombre: string; rol: any };
     ipAddress?: string;
   }) {
@@ -1218,6 +1221,7 @@ class GestorFisioStore {
       fechaHoraFin: finIso,
       estado: "PROGRAMADA",
       esReevaluacion: esReevaluacionFlag,
+      notasCita: params.notasCita || undefined,
       creadoPorNombre: params.usuarioAuditoria?.nombre || "Recepción AJ Fisioterapia",
       createdAt: new Date().toISOString(),
     };

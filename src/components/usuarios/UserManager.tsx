@@ -353,6 +353,7 @@ export function UserManager({ initialUsers }: UserManagerProps) {
                 <option value="ADMIN">ADMIN (Gerencia)</option>
                 <option value="RECEPCION">RECEPCIÓN (Caja/Admisión)</option>
                 <option value="TERAPEUTA">TERAPEUTA (Clínico)</option>
+                <option value="ASISTENTE">ASISTENTE (Técnico / Salas)</option>
                 <option value="PACIENTE">PACIENTE (Cliente)</option>
               </select>
             </div>
@@ -380,7 +381,7 @@ export function UserManager({ initialUsers }: UserManagerProps) {
                   </tr>
                 ) : (
                   filteredUsers.map((u) => {
-                    const roleInfo = ROLE_DETAILS[u.rol];
+                    const roleInfo = ROLE_DETAILS[u.rol] || ROLE_DETAILS.TERAPEUTA;
                     return (
                       <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
                         <td className="py-3 px-4">
@@ -418,6 +419,7 @@ export function UserManager({ initialUsers }: UserManagerProps) {
                               <option value="ADMIN">ADMIN</option>
                               <option value="RECEPCION">RECEPCIÓN</option>
                               <option value="TERAPEUTA">TERAPEUTA</option>
+                              <option value="ASISTENTE">ASISTENTE</option>
                             </select>
                           )}
                         </td>
@@ -742,7 +744,8 @@ export function UserManager({ initialUsers }: UserManagerProps) {
                   onChange={(e) => setNuevoRol(e.target.value as UserRole)}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-bold focus:ring-2 focus:ring-teal-500 focus:outline-none"
                 >
-                  <option value="TERAPEUTA">TERAPEUTA (Personal Clínico / Escala EVA)</option>
+                  <option value="TERAPEUTA">TERAPEUTA (Licenciado Colegiado / Escala EVA y Reevaluación)</option>
+                  <option value="ASISTENTE">ASISTENTE (Técnico Terapéutico / Agentes Físicos y Sala)</option>
                   <option value="RECEPCION">RECEPCIÓN (Caja, Agenda y Admisión)</option>
                   <option value="ADMIN">ADMIN (Co-Administrador / Gerencia)</option>
                 </select>

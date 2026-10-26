@@ -11,6 +11,7 @@ import { PatientSessionHistory } from "@/components/pacientes/PatientSessionHist
 import { EvaScaleChart } from "@/components/pacientes/EvaScaleChart";
 import { PackageProgressBar } from "@/components/pacientes/PackageProgressBar";
 import { formatDateTime, formatCurrency } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 import { 
   Activity, 
   AlertTriangle, 
@@ -27,7 +28,8 @@ import {
   FileText,
   LayoutGrid,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  ShieldAlert
 } from "lucide-react";
 
 interface PatientDetailClientProps {
@@ -50,8 +52,17 @@ export function PatientDetailClient({
   logsDelPaciente = [],
 }: PatientDetailClientProps) {
   const router = useRouter();
+  const { hasPermission, currentRole } = useAuth();
   const [currentPatient, setCurrentPatient] = useState(paciente);
   const [activeTab, setActiveTab] = useState<"historial" | "grafico" | "paquetes" | "auditoria" | "todo">("historial");
+
+  // Permisos segmentados estrictos (Seguridad del Negocio)
+  const canEditPatient = hasPermission("pacientes:crear");
+  const canPrintReport = hasPermission("clinica:reporte");
+  const canAssignPackage = hasPermission("pacientes:paquetes");
+  const canSeeFinance = hasPermission("caja:ver");
+  const canSeeAudit = hasPermission("auditoria:ver");
+  const canRegisterAttendance = hasPermission("clinica:evolucion");
   
   // Modales
   const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
@@ -143,23 +154,37 @@ export function PatientDetailClient({
           </p>
         </div>
 
-        {/* 4. Estado Financiero */}
+        {/* 4. Estado Financiero / Plan Clínico */}
         <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[10px] font-bold uppercase tracking-wider">Finanzas</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider">
+              {canSeeFinance ? "Finanzas" : "Plan de Cuidado"}
+            </span>
             <CreditCard className="w-3.5 h-3.5 text-indigo-600" />
           </div>
           <div className="font-extrabold text-sm text-slate-800">
-            {paqueteActivo ? (
-              <span className={paqueteActivo.estadoPago === "PAGADO" ? "text-emerald-700" : "text-amber-700"}>
-                {paqueteActivo.estadoPago}
-              </span>
+            {canSeeFinance ? (
+              paqueteActivo ? (
+                <span className={paqueteActivo.estadoPago === "PAGADO" ? "text-emerald-700" : "text-amber-700"}>
+                  {paqueteActivo.estadoPago}
+                </span>
+              ) : (
+                <span className="text-slate-400">Al día</span>
+              )
             ) : (
-              <span className="text-slate-400">Al día</span>
+              paqueteActivo ? (
+                <span className="text-teal-700">En Curso</span>
+              ) : (
+                <span className="text-slate-400">Individual</span>
+              )
             )}
           </div>
           <p className="text-[10px] text-slate-500 truncate">
-            {paqueteActivo ? `${formatCurrency(paqueteActivo.montoPagado)} de ${formatCurrency(paqueteActivo.montoTotal)}` : "Pagos por sesión"}
+            {canSeeFinance ? (
+              paqueteActivo ? `${formatCurrency(paqueteActivo.montoPagado)} de ${formatCurrency(paqueteActivo.montoTotal)}` : "Pagos por sesión"
+            ) : (
+              paqueteActivo ? `${paqueteActivo.sesionesConsumidas} de ${paqueteActivo.totalSesiones} sesiones` : "Atención por sesión"
+            )}
           </p>
         </div>
       </div>
@@ -179,42 +204,50 @@ export function PatientDetailClient({
 
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
           {/* Editar datos */}
-          <button
-            onClick={() => setIsEditModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
-            title="Editar filiación y contacto"
-          >
-            <UserCheck className="w-4 h-4 text-slate-600" />
-            <span>Editar Datos</span>
-          </button>
+          {canEditPatient && (
+            <button
+              onClick={() => setIsEditModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+              title="Editar filiación y contacto"
+            >
+              <UserCheck className="w-4 h-4 text-slate-600" />
+              <span>Editar Datos</span>
+            </button>
+          )}
 
           {/* Imprimir Ficha */}
-          <button
-            onClick={() => setIsReportModalOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-xl transition border border-indigo-200 cursor-pointer"
-          >
-            <Printer className="w-4 h-4 text-indigo-600" />
-            <span>Imprimir Ficha</span>
-          </button>
+          {canPrintReport && (
+            <button
+              onClick={() => setIsReportModalOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-xl transition border border-indigo-200 cursor-pointer"
+            >
+              <Printer className="w-4 h-4 text-indigo-600" />
+              <span>Imprimir Ficha</span>
+            </button>
+          )}
 
           {/* Asignar Paquete */}
-          <button
-            onClick={() => setIsPackageModalOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold rounded-xl transition border border-teal-200 cursor-pointer"
-          >
-            <Layers className="w-4 h-4 text-teal-600" />
-            <span>Asignar Paquete</span>
-          </button>
+          {canAssignPackage && (
+            <button
+              onClick={() => setIsPackageModalOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold rounded-xl transition border border-teal-200 cursor-pointer"
+            >
+              <Layers className="w-4 h-4 text-teal-600" />
+              <span>Asignar Paquete</span>
+            </button>
+          )}
 
           {/* Botón Principal: Registrar Asistencia o Agendar */}
           {citasPendientes.length > 0 ? (
-            <button
-              onClick={() => setIsAttendanceModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-md shadow-teal-600/30 transition cursor-pointer"
-            >
-              <Activity className="w-4 h-4" />
-              <span>Registrar Asistencia y EVA</span>
-            </button>
+            canRegisterAttendance ? (
+              <button
+                onClick={() => setIsAttendanceModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-md shadow-teal-600/30 transition cursor-pointer"
+              >
+                <Activity className="w-4 h-4" />
+                <span>Registrar Asistencia y EVA</span>
+              </button>
+            ) : null
           ) : (
             <Link
               href={`/dashboard/agenda?pacienteId=${currentPatient.id}`}
@@ -276,20 +309,22 @@ export function PatientDetailClient({
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>Paquetes y Pagos ({paquetes.length})</span>
+            <span>{canSeeFinance ? `Paquetes y Pagos (${paquetes.length})` : `Sesiones del Plan (${paquetes.length})`}</span>
           </button>
 
-          <button
-            onClick={() => setActiveTab("auditoria")}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
-              activeTab === "auditoria"
-                ? "bg-teal-600 text-white shadow-xs"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            }`}
-          >
-            <History className="w-3.5 h-3.5" />
-            <span>Trazabilidad ({logsDelPaciente.length})</span>
-          </button>
+          {canSeeAudit && (
+            <button
+              onClick={() => setActiveTab("auditoria")}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                activeTab === "auditoria"
+                  ? "bg-teal-600 text-white shadow-xs"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              <History className="w-3.5 h-3.5" />
+              <span>Trazabilidad ({logsDelPaciente.length})</span>
+            </button>
+          )}
         </div>
 
         {/* Toggle Ver Todo Desplegado */}
@@ -331,15 +366,15 @@ export function PatientDetailClient({
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                 <Layers className="w-4 h-4 text-teal-600" />
-                <span>Paquetes de Tratamiento y Finanzas</span>
+                <span>{canSeeFinance ? "Paquetes de Tratamiento y Finanzas" : "Progreso de Sesiones del Plan"}</span>
               </h2>
             </div>
-            <PackageProgressBar paquetes={paquetes} />
+            <PackageProgressBar paquetes={paquetes} showFinancials={canSeeFinance} />
           </div>
         )}
 
         {/* 4. TRAZABILIDAD Y AUDITORÍA */}
-        {(activeTab === "auditoria" || activeTab === "todo") && (
+        {canSeeAudit && (activeTab === "auditoria" || activeTab === "todo") && (
           <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4 animate-in fade-in">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">

@@ -52,7 +52,8 @@ export function MatrixGrid({
   servicios,
   configuracion,
 }: MatrixGridProps) {
-  const { currentUser } = useAuth();
+  const { currentUser, hasPermission } = useAuth();
+  const canSeeFinance = hasPermission("caja:ver");
   const [citas, setCitas] = useState(initialCitas);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -446,10 +447,10 @@ export function MatrixGrid({
             onChange={(e) => setFilterTerapeuta(e.target.value)}
             className="px-2.5 py-1.5 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
           >
-            <option value="TODOS">Todos los Terapeutas ({terapeutas.length})</option>
+            <option value="TODOS">Todo el Personal ({terapeutas.length})</option>
             {terapeutas.map((t) => (
               <option key={t.id} value={t.id}>
-                {t.nombre}
+                {t.nombre} {t.rol === "ASISTENTE" ? "• Asistente" : "• Terapeuta"}
               </option>
             ))}
           </select>
@@ -910,7 +911,7 @@ export function MatrixGrid({
                       >
                         {terapeutas.map((t) => (
                           <option key={t.id} value={t.id}>
-                            {t.nombre}
+                            {t.nombre} {t.rol === "ASISTENTE" ? "(Asistente)" : "(Terapeuta)"}
                           </option>
                         ))}
                       </select>
@@ -980,11 +981,15 @@ export function MatrixGrid({
                     </div>
 
                     <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/70">
-                      <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider block">Terapeuta Responsable</span>
-                      <span className="font-bold text-slate-800 block text-xs mt-0.5 truncate">
-                        {terapeuta?.nombre || "Terapeuta"}
+                      <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider block">
+                        {terapeuta?.rol === "ASISTENTE" ? "Técnico Asistente" : "Terapeuta Responsable"}
                       </span>
-                      <span className="text-[10px] text-slate-500 block">Lic. Fisioterapia</span>
+                      <span className="font-bold text-slate-800 block text-xs mt-0.5 truncate">
+                        {terapeuta?.nombre || "Personal Clínico"}
+                      </span>
+                      <span className="text-[10px] text-slate-500 block">
+                        {terapeuta?.rol === "ASISTENTE" ? "Técnico Fisioterapia" : "Lic. Fisioterapia"}
+                      </span>
                     </div>
                   </div>
 
@@ -1014,12 +1019,18 @@ export function MatrixGrid({
                           <span className="text-[10px] text-indigo-700">Consumo: {paquete.sesionesConsumidas}/{paquete.totalSesiones} sesiones</span>
                         </div>
                       </div>
-                      <span className={cn(
-                        "px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase",
-                        paquete.estadoPago === "PAGADO" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-900"
-                      )}>
-                        {paquete.estadoPago}
-                      </span>
+                      {canSeeFinance ? (
+                        <span className={cn(
+                          "px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase",
+                          paquete.estadoPago === "PAGADO" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-900"
+                        )}>
+                          {paquete.estadoPago}
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-teal-100 text-teal-800">
+                          Plan Activo
+                        </span>
+                      )}
                     </div>
                   )}
 

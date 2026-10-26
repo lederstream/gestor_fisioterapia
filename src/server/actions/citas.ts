@@ -101,6 +101,8 @@ export async function agendarCita(
               fechaHoraFin: fin,
               estado: "PROGRAMADA",
               esReevaluacion,
+              notasCita: validated.notasCita || null,
+              creadoPorNombre: usuarioAuditoria?.nombre || "Recepción AJ Fisioterapia",
             },
           });
 
@@ -113,7 +115,7 @@ export async function agendarCita(
               accion: "CITA_CREADA",
               modulo: "AGENDA",
               entidadId: nuevaCitaDb.id,
-              detalles: `Cita agendada para el paciente ${validated.pacienteId} en ${sala.nombre}. ${esReevaluacion ? "[HITO REEVALUACIÓN OBLIGATORIA]" : ""}`,
+              detalles: `Cita agendada para el paciente ${validated.pacienteId} en ${sala.nombre}. ${esReevaluacion ? "[HITO REEVALUACIÓN OBLIGATORIA]" : ""}${validated.notasCita ? ` [Notas: ${validated.notasCita}]` : ""}`,
               ipAddress: clientIp,
             },
           });
@@ -130,6 +132,7 @@ export async function agendarCita(
           fechaHoraInicio: validated.fechaHoraInicio,
           duracionMinutos: validated.duracionMinutos,
           esReevaluacion: validated.esReevaluacion,
+          notasCita: validated.notasCita,
           usuarioAuditoria,
           ipAddress: clientIp,
         });
@@ -221,7 +224,7 @@ export async function obtenerCitasAgenda(fechaIso?: string) {
         }),
         prisma.sala.findMany({ orderBy: { nombre: "asc" } }),
         prisma.user.findMany({
-          where: { rol: "TERAPEUTA" },
+          where: { rol: { in: ["TERAPEUTA", "ASISTENTE"] } },
           orderBy: { nombre: "asc" },
         }),
         prisma.servicio.findMany({ orderBy: { orden: "asc" } }),

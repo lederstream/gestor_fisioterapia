@@ -3,11 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { dbStore, ConfiguracionClinicaItem } from "@/lib/store";
 import { ServerActionResult } from "./citas";
-import { prisma } from "@/lib/prisma";
+import { prisma, isDatabaseAvailable, markDatabaseError } from "@/lib/prisma";
 
 export async function obtenerConfiguracionClinica(): Promise<ConfiguracionClinicaItem> {
   try {
-    if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+    if (isDatabaseAvailable() && process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       const configDb = await prisma.configuracionClinica.findFirst();
       if (configDb) {
         const item: ConfiguracionClinicaItem = {
@@ -51,6 +51,7 @@ export async function obtenerConfiguracionClinica(): Promise<ConfiguracionClinic
       }
     }
   } catch (err) {
+    markDatabaseError(err);
     console.warn("Configuracion: No se pudo leer de Prisma/Supabase, usando dbStore:", err);
   }
   return dbStore.getConfiguracion();
@@ -63,7 +64,7 @@ export async function obtenerConfiguracionCompleta() {
   let personal = dbStore.getUsers();
 
   try {
-    if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+    if (isDatabaseAvailable() && process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       const [salasDb, serviciosDb, personalDb] = await Promise.all([
         prisma.sala.findMany(),
         prisma.servicio.findMany({ orderBy: { orden: "asc" } }),

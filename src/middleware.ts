@@ -36,7 +36,7 @@ export async function middleware(request: NextRequest) {
     if (session) {
       const targetUrl = session.rol === "PACIENTE" 
         ? "/dashboard" 
-        : session.rol === "RECEPCION" || session.rol === "TERAPEUTA" 
+        : session.rol === "RECEPCION" || session.rol === "TERAPEUTA" || session.rol === "ASISTENTE"
           ? "/dashboard/agenda" 
           : "/dashboard";
       return NextResponse.redirect(new URL(targetUrl, request.url));
@@ -80,15 +80,15 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    if (rol === "TERAPEUTA") {
-      // Terapeuta no tiene acceso a finanzas (caja), usuarios, config ni auditoría
-      const restrictedForTerapeuta = [
+    if (rol === "TERAPEUTA" || rol === "ASISTENTE") {
+      // Terapeutas y Asistentes no tienen acceso a finanzas (caja), usuarios, config ni auditoría
+      const restrictedForStaff = [
         "/dashboard/caja",
         "/dashboard/usuarios",
         "/dashboard/configuracion",
         "/dashboard/auditoria",
       ];
-      if (restrictedForTerapeuta.some((p) => pathname.startsWith(p))) {
+      if (restrictedForStaff.some((p) => pathname.startsWith(p))) {
         return NextResponse.redirect(new URL("/dashboard/agenda", request.url));
       }
     }

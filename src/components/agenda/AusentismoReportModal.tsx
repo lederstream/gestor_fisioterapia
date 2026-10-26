@@ -17,6 +17,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 
 interface AusentismoReportModalProps {
   isOpen: boolean;
@@ -35,6 +36,8 @@ export function AusentismoReportModal({
   salas,
   clinicName = "AJ Fisioterapia",
 }: AusentismoReportModalProps) {
+  const { hasPermission } = useAuth();
+  const canSeeFinance = hasPermission("caja:ver");
   const [selectedWeekOffset, setSelectedWeekOffset] = useState<number>(0);
 
   // Calcular rango de la semana seleccionada (Lunes a Sábado)
@@ -329,13 +332,13 @@ export function AusentismoReportModal({
 
             <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-2xs space-y-1">
               <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 block">
-                Impacto en Caja
+                {canSeeFinance ? "Impacto en Caja" : "Atención Cumplida"}
               </span>
               <div className="text-2xl font-black text-stone-800">
-                {formatCurrency(weekData.impactoEconomico)}
+                {canSeeFinance ? formatCurrency(weekData.impactoEconomico) : `${weekData.totalAtendidas} citas`}
               </div>
               <span className="text-[11px] text-stone-400 block">
-                Ingreso dejado de percibir
+                {canSeeFinance ? "Ingreso dejado de percibir" : "Turnos clínicos asistidos"}
               </span>
             </div>
           </div>

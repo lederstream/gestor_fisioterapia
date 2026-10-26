@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Shield, UserCheck, Stethoscope, User, ChevronDown, LogOut, CheckCircle2 } from "lucide-react";
+import { Shield, UserCheck, Stethoscope, User, ChevronDown, LogOut, CheckCircle2, Activity } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { UserRole } from "@/lib/permissions";
 
@@ -9,6 +9,7 @@ const ROLE_ICONS: Record<UserRole, any> = {
   ADMIN: Shield,
   RECEPCION: UserCheck,
   TERAPEUTA: Stethoscope,
+  ASISTENTE: Activity,
   PACIENTE: User,
 };
 

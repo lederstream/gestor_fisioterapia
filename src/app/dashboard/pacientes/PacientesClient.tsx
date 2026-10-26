@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { useAuth } from "@/lib/auth-context";
 import { NewPatientModal } from "@/components/pacientes/NewPatientModal";
 import { 
   Users, 
@@ -26,6 +27,8 @@ interface PacientesClientProps {
 }
 
 export function PacientesClient({ initialPacientes }: PacientesClientProps) {
+  const { hasPermission } = useAuth();
+  const canCreatePatient = hasPermission("pacientes:crear");
   const [pacientes, setPacientes] = useState(initialPacientes);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<"todos" | "reevaluacion" | "paquetes">("todos");
@@ -104,13 +107,15 @@ export function PacientesClient({ initialPacientes }: PacientesClientProps) {
         </div>
 
         <div className="flex items-center gap-2.5 w-full sm:w-auto">
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-md shadow-teal-600/25 transition cursor-pointer"
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>Nuevo Paciente</span>
-          </button>
+          {canCreatePatient && (
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-md shadow-teal-600/25 transition cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>Nuevo Paciente</span>
+            </button>
+          )}
           <span className="text-xs font-semibold px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 whitespace-nowrap shadow-2xs">
             {pacientes.length} Registrados
           </span>
