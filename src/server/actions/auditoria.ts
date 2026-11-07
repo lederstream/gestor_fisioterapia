@@ -3,6 +3,7 @@
 import { dbStore, AuditLogItem } from "@/lib/store";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { obtenerSesionServidor } from "@/lib/auth-server";
 
 export interface FiltrosAuditoria {
   modulo?: string;
@@ -32,9 +33,18 @@ export async function obtenerIpCliente(): Promise<string> {
 }
 
 export async function obtenerLogsAuditoria(filtros?: FiltrosAuditoria): Promise<AuditLogItem[]> {
+  const sesion = await obtenerSesionServidor();
+  const esSuperAdmin = sesion?.rol === "SUPERADMIN";
+
   if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
     try {
       const logsDb = await prisma.auditLog.findMany({
+        where: esSuperAdmin ? undefined : {
+          AND: [
+            { usuarioRol: { not: "SUPERADMIN" } },
+            { detalles: { not: { contains: "SUPERADMIN" } } },
+          ],
+        },
         orderBy: {
           createdAt: "desc",
         },
@@ -78,7 +88,10 @@ export async function obtenerLogsAuditoria(filtros?: FiltrosAuditoria): Promise<
     }
   }
 
-  const logs = dbStore.getAuditLogs();
+  const rawLogs = dbStore.getAuditLogs();
+  const logs = esSuperAdmin 
+    ? rawLogs 
+    : rawLogs.filter((l) => (l.usuarioRol as string) !== "SUPERADMIN" && !l.detalles?.includes("SUPERADMIN"));
 
   if (!filtros) return logs;
 

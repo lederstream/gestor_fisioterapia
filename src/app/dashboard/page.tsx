@@ -1,10 +1,14 @@
 import { dbStore } from "@/lib/store";
 import { DashboardPageClient } from "./DashboardPageClient";
 import { prisma } from "@/lib/prisma";
+import { obtenerSesionServidor } from "@/lib/auth-server";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
+  const sesion = await obtenerSesionServidor();
+  const esSuperAdmin = sesion?.rol === "SUPERADMIN";
+
   if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
     try {
       const [
@@ -35,7 +39,16 @@ export default async function DashboardPage() {
           include: { paciente: true, servicio: true },
         }),
         prisma.pago.findMany({ orderBy: { fechaPago: "desc" } }),
-        prisma.auditLog.findMany({ orderBy: { createdAt: "desc" }, take: 8 }),
+        prisma.auditLog.findMany({
+          where: esSuperAdmin ? undefined : {
+            AND: [
+              { usuarioRol: { not: "SUPERADMIN" } },
+              { detalles: { not: { contains: "SUPERADMIN" } } },
+            ],
+          },
+          orderBy: { createdAt: "desc" },
+          take: 8,
+        }),
         prisma.historiaEvolucion.findMany({ take: 20 }),
         prisma.user.findMany({ where: { rol: { in: ["TERAPEUTA", "ASISTENTE"] } } }),
         prisma.servicio.findMany({ orderBy: { orden: "asc" } }),
@@ -209,7 +222,11 @@ export default async function DashboardPage() {
   const pacientes = dbStore.getPacientes();
   const paquetes = dbStore.getPaquetes();
   const pagos = dbStore.getPagos();
-  const auditLogs = dbStore.getAuditLogs().slice(0, 5);
+  const rawAuditLogs = dbStore.getAuditLogs();
+  const safeAuditLogs = esSuperAdmin 
+    ? rawAuditLogs 
+    : rawAuditLogs.filter((l) => (l.usuarioRol as string) !== "SUPERADMIN" && !l.detalles?.includes("SUPERADMIN"));
+  const auditLogs = safeAuditLogs.slice(0, 5);
   const historias = dbStore.getHistorias();
   const terapeutas = dbStore.getTerapeutas();
   const servicios = dbStore.getServicios();

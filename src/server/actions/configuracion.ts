@@ -236,16 +236,29 @@ export async function cambiarEstadoSala(
 
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       try {
-        const updatedDb = await prisma.sala.update({
-          where: { id: salaId },
-          data: { estado: nuevoEstado as any },
-        });
-        resultSala = {
-          id: updatedDb.id,
-          nombre: updatedDb.nombre,
-          estado: updatedDb.estado,
-          capacidadSimultanea: 1,
-        };
+        let targetSala = await prisma.sala.findUnique({ where: { id: salaId } });
+        if (!targetSala) {
+          targetSala = await prisma.sala.findFirst({ where: { nombre: salaId } });
+        }
+        if (!targetSala && salaId.toLowerCase().includes("sala")) {
+          const numMatch = salaId.match(/\d+/);
+          if (numMatch) {
+            targetSala = await prisma.sala.findFirst({ where: { nombre: `Sala ${numMatch[0]}` } });
+          }
+        }
+
+        if (targetSala) {
+          const updatedDb = await prisma.sala.update({
+            where: { id: targetSala.id },
+            data: { estado: nuevoEstado as any },
+          });
+          resultSala = {
+            id: updatedDb.id,
+            nombre: updatedDb.nombre,
+            estado: updatedDb.estado,
+            capacidadSimultanea: 1,
+          };
+        }
       } catch (dbErr) {
         console.warn("Error actualizando sala en Prisma:", dbErr);
       }
@@ -261,6 +274,7 @@ export async function cambiarEstadoSala(
     revalidatePath("/dashboard/agenda");
     revalidatePath("/dashboard/configuracion");
     revalidatePath("/dashboard");
+    revalidatePath("/reservas");
     return { success: true, data: resultSala };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Error al cambiar estado de sala.";
