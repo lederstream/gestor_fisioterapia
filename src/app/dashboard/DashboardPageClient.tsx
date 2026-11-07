@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { formatCurrency, formatTime, formatDateTime } from "@/lib/utils";
+import { formatCurrency, formatTime, formatDateTime, cn } from "@/lib/utils";
 import { PatientDashboardView } from "@/components/pacientes/PatientDashboardView";
 import { AusentismoReportModal } from "@/components/agenda/AusentismoReportModal";
 import { 
@@ -77,6 +77,9 @@ export function DashboardPageClient({
   const totalProgramadas = citas.filter((c) => c.estado === "PROGRAMADA" || c.estado === "CONFIRMADA").length;
   const totalReevaluaciones = citas.filter((c) => c.esReevaluacion && c.estado !== "CANCELADA").length;
   const totalRecaudado = pagos.reduce((sum, p) => sum + p.monto, 0);
+
+  const salasDisponibles = salas.filter((s) => s.estado === "DISPONIBLE").length;
+  const totalSalas = salas.length || 6;
 
   const canSeeFinance = hasPermission("caja:ver");
   const canSeeAudit = hasPermission("auditoria:ver");
@@ -157,10 +160,16 @@ export function DashboardPageClient({
             </div>
           </div>
           <div className="text-2xl font-extrabold text-slate-800">
-            6 / 6
+            {salasDisponibles} / {totalSalas}
           </div>
-          <p className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
-            <CheckCircle2 className="w-3.5 h-3.5" /> 100% de salas operativas en San Borja
+          <p className={cn(
+            "text-[11px] font-medium flex items-center gap-1",
+            salasDisponibles === totalSalas ? "text-emerald-600" : "text-amber-600"
+          )}>
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            {salasDisponibles === totalSalas 
+              ? "100% de salas operativas en San Borja" 
+              : `${totalSalas - salasDisponibles} sala(s) en mantenimiento`}
           </p>
         </div>
 
@@ -249,21 +258,53 @@ export function DashboardPageClient({
 
           <div className="grid grid-cols-2 gap-2.5">
             {salas.map((sala) => {
-              const citaEnCurso = citas.find(
-                (c) => c.salaId === sala.id && c.estado !== "CANCELADA"
-              );
+              const now = new Date();
+              const isMantenimiento = sala.estado === "MANTENIMIENTO";
+              const citaEnCurso = !isMantenimiento && citas.find((c) => {
+                const matchSala = c.salaId === sala.id || c.sala?.id === sala.id || c.sala?.nombre === sala.nombre;
+                if (!matchSala) return false;
+                if (c.estado !== "PROGRAMADA" && c.estado !== "CONFIRMADA") return false;
+                const start = new Date(c.fechaHoraInicio);
+                const end = new Date(c.fechaHoraFin);
+                return now >= start && now <= end;
+              });
 
               return (
                 <div
                   key={sala.id}
-                  className="p-3 rounded-xl border border-slate-200 bg-slate-50/70 flex flex-col justify-between"
+                  className={cn(
+                    "p-3 rounded-xl border flex flex-col justify-between transition",
+                    isMantenimiento
+                      ? "border-amber-200/80 bg-amber-50/40 text-amber-900"
+                      : citaEnCurso
+                      ? "border-blue-200 bg-blue-50/40 text-blue-900"
+                      : "border-slate-200 bg-slate-50/70 text-slate-800"
+                  )}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-slate-800 text-xs">{sala.nombre}</span>
-                    <span className={`w-2 h-2 rounded-full ${sala.estado === "DISPONIBLE" ? "bg-emerald-500" : "bg-amber-500"}`} />
+                    <span className="font-bold text-xs">{sala.nombre}</span>
+                    <span
+                      className={cn(
+                        "w-2 h-2 rounded-full",
+                        isMantenimiento
+                          ? "bg-amber-500"
+                          : citaEnCurso
+                          ? "bg-blue-500 animate-pulse"
+                          : "bg-emerald-500"
+                      )}
+                    />
                   </div>
-                  <span className="text-[10px] text-slate-500 truncate">
-                    {sala.estado === "MANTENIMIENTO" ? "Mantenimiento" : citaEnCurso ? "Ocupada" : "Libre"}
+                  <span
+                    className={cn(
+                      "text-[10px] font-semibold truncate",
+                      isMantenimiento
+                        ? "text-amber-700"
+                        : citaEnCurso
+                        ? "text-blue-700 font-bold"
+                        : "text-emerald-700"
+                    )}
+                  >
+                    {isMantenimiento ? "En Mantenimiento" : citaEnCurso ? "En Atención Ahora" : "Libre / Disponible"}
                   </span>
                 </div>
               );

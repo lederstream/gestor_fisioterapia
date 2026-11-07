@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bell, Clock, MapPin, Menu, Sparkles, HeartHandshake } from "lucide-react";
+import { Clock, MapPin, Menu, Sparkles, HeartHandshake } from "lucide-react";
 import { RoleSwitcher } from "./RoleSwitcher";
 import { useAuth } from "@/lib/auth-context";
 
@@ -99,14 +99,6 @@ export function DashboardNavbar({ onToggleMobileMenu, initialConfig }: Dashboard
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
-        <button 
-          title={isPatient ? "Avisos de citas y evolución" : "Notificaciones de Reevaluación"}
-          className="relative p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors border border-slate-200"
-        >
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-white animate-pulse" />
-        </button>
-
         <RoleSwitcher />
       </div>
     </header>

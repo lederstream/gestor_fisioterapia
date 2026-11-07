@@ -181,16 +181,8 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile, initialC
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          <div className="px-3 pb-2 text-[10px] font-bold text-teal-300/70 uppercase tracking-wider flex items-center justify-between">
-            <span>{isPatient ? "Mi Portal Clínico" : "Menú Principal"}</span>
-            <span className={cn(
-              "text-[9px] font-bold px-1.5 py-0.5 rounded border",
-              isPatient 
-                ? "bg-emerald-500/25 text-emerald-200 border-emerald-400/40" 
-                : "bg-white/10 text-teal-200 border-white/15"
-            )}>
-              {currentRole}
-            </span>
+          <div className="px-3 pb-2 text-[10px] font-bold text-teal-300/70 uppercase tracking-wider">
+            {isPatient ? "Mi Portal Clínico" : "Menú Principal"}
           </div>
 
           {/* Botón de Acción Principal para el Paciente: Reservar Cita In-App */}
@@ -269,8 +261,8 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile, initialC
           )}
         </nav>
 
-        {/* Footer Card: Personalizado según si es Paciente o Personal */}
-        {isPatient ? (
+        {/* Footer Card: Solo para soporte del paciente */}
+        {isPatient && (
           <div className="p-3.5 border border-emerald-500/25 bg-emerald-950/50 m-3 rounded-2xl shadow-inner">
             <div className="flex items-center gap-2 mb-1">
               <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -288,16 +280,6 @@ export function DashboardSidebar({ isOpenMobile = false, onCloseMobile, initialC
               <MessageCircle className="w-3.5 h-3.5 text-emerald-300" />
               <span>WhatsApp de Soporte</span>
             </a>
-          </div>
-        ) : (
-          <div className="p-3.5 border border-white/10 bg-white/5 m-3 rounded-2xl">
-            <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span className="text-xs font-bold text-white">{clinicConfig.nombreComercial}</span>
-            </div>
-            <p className="text-[11px] text-teal-200/80 leading-relaxed">
-              Centro de Fisioterapia • {clinicConfig.totalSalasFisicas} salas de atención activas.
-            </p>
           </div>
         )}
 
