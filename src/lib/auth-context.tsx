@@ -112,6 +112,7 @@ export function AuthProvider({
     await cerrarSesion();
     setIsAuthenticated(false);
     if (typeof window !== "undefined") {
+      sessionStorage.removeItem("agy_impersonated_role");
       window.location.href = "/login";
     }
   };

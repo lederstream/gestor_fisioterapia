@@ -66,7 +66,18 @@ export function LoginPageClient({ config }: LoginPageClientProps) {
       }
 
       setSuccessMessage(`Bienvenido, ${res.data?.user.nombre}. Accediendo al portal...`);
-      const destination = redirectParam || res.data?.user.targetUrl || "/dashboard";
+      
+      // Limpiar cualquier estado previo de simulación
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("agy_impersonated_role");
+      }
+
+      // El destino al iniciar sesión siempre debe ser el panel de "Inicio" (/dashboard).
+      // Solo respetar redirectParam si no apunta a la consola interna de soporte.
+      let destination = "/dashboard";
+      if (redirectParam && !redirectParam.includes("/soporte")) {
+        destination = redirectParam;
+      }
 
       setTimeout(() => {
         window.location.href = destination;

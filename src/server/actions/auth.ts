@@ -192,13 +192,8 @@ export async function iniciarSesion(
         },
       }).catch(() => {});
 
-      const targetUrl = rolEfectivo === "SUPERADMIN"
-        ? "/dashboard/soporte"
-        : rolEfectivo === "PACIENTE" 
-          ? "/dashboard" 
-          : rolEfectivo === "RECEPCION" || rolEfectivo === "TERAPEUTA" || rolEfectivo === "ASISTENTE"
-            ? "/dashboard/agenda" 
-            : "/dashboard";
+      // Todo el personal administrativo, clínico, pacientes y superadmin aterrizan en "Inicio" (/dashboard)
+      const targetUrl = "/dashboard";
 
       return {
         success: true,
@@ -302,13 +297,8 @@ export async function iniciarSesion(
         };
       }
 
-      const targetUrl = storeRole === "SUPERADMIN"
-        ? "/dashboard/soporte"
-        : storeRole === "PACIENTE"
-          ? "/dashboard"
-          : storeRole === "RECEPCION" || storeRole === "TERAPEUTA" || storeRole === "ASISTENTE"
-            ? "/dashboard/agenda"
-            : "/dashboard";
+      // Todo el personal administrativo, clínico, pacientes y superadmin aterrizan en "Inicio" (/dashboard)
+      const targetUrl = "/dashboard";
 
       const sessionData: SessionPayload = {
         userId: storeUser.id,

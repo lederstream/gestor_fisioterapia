@@ -31,15 +31,10 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // 1. Si ya está autenticado y visita /login, redirigir a su portal correspondiente
+  // 1. Si ya está autenticado y visita /login, redirigir siempre a "Inicio" (/dashboard)
   if (pathname === "/login") {
     if (session) {
-      const targetUrl = session.rol === "PACIENTE" 
-        ? "/dashboard" 
-        : session.rol === "RECEPCION" || session.rol === "TERAPEUTA" || session.rol === "ASISTENTE"
-          ? "/dashboard/agenda" 
-          : "/dashboard";
-      return NextResponse.redirect(new URL(targetUrl, request.url));
+      return NextResponse.redirect(new URL("/dashboard", request.url));
     }
     return NextResponse.next();
   }
@@ -53,6 +48,11 @@ export async function middleware(request: NextRequest) {
     }
 
     const { rol } = session;
+
+    // Proteger consola de soporte exclusivo para SuperAdmin
+    if (pathname.startsWith("/dashboard/soporte") && rol !== "SUPERADMIN") {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
 
     // Reglas estrictas RBAC por Rol:
     if (rol === "PACIENTE") {
