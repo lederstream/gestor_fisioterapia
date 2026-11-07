@@ -6,9 +6,7 @@ import {
 } from "@/lib/store";
 import { 
   UserRole, 
-  ROLE_DETAILS, 
-  ROLE_PERMISSIONS, 
-  Permission 
+  ROLE_DETAILS 
 } from "@/lib/permissions";
 import { 
   crearNuevoUsuario, 
@@ -52,7 +50,6 @@ interface UserManagerProps {
 
 export function UserManager({ initialUsers }: UserManagerProps) {
   const [users, setUsers] = useState<UserItem[]>(initialUsers);
-  const [activeTab, setActiveTab] = useState<"usuarios" | "matriz">("usuarios");
   const [search, setSearch] = useState("");
   const [filterRol, setFilterRol] = useState<string>("TODOS");
 
@@ -236,38 +233,19 @@ export function UserManager({ initialUsers }: UserManagerProps) {
     }
   };
 
-  // Lista de permisos clave para la matriz
-  const permisosMatriz: { modulo: string; permiso: Permission; label: string }[] = [
-    { modulo: "Agenda de Salas", permiso: "agenda:ver", label: "Ver disponibilidad y matriz de 6 salas" },
-    { modulo: "Agenda de Salas", permiso: "agenda:agendar", label: "Reservar, reprogramar o cancelar citas" },
-    { modulo: "Caja y Cobranzas", permiso: "caja:ver", label: "Ver balance monetario del turno y recaudación" },
-    { modulo: "Caja y Cobranzas", permiso: "caja:cobrar", label: "Cobrar con Yape, Plin, POS y Efectivo" },
-    { modulo: "Caja y Cobranzas", permiso: "caja:arqueo", label: "Realizar arqueo físico y sellado de turno" },
-    { modulo: "Pacientes", permiso: "pacientes:ver", label: "Consultar directorio general de pacientes" },
-    { modulo: "Pacientes", permiso: "pacientes:crear", label: "Registrar nuevos pacientes y expedientes" },
-    { modulo: "Pacientes", permiso: "pacientes:paquetes", label: "Contratar paquetes de 10 y 20 sesiones" },
-    { modulo: "Ficha Médica & EVA", permiso: "clinica:evolucion", label: "Registrar escala EVA antes y después de terapia" },
-    { modulo: "Ficha Médica & EVA", permiso: "clinica:reevaluacion", label: "Acreditar examen de 5 sesiones y desbloquear alta" },
-    { modulo: "Ficha Médica & EVA", permiso: "clinica:reporte", label: "Emitir informe médico oficial membretado" },
-    { modulo: "Auditoría & Logs", permiso: "auditoria:ver", label: "Ver bitácora inmutable de eventos con IP y fecha" },
-    { modulo: "Configuración", permiso: "config:modificar", label: "Modificar tarifas, salas y reglas de San Borja" },
-    { modulo: "Seguridad & RBAC", permiso: "usuarios:gestionar", label: "Crear usuarios y cambiar roles dinámicamente" },
-    { modulo: "Portal Paciente", permiso: "portal:mis_citas", label: "Portal privado de consultas sin acceso administrativo" },
-  ];
-
   return (
     <div className="space-y-6">
       {/* Header del Módulo */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-xs font-bold mb-1">
-            <Shield className="w-3.5 h-3.5" /> Equipo y Permisos
+            <Users className="w-3.5 h-3.5" /> Equipo Clínico y Personal
           </div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            Equipo
+            Gestión de Equipo
           </h1>
           <p className="text-xs text-slate-500">
-            Personal clínico, roles y permisos de acceso.
+            Administración del personal de salud, recepcionistas y accesos a la clínica.
           </p>
         </div>
 
@@ -308,56 +286,33 @@ export function UserManager({ initialUsers }: UserManagerProps) {
         </div>
       )}
 
-      {/* Tarjetas de Políticas de Seguridad */}
+      {/* Tarjetas de Cargos del Equipo */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {Object.values(ROLE_DETAILS).map((role) => (
-          <div
-            key={role.id}
-            className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-2"
-          >
-            <div className="flex items-center justify-between">
-              <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border ${role.badge}`}>
-                {role.id}
-              </span>
-              <span className={`w-2.5 h-2.5 rounded-full ${role.dot}`} />
+        {(["ADMIN", "RECEPCION", "TERAPEUTA", "ASISTENTE"] as UserRole[]).map((rolKey) => {
+          const role = ROLE_DETAILS[rolKey];
+          if (!role) return null;
+          return (
+            <div
+              key={role.id}
+              className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-2"
+            >
+              <div className="flex items-center justify-between">
+                <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border ${role.badge}`}>
+                  {role.id}
+                </span>
+                <span className={`w-2.5 h-2.5 rounded-full ${role.dot}`} />
+              </div>
+              <h4 className="font-extrabold text-slate-800 text-xs">{role.label}</h4>
+              <p className="text-[11px] text-slate-500 leading-relaxed line-clamp-2">
+                {role.description}
+              </p>
             </div>
-            <h4 className="font-extrabold text-slate-800 text-xs">{role.label}</h4>
-            <p className="text-[11px] text-slate-500 leading-relaxed line-clamp-2">
-              {role.description}
-            </p>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* Tabs Selector */}
-      <div className="flex border-b border-slate-200 bg-white px-4 rounded-2xl shadow-xs">
-        <button
-          onClick={() => setActiveTab("usuarios")}
-          className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition -mb-[1px] cursor-pointer ${
-            activeTab === "usuarios"
-              ? "border-teal-600 text-teal-700 bg-teal-50/40"
-              : "border-transparent text-slate-500 hover:text-slate-800"
-          }`}
-        >
-          <Users className="w-4 h-4" />
-          <span>Usuarios ({users.length})</span>
-        </button>
-        <button
-          onClick={() => setActiveTab("matriz")}
-          className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition -mb-[1px] cursor-pointer ${
-            activeTab === "matriz"
-              ? "border-teal-600 text-teal-700 bg-teal-50/40"
-              : "border-transparent text-slate-500 hover:text-slate-800"
-          }`}
-        >
-          <ShieldCheck className="w-4 h-4" />
-          <span>Permisos (RBAC)</span>
-        </button>
-      </div>
-
-      {/* TAB 1: TABLA DE USUARIOS Y ROLES */}
-      {activeTab === "usuarios" && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-3 p-5">
+      {/* TABLA DE USUARIOS Y ROLES */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-3 p-5">
           {/* Barra de Filtros */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             <div className="relative flex-1 sm:max-w-xs">
@@ -519,99 +474,6 @@ export function UserManager({ initialUsers }: UserManagerProps) {
             </table>
           </div>
         </div>
-      )}
-
-      {/* TAB 2: MATRIZ AUDITABLE DE PERMISOS (RBAC) */}
-      {activeTab === "matriz" && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6 space-y-4">
-          <div>
-            <h3 className="font-extrabold text-slate-900 text-base">
-              Matriz Comparativa de Permisos y Medidas de Seguridad
-            </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Supervisión de restricciones por perfil para cumplimiento de buenas prácticas médicas y financieras.
-            </p>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border border-slate-200 rounded-xl overflow-hidden">
-              <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
-                <tr>
-                  <th className="py-3 px-4">Módulo Funcional</th>
-                  <th className="py-3 px-4">Capacidad / Acción</th>
-                  <th className="py-3 px-3 text-center bg-purple-50/80 text-purple-900">ADMIN</th>
-                  <th className="py-3 px-3 text-center bg-blue-50/80 text-blue-900">RECEPCIÓN</th>
-                  <th className="py-3 px-3 text-center bg-teal-50/80 text-teal-900">TERAPEUTA</th>
-                  <th className="py-3 px-3 text-center bg-emerald-50/80 text-emerald-900">PACIENTE</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {permisosMatriz.map((item, idx) => {
-                  const adminHas = ROLE_PERMISSIONS.ADMIN.includes(item.permiso);
-                  const recHas = ROLE_PERMISSIONS.RECEPCION.includes(item.permiso);
-                  const terHas = ROLE_PERMISSIONS.TERAPEUTA.includes(item.permiso);
-                  const pacHas = ROLE_PERMISSIONS.PACIENTE.includes(item.permiso);
-
-                  return (
-                    <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3 px-4 font-bold text-slate-800">
-                        {item.modulo}
-                      </td>
-                      <td className="py-3 px-4 text-slate-600">
-                        {item.label}
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        {adminHas ? (
-                          <span className="inline-flex p-1 rounded-md bg-emerald-50 text-emerald-600">
-                            <Check className="w-4 h-4" />
-                          </span>
-                        ) : (
-                          <span className="inline-flex p-1 rounded-md bg-rose-50 text-rose-500">
-                            <X className="w-4 h-4" />
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        {recHas ? (
-                          <span className="inline-flex p-1 rounded-md bg-emerald-50 text-emerald-600">
-                            <Check className="w-4 h-4" />
-                          </span>
-                        ) : (
-                          <span className="inline-flex p-1 rounded-md bg-rose-50 text-rose-500">
-                            <X className="w-4 h-4" />
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        {terHas ? (
-                          <span className="inline-flex p-1 rounded-md bg-emerald-50 text-emerald-600">
-                            <Check className="w-4 h-4" />
-                          </span>
-                        ) : (
-                          <span className="inline-flex p-1 rounded-md bg-rose-50 text-rose-500">
-                            <X className="w-4 h-4" />
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        {pacHas ? (
-                          <span className="inline-flex p-1 rounded-md bg-emerald-50 text-emerald-600">
-                            <Check className="w-4 h-4" />
-                          </span>
-                        ) : (
-                          <span className="inline-flex p-1 rounded-md bg-rose-50 text-rose-500">
-                            <X className="w-4 h-4" />
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
 
       {/* MODAL CREAR NUEVO USUARIO (MODULAR, RESPONSIVO Y AMIGABLE) */}
       {isModalOpen && (
