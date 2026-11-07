@@ -41,9 +41,10 @@ export default async function DashboardPage() {
         prisma.pago.findMany({ orderBy: { fechaPago: "desc" } }),
         prisma.auditLog.findMany({
           where: esSuperAdmin ? undefined : {
-            AND: [
-              { usuarioRol: { not: "SUPERADMIN" } },
-              { detalles: { not: { contains: "SUPERADMIN" } } },
+            NOT: [
+              { usuarioRol: "SUPERADMIN" },
+              { usuarioNombre: { contains: "superadmin", mode: "insensitive" } },
+              { detalles: { contains: "superadmin", mode: "insensitive" } },
             ],
           },
           orderBy: { createdAt: "desc" },

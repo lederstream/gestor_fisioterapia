@@ -32,6 +32,13 @@ export async function obtenerIpCliente(): Promise<string> {
   }
 }
 
+export function esLogDeSuperAdmin(log: { usuarioRol?: string | null; usuarioNombre?: string | null; detalles?: string | null }): boolean {
+  const rol = String(log.usuarioRol || "").toUpperCase();
+  const nombre = String(log.usuarioNombre || "").toLowerCase();
+  const detalles = String(log.detalles || "").toLowerCase();
+  return rol === "SUPERADMIN" || nombre.includes("superadmin") || detalles.includes("superadmin");
+}
+
 export async function obtenerLogsAuditoria(filtros?: FiltrosAuditoria): Promise<AuditLogItem[]> {
   const sesion = await obtenerSesionServidor();
   const esSuperAdmin = sesion?.rol === "SUPERADMIN";
@@ -40,29 +47,32 @@ export async function obtenerLogsAuditoria(filtros?: FiltrosAuditoria): Promise<
     try {
       const logsDb = await prisma.auditLog.findMany({
         where: esSuperAdmin ? undefined : {
-          AND: [
-            { usuarioRol: { not: "SUPERADMIN" } },
-            { detalles: { not: { contains: "SUPERADMIN" } } },
+          NOT: [
+            { usuarioRol: "SUPERADMIN" },
+            { usuarioNombre: { contains: "superadmin", mode: "insensitive" } },
+            { detalles: { contains: "superadmin", mode: "insensitive" } },
           ],
         },
         orderBy: {
           createdAt: "desc",
         },
-        take: 200,
+        take: 300,
       });
 
-      const formateados: AuditLogItem[] = logsDb.map((l) => ({
-        id: l.id,
-        usuarioId: l.usuarioId,
-        usuarioNombre: l.usuarioNombre,
-        usuarioRol: l.usuarioRol as any,
-        accion: l.accion,
-        modulo: l.modulo as any,
-        entidadId: l.entidadId,
-        detalles: l.detalles,
-        ipAddress: l.ipAddress || undefined,
-        createdAt: l.createdAt.toISOString(),
-      }));
+      const formateados: AuditLogItem[] = logsDb
+        .filter((l) => (esSuperAdmin ? true : !esLogDeSuperAdmin(l)))
+        .map((l) => ({
+          id: l.id,
+          usuarioId: l.usuarioId,
+          usuarioNombre: l.usuarioNombre,
+          usuarioRol: l.usuarioRol as any,
+          accion: l.accion,
+          modulo: l.modulo as any,
+          entidadId: l.entidadId,
+          detalles: l.detalles,
+          ipAddress: l.ipAddress || undefined,
+          createdAt: l.createdAt.toISOString(),
+        }));
 
       if (!filtros) return formateados;
 
@@ -91,7 +101,7 @@ export async function obtenerLogsAuditoria(filtros?: FiltrosAuditoria): Promise<
   const rawLogs = dbStore.getAuditLogs();
   const logs = esSuperAdmin 
     ? rawLogs 
-    : rawLogs.filter((l) => (l.usuarioRol as string) !== "SUPERADMIN" && !l.detalles?.includes("SUPERADMIN"));
+    : rawLogs.filter((l) => !esLogDeSuperAdmin(l));
 
   if (!filtros) return logs;
 

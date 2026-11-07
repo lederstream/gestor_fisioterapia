@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { formatDateTime } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 import { 
   ShieldCheck, 
   Search, 
@@ -33,7 +34,21 @@ interface AuditLogTableProps {
 }
 
 export function AuditLogTable({ initialLogs }: AuditLogTableProps) {
-  const [logs] = useState(initialLogs);
+  const { currentRole } = useAuth();
+  const esSuperAdmin = currentRole === "SUPERADMIN";
+
+  // Blindaje estricto de privacidad: Si el usuario es ADMIN (o está simulando ser ADMIN/Recepción/Terapeuta),
+  // ningún rastro de SuperAdmin, ni su IP, ni sus inicios de sesión, ni su nombre deben ser visibles jamás.
+  const logs = useMemo(() => {
+    if (esSuperAdmin) return initialLogs;
+    return initialLogs.filter((log) => {
+      const rol = String(log.usuarioRol || "").toUpperCase();
+      const nombre = String(log.usuarioNombre || "").toLowerCase();
+      const detalles = String(log.detalles || "").toLowerCase();
+      return rol !== "SUPERADMIN" && !nombre.includes("superadmin") && !detalles.includes("superadmin");
+    });
+  }, [initialLogs, esSuperAdmin]);
+
   const [filterModulo, setFilterModulo] = useState<string>("TODOS");
   const [filterRol, setFilterRol] = useState<string>("TODOS");
   const [filterPeriodo, setFilterPeriodo] = useState<string>("TODOS");

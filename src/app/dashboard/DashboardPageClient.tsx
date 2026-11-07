@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { formatCurrency, formatTime, formatDateTime, cn } from "@/lib/utils";
@@ -80,6 +80,17 @@ export function DashboardPageClient({
 
   const salasDisponibles = salas.filter((s) => s.estado === "DISPONIBLE").length;
   const totalSalas = salas.length || 6;
+
+  const isSuperAdminView = currentRole === "SUPERADMIN";
+  const visibleAuditLogs = useMemo(() => {
+    if (isSuperAdminView) return auditLogs;
+    return auditLogs.filter((log) => {
+      const rol = String(log.usuarioRol || "").toUpperCase();
+      const nombre = String(log.usuarioNombre || "").toLowerCase();
+      const detalles = String(log.detalles || "").toLowerCase();
+      return rol !== "SUPERADMIN" && !nombre.includes("superadmin") && !detalles.includes("superadmin");
+    });
+  }, [auditLogs, isSuperAdminView]);
 
   const canSeeFinance = hasPermission("caja:ver");
   const canSeeAudit = hasPermission("auditoria:ver");
@@ -416,7 +427,7 @@ export function DashboardPageClient({
           </div>
 
           <div className="divide-y divide-slate-100">
-            {auditLogs.map((log) => (
+            {visibleAuditLogs.map((log) => (
               <div key={log.id} className="py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
                 <div className="flex items-start gap-3">
                   <span className="w-2 h-2 rounded-full bg-teal-500 mt-1.5 shrink-0" />
