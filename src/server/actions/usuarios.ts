@@ -10,9 +10,14 @@ import { obtenerSesionServidor } from "@/lib/auth-server";
 import { obtenerIpCliente } from "./auditoria";
 
 export async function obtenerUsuarios(): Promise<UserItem[]> {
+  const sesion = await obtenerSesionServidor();
+  const isSuperadminViewer = sesion?.rol === "SUPERADMIN";
+
   if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
     try {
       const usersDb = await prisma.user.findMany({
+        // Ocultar cuentas de SuperAdmin a los administradores y personal de la clínica
+        where: isSuperadminViewer ? {} : { rol: { not: "SUPERADMIN" } },
         orderBy: {
           nombre: "asc",
         },
@@ -31,7 +36,8 @@ export async function obtenerUsuarios(): Promise<UserItem[]> {
     }
   }
 
-  return dbStore.getUsers();
+  const storeUsers = dbStore.getUsers();
+  return isSuperadminViewer ? storeUsers : storeUsers.filter((u) => u.rol !== "SUPERADMIN");
 }
 
 export async function crearNuevoUsuario(data: {
@@ -59,6 +65,14 @@ export async function crearNuevoUsuario(data: {
       return {
         success: false,
         error: "Violación de seguridad RBAC: Los pacientes no se registran como personal. Utilice el módulo de Pacientes.",
+      };
+    }
+
+    // Regla de jerarquía estricta: Solo un SuperAdmin puede dar de alta a otro SuperAdmin
+    if (data.rol === "SUPERADMIN" && sesion.rol !== "SUPERADMIN") {
+      return {
+        success: false,
+        error: "Violación de jerarquía: La administración de la clínica no tiene autorización para crear cuentas con rol SuperAdmin.",
       };
     }
 
@@ -180,6 +194,21 @@ export async function modificarRolUsuario(
         });
 
         if (usuarioTarget) {
+          // BLINDAJE JERÁRQUICO INMUTABLE: SuperAdmin es intocable por administradores de clínica
+          if (usuarioTarget.rol === "SUPERADMIN" && sesion.rol !== "SUPERADMIN") {
+            return {
+              success: false,
+              error: "Violación crítica de jerarquía: Las cuentas de Soporte Raíz / SuperAdmin son inmutables y no pueden ser alteradas por la clínica.",
+            };
+          }
+
+          if (nuevoRol === "SUPERADMIN" && sesion.rol !== "SUPERADMIN") {
+            return {
+              success: false,
+              error: "Violación de jerarquía: Solo un SuperAdmin puede conceder privilegios de SuperAdmin.",
+            };
+          }
+
           const esPacienteTarget = 
             usuarioTarget.rol === "PACIENTE" || 
             usuarioTarget.especialidad?.toLowerCase().includes("paciente");
@@ -268,6 +297,11 @@ export async function cambiarEstadoUsuario(
 
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       try {
+        const target = await prisma.user.findUnique({ where: { id: usuarioId } });
+        if (target?.rol === "SUPERADMIN" && sesion.rol !== "SUPERADMIN") {
+          return { success: false, error: "Violación crítica: Las cuentas de SuperAdmin están blindadas y no pueden ser suspendidas." };
+        }
+
         const actualizadoDb = await prisma.user.update({
           where: { id: usuarioId },
           data: { estado: nuevoEstado },
@@ -319,6 +353,11 @@ export async function eliminarUsuarioSistema(
 
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       try {
+        const target = await prisma.user.findUnique({ where: { id: usuarioId } });
+        if (target?.rol === "SUPERADMIN") {
+          return { success: false, error: "Violación crítica: Las cuentas de SuperAdmin están blindadas y no pueden ser eliminadas." };
+        }
+
         const eliminadoDb = await prisma.user.delete({
           where: { id: usuarioId },
         });
@@ -379,8 +418,8 @@ export async function cambiarPasswordUsuarioDesdeAdmin(
 ): Promise<ServerActionResult> {
   try {
     const sesion = await obtenerSesionServidor();
-    if (!sesion || sesion.rol !== "ADMIN") {
-      return { success: false, error: "Solo los administradores pueden gestionar contraseñas del equipo." };
+    if (!sesion || (sesion.rol !== "ADMIN" && sesion.rol !== "SUPERADMIN")) {
+      return { success: false, error: "Solo los administradores o SuperAdmin pueden gestionar contraseñas del equipo." };
     }
 
     const cleanPass = nuevaPassword.trim();
@@ -393,6 +432,11 @@ export async function cambiarPasswordUsuarioDesdeAdmin(
 
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       try {
+        const target = await prisma.user.findUnique({ where: { id: usuarioId } });
+        if (target?.rol === "SUPERADMIN" && sesion.rol !== "SUPERADMIN") {
+          return { success: false, error: "Violación crítica: La administración de la clínica no puede modificar la contraseña de una cuenta SuperAdmin." };
+        }
+
         const usuarioActualizado = await prisma.user.update({
           where: { id: usuarioId },
           data: { passwordHash },

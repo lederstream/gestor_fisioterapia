@@ -429,7 +429,15 @@ export function UserManager({ initialUsers }: UserManagerProps) {
 
                         {/* SELECTOR DE ROL DINÁMICO (PROTEGIDO) */}
                         <td className="py-3 px-4">
-                          {u.rol === "PACIENTE" ? (
+                          {u.rol === "SUPERADMIN" ? (
+                            <span 
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-black rounded-lg border bg-slate-900 text-amber-400 border-amber-500/40 shadow-xs"
+                              title="Cuenta raíz protegida por el proveedor SaaS (Inmutable por la clínica)"
+                            >
+                              <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                              <span>SUPERADMIN</span>
+                            </span>
+                          ) : u.rol === "PACIENTE" ? (
                             <span 
                               className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg border bg-emerald-50 text-emerald-800 border-emerald-300 shadow-xs"
                               title="Rol blindado por seguridad médica RBAC (No escalable a personal administrativo)"
@@ -457,39 +465,51 @@ export function UserManager({ initialUsers }: UserManagerProps) {
                         </td>
 
                         <td className="py-3 px-4">
-                          <button
-                            onClick={() => handleToggleEstado(u.id, u.estado)}
-                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition ${
-                              u.estado === "ACTIVO"
-                                ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                                : "bg-slate-100 text-slate-500 border-slate-300 hover:bg-slate-200"
-                            }`}
-                          >
-                            {u.estado === "ACTIVO" ? "Activo" : "Suspendido"}
-                          </button>
+                          {u.rol === "SUPERADMIN" ? (
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-50 text-amber-700 border border-amber-300">
+                              Protegido
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleToggleEstado(u.id, u.estado)}
+                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition ${
+                                u.estado === "ACTIVO"
+                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                                  : "bg-slate-100 text-slate-500 border-slate-300 hover:bg-slate-200"
+                              }`}
+                            >
+                              {u.estado === "ACTIVO" ? "Activo" : "Suspendido"}
+                            </button>
+                          )}
                         </td>
 
                         <td className="py-3 px-4 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <button
-                              onClick={() => {
-                                setPasswordModalUser(u);
-                                setNuevaClaveAdmin("");
-                              }}
-                              className="p-1.5 text-slate-400 hover:text-teal-600 rounded-lg hover:bg-teal-50 transition cursor-pointer"
-                              title="Asignar / Cambiar Contraseña"
-                            >
-                              <KeyRound className="w-4 h-4" />
-                            </button>
+                          {u.rol === "SUPERADMIN" ? (
+                            <span className="text-[10px] text-slate-400 font-semibold px-2 py-1">
+                              Cuenta Raíz
+                            </span>
+                          ) : (
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                onClick={() => {
+                                  setPasswordModalUser(u);
+                                  setNuevaClaveAdmin("");
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-teal-600 rounded-lg hover:bg-teal-50 transition cursor-pointer"
+                                title="Asignar / Cambiar Contraseña"
+                              >
+                                <KeyRound className="w-4 h-4" />
+                              </button>
 
-                            <button
-                              onClick={() => handleEliminar(u.id, u.nombre)}
-                              className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition cursor-pointer"
-                              title="Eliminar usuario"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
+                              <button
+                                onClick={() => handleEliminar(u.id, u.nombre)}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition cursor-pointer"
+                                title="Eliminar usuario"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     );

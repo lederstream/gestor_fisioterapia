@@ -12,7 +12,7 @@ interface LandingHeaderProps {
   isAuthenticated: boolean;
   currentRole?: string;
   currentUser?: { nombre: string; email: string } | null;
-  onOpenLoginModal: () => void;
+  onOpenLoginModal?: () => void;
   onOpenQuickBooking: () => void;
 }
 
@@ -39,7 +39,7 @@ export function LandingHeader({
         router.push("/dashboard");
       }
     } else {
-      onOpenLoginModal();
+      router.push("/login");
     }
   };
 

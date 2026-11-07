@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { LoginPortalModal } from "@/components/auth/LoginPortalModal";
 import { QuickPreBookingModal } from "@/components/reservas/QuickPreBookingModal";
 import { ConfiguracionClinicaItem, ServicioItem, SalaItem, TestimonioItem } from "@/lib/store";
 
@@ -23,7 +22,6 @@ interface LandingViewProps {
 
 export function LandingView({ config, servicios, salas }: LandingViewProps) {
   const { isAuthenticated, currentRole, currentUser } = useAuth();
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isPreBookingOpen, setIsPreBookingOpen] = useState(false);
   const [preBookingServiceId, setPreBookingServiceId] = useState<string | undefined>(undefined);
 
@@ -216,7 +214,6 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
         isAuthenticated={isAuthenticated}
         currentRole={currentRole}
         currentUser={currentUser}
-        onOpenLoginModal={() => setIsLoginModalOpen(true)}
         onOpenQuickBooking={() => handleOpenQuickBooking()}
       />
 
@@ -268,12 +265,7 @@ export function LandingView({ config, servicios, salas }: LandingViewProps) {
         onOpenQuickBooking={() => handleOpenQuickBooking()}
       />
 
-      {/* Modales de Interacción */}
-      <LoginPortalModal
-        isOpen={isLoginModalOpen}
-        onClose={() => setIsLoginModalOpen(false)}
-      />
-
+      {/* Modal de Pre-Reserva Rápida */}
       <QuickPreBookingModal
         isOpen={isPreBookingOpen}
         onClose={() => setIsPreBookingOpen(false)}
