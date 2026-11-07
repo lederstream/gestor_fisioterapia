@@ -4,6 +4,7 @@ import { dbStore, AuditLogItem } from "@/lib/store";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { obtenerSesionServidor } from "@/lib/auth-server";
+import { revalidatePath } from "next/cache";
 
 export interface FiltrosAuditoria {
   modulo?: string;
@@ -122,4 +123,27 @@ export async function obtenerLogsAuditoria(filtros?: FiltrosAuditoria): Promise<
     }
     return true;
   });
+}
+
+/**
+ * Purgar completamente la bitácora de auditoría en Supabase (Solo para SuperAdmin / Desarrollador)
+ * Útil para limpiar registros de prueba antes de entregar el software a producción.
+ */
+export async function purgarAuditoria(): Promise<{ success: boolean; error?: string }> {
+  try {
+    const sesion = await obtenerSesionServidor();
+    if (sesion?.rol !== "SUPERADMIN") {
+      return { success: false, error: "Acción restringida exclusivamente para el Desarrollador / SuperAdmin." };
+    }
+
+    if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+      await prisma.auditLog.deleteMany({});
+    }
+
+    revalidatePath("/dashboard/auditoria");
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (err: unknown) {
+    return { success: false, error: err instanceof Error ? err.message : "Error al purgar bitácora" };
+  }
 }

@@ -52,11 +52,34 @@ export function DashboardNavbar({ onToggleMobileMenu, initialConfig }: Dashboard
     }
   }, []);
 
-  const todayStr = new Intl.DateTimeFormat("es-PE", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  }).format(new Date());
+  const [timeStr, setTimeStr] = useState<string>("");
+  const [dateStr, setDateStr] = useState<string>("");
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const dateFormatted = new Intl.DateTimeFormat("es-PE", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+        timeZone: "America/Lima",
+      }).format(now);
+      const timeFormatted = new Intl.DateTimeFormat("es-PE", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+        timeZone: "America/Lima",
+      }).format(now);
+
+      setDateStr(dateFormatted);
+      setTimeStr(timeFormatted);
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const isPatient = currentRole === "PACIENTE";
   const shortAddress = clinicConfig.direccion ? clinicConfig.direccion.split(",")[0] : "Av. Guardia Civil";
@@ -92,9 +115,15 @@ export function DashboardNavbar({ onToggleMobileMenu, initialConfig }: Dashboard
           </div>
         )}
 
-        <div className="hidden lg:flex items-center gap-2 text-xs text-slate-500 capitalize">
-          <Clock className="w-3.5 h-3.5 text-slate-400" />
-          <span>{todayStr}</span>
+        {/* Reloj y Fecha Sincronizada con Hora de Perú (America/Lima) */}
+        <div className="hidden md:flex items-center gap-2 text-xs text-slate-700 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200/80 shadow-2xs">
+          <Clock className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+          <span className="capitalize font-medium">{dateStr || "Hoy"}</span>
+          <span className="text-slate-300">•</span>
+          <span className="font-mono font-bold text-slate-900">{timeStr || "--:--:--"}</span>
+          <span className="text-[9px] text-teal-700 font-extrabold bg-teal-100/70 px-1.5 py-0.5 rounded border border-teal-200">
+            PERÚ (UTC-5)
+          </span>
         </div>
       </div>
 

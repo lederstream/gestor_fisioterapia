@@ -246,18 +246,6 @@ export async function iniciarSesion(
 
       await establecerCookieSesion(sessionData);
 
-      await prisma.auditLog.create({
-        data: {
-          usuarioId: paciente.id,
-          usuarioNombre: sessionData.nombre,
-          usuarioRol: "PACIENTE",
-          accion: "INICIO_SESION",
-          modulo: "SISTEMA",
-          detalles: `Inicio de sesión exitoso de paciente (DNI: ${paciente.dni}).`,
-          ipAddress: clientIp,
-        },
-      }).catch(() => {});
-
       return {
         success: true,
         data: {

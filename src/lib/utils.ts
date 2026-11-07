@@ -19,6 +19,7 @@ export function formatDateTime(date: Date | string): string {
   return new Intl.DateTimeFormat("es-PE", {
     dateStyle: "medium",
     timeStyle: "short",
+    timeZone: "America/Lima",
   }).format(d);
 }
 
@@ -28,6 +29,7 @@ export function formatTime(date: Date | string): string {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
+    timeZone: "America/Lima",
   }).format(d);
 }
 
@@ -37,5 +39,6 @@ export function formatDate(date: Date | string): string {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
+    timeZone: "America/Lima",
   }).format(d);
 }
