@@ -17,7 +17,8 @@ import {
   Stethoscope,
   Building2,
   Phone,
-  FileText
+  FileText,
+  ChevronDown
 } from "lucide-react";
 
 interface NewAppointmentModalProps {
@@ -349,81 +350,106 @@ export function NewAppointmentModal({
             )}
           </div>
 
-          {/* 2. SALA FÍSICA (PÍLDORAS CLICKEABLES) */}
-          <div className="space-y-1.5">
-            <label className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
-              <Building2 className="w-3.5 h-3.5 text-teal-600" />
-              Sala Física Asignada *
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {effectiveSalas.map((s) => {
-                const isSelected = salaId === s.id;
-                const isMantenimiento = s.estado === "MANTENIMIENTO";
-                return (
+          {/* 2 & 3. SALA FÍSICA Y TERAPEUTA RESPONSABLE (PÍLDORAS COMBOBOX COMPACTAS EN 2 COLUMNAS) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            {/* Sala Física Combobox */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                  <Building2 className="w-3.5 h-3.5 text-teal-600" />
+                  <span>Sala Física Asignada *</span>
+                </label>
+                {effectiveSalas.find(s => s.id === salaId)?.estado === "DISPONIBLE" && (
+                  <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-bold border border-emerald-200">
+                    ● Libre
+                  </span>
+                )}
+              </div>
+              <div className="relative">
+                <select
+                  value={salaId}
+                  onChange={(e) => setSalaId(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 focus:border-teal-500 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition cursor-pointer appearance-none pr-8"
+                >
+                  {effectiveSalas.map((s) => (
+                    <option key={s.id} value={s.id} disabled={s.estado === "MANTENIMIENTO"}>
+                      {s.nombre} {s.estado === "MANTENIMIENTO" ? "(Mantenimiento)" : "— Libre / Disponible"}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+              {/* Píldoras rápidas de selección de sala en un clic */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 pt-0.5">
+                {effectiveSalas.slice(0, 4).map((s) => (
                   <button
                     type="button"
                     key={s.id}
-                    disabled={isMantenimiento}
+                    disabled={s.estado === "MANTENIMIENTO"}
                     onClick={() => setSalaId(s.id)}
                     className={cn(
-                      "px-3 py-2 rounded-xl border text-left transition flex items-center justify-between cursor-pointer text-xs",
-                      isSelected
-                        ? "bg-teal-600 text-white border-teal-600 shadow-xs font-bold"
-                        : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300",
-                      isMantenimiento && "opacity-40 cursor-not-allowed bg-slate-100 border-slate-200"
+                      "px-2 py-0.5 text-[10px] rounded-lg font-semibold transition border shrink-0 cursor-pointer",
+                      salaId === s.id
+                        ? "bg-teal-600 text-white border-teal-600 shadow-2xs font-bold"
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
                     )}
                   >
-                    <div className="truncate">
-                      <div className="font-bold truncate">{s.nombre}</div>
-                      <div className={cn("text-[10px]", isSelected ? "text-teal-100" : "text-slate-400")}>
-                        {isMantenimiento ? "Mantenimiento" : "Disponible"}
-                      </div>
-                    </div>
-                    {isSelected && <Check className="w-4 h-4 text-white shrink-0 ml-1" />}
+                    {s.nombre}
                   </button>
-                );
-              })}
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* 3. TERAPEUTA ASIGNADO (PÍLDORAS CLICKEABLES) */}
-          <div className="space-y-1.5">
-            <label className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
-              <Stethoscope className="w-3.5 h-3.5 text-teal-600" />
-              Terapeuta Responsable *
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-36 overflow-y-auto pr-1">
-              {effectiveTerapeutas.map((t) => {
-                const isSelected = terapeutaId === t.id;
-                const rolTexto = t.rol === "ASISTENTE" ? "Asistente" : t.rol === "ADMIN" ? "Admin Clínico" : "Terapeuta";
-                return (
-                  <button
-                    type="button"
-                    key={t.id}
-                    onClick={() => setTerapeutaId(t.id)}
-                    className={cn(
-                      "p-2.5 rounded-xl border text-left transition flex items-center justify-between cursor-pointer text-xs",
-                      isSelected
-                        ? "bg-teal-50 border-teal-500 text-teal-900 shadow-xs font-bold ring-1 ring-teal-500"
-                        : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300"
-                    )}
-                  >
-                    <div className="flex items-center gap-2 truncate">
-                      <div className={cn(
-                        "w-6 h-6 rounded-full flex items-center justify-center font-bold text-[10px] shrink-0",
-                        isSelected ? "bg-teal-600 text-white" : "bg-slate-200 text-slate-600"
-                      )}>
-                        {t.nombre?.[0] || "T"}
-                      </div>
-                      <div className="truncate">
-                        <div className="font-bold truncate">{t.nombre}</div>
-                        <div className="text-[10px] text-slate-400">{rolTexto}</div>
-                      </div>
-                    </div>
-                    {isSelected && <Check className="w-4 h-4 text-teal-600 shrink-0 ml-1" />}
-                  </button>
-                );
-              })}
+            {/* Terapeuta Responsable Combobox */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                  <Stethoscope className="w-3.5 h-3.5 text-teal-600" />
+                  <span>Terapeuta Responsable *</span>
+                </label>
+                <span className="text-[10px] text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full font-bold border border-teal-200">
+                  Profesional
+                </span>
+              </div>
+              <div className="relative">
+                <select
+                  value={terapeutaId}
+                  onChange={(e) => setTerapeutaId(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 focus:border-teal-500 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition cursor-pointer appearance-none pr-8"
+                >
+                  {effectiveTerapeutas.map((t) => {
+                    const rolTexto = t.rol === "ASISTENTE" ? "Asistente" : t.rol === "ADMIN" ? "Admin Clínico" : "Terapeuta";
+                    const espTexto = t.especialidad ? ` • ${t.especialidad}` : "";
+                    return (
+                      <option key={t.id} value={t.id}>
+                        {t.nombre} ({rolTexto}{espTexto})
+                      </option>
+                    );
+                  })}
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+              {/* Píldoras rápidas de terapeutas frecuentes */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 pt-0.5">
+                {effectiveTerapeutas.slice(0, 3).map((t) => {
+                  const shortName = t.nombre.replace(/^Lic\.\s+|^Tec\.\s+/i, "").split(" ")[0];
+                  return (
+                    <button
+                      type="button"
+                      key={t.id}
+                      onClick={() => setTerapeutaId(t.id)}
+                      className={cn(
+                        "px-2 py-0.5 text-[10px] rounded-lg font-semibold transition border shrink-0 cursor-pointer",
+                        terapeutaId === t.id
+                          ? "bg-teal-600 text-white border-teal-600 shadow-2xs font-bold"
+                          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
+                      )}
+                    >
+                      {shortName}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
