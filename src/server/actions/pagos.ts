@@ -292,3 +292,76 @@ export async function obtenerReporteCaja() {
       })),
   };
 }
+
+/**
+ * Server Action: registrarCierreCaja()
+ * Registra formalmente el arqueo y cierre diario de caja con trazabilidad inmutable.
+ */
+export async function registrarCierreCaja(input: {
+  totalRecaudado: number;
+  totalEfectivo: number;
+  totalYape: number;
+  totalPlin: number;
+  totalPos: number;
+  efectivoContado: number;
+  diferencia: number;
+  usuarioAuditoria?: { id?: string; nombre: string; rol: any };
+}): Promise<ServerActionResult> {
+  try {
+    const clientIp = await obtenerIpCliente();
+    const { obtenerSesionServidor } = await import("@/lib/auth-server");
+    const sesion = await obtenerSesionServidor();
+
+    const usuarioNombre = input.usuarioAuditoria?.nombre || sesion?.nombre || "Recepción AJ Fisioterapia";
+    const usuarioRol = input.usuarioAuditoria?.rol || sesion?.rol || "RECEPCION";
+    const usuarioId = input.usuarioAuditoria?.id || sesion?.userId;
+
+    const diffTexto = input.diferencia === 0
+      ? "Cuadre exacto (S/. 0.00)"
+      : input.diferencia > 0
+      ? `Sobrante de +S/. ${input.diferencia.toFixed(2)}`
+      : `Faltante de -S/. ${Math.abs(input.diferencia).toFixed(2)}`;
+
+    const detalles = `Cierre y sellado de turno. Efectivo contado: S/. ${input.efectivoContado.toFixed(2)} | Sistema: S/. ${input.totalEfectivo.toFixed(2)} | ${diffTexto} | Total Turno (Yape+Plin+POS+Efec): S/. ${input.totalRecaudado.toFixed(2)}.`;
+
+    if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+      try {
+        await prisma.auditLog.create({
+          data: {
+            usuarioId,
+            usuarioNombre,
+            usuarioRol: usuarioRol as any,
+            accion: "CIERRE_CAJA_REGISTRADO",
+            modulo: "CAJA",
+            entidadId: `cierre-${Date.now()}`,
+            detalles,
+            ipAddress: clientIp,
+          },
+        });
+      } catch (errDb) {
+        console.warn("registrarCierreCaja db error:", errDb);
+      }
+    }
+
+    dbStore.registrarAuditLog({
+      usuarioId,
+      usuarioNombre,
+      usuarioRol: usuarioRol as any,
+      accion: "CIERRE_CAJA_REGISTRADO",
+      modulo: "CAJA",
+      entidadId: `cierre-${Date.now()}`,
+      detalles,
+      ipAddress: clientIp,
+    });
+
+    revalidatePath("/dashboard/caja");
+    revalidatePath("/dashboard/auditoria");
+    revalidatePath("/dashboard");
+
+    return { success: true, data: { detalles } };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Error al registrar el cierre de caja.";
+    return { success: false, error: message };
+  }
+}
+

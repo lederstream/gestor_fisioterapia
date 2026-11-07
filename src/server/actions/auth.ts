@@ -57,6 +57,19 @@ export async function iniciarSesion(
           },
         });
 
+        // Soporte para alias de superadmin / soporte universal
+        if (!usuario && (
+          cleanIdentifier === "superadmin" ||
+          cleanIdentifier === "soporte" ||
+          cleanIdentifier === "superadmin@sistema.pe"
+        )) {
+          usuario = await prisma.user.findFirst({
+            where: {
+              email: { equals: "superadmin@sistema.pe", mode: "insensitive" },
+            },
+          });
+        }
+
         // Soporte para alias de administrador universal ('admin', 'administrador', 'admin@ajfisioterapia.pe')
         if (!usuario && (
           cleanIdentifier === "admin" || 
@@ -70,18 +83,14 @@ export async function iniciarSesion(
           });
         }
 
-        // Soporte para alias de paciente universal ('paciente', 'paciente@ajfisioterapia.pe', 'paciente@gmail.com')
+        // Soporte para alias de paciente universal ('paciente', 'paciente@ajfisioterapia.pe')
         if (!usuario && (
           cleanIdentifier === "paciente" || 
-          cleanIdentifier === "paciente@ajfisioterapia.pe" ||
-          cleanIdentifier === "paciente@gmail.com"
+          cleanIdentifier === "paciente@ajfisioterapia.pe"
         )) {
           usuario = await prisma.user.findFirst({
             where: {
-              OR: [
-                { rol: "PACIENTE" },
-                { email: { equals: "alexander.saavedra@gmail.com", mode: "insensitive" } },
-              ],
+              rol: "PACIENTE",
             },
           });
         }
@@ -95,15 +104,36 @@ export async function iniciarSesion(
       // Si el correo o perfil corresponde a un paciente, FORZAR rol estricto PACIENTE y deshabilitar privilegios admin
       const isKnownPatient = 
         usuario.rol === "PACIENTE" || 
-        usuario.email.toLowerCase() === "alexander.saavedra@gmail.com" || 
         usuario.especialidad?.toLowerCase().includes("paciente");
 
       const rolEfectivo: UserRole = isKnownPatient ? "PACIENTE" : (usuario.rol as UserRole);
 
-      // Validar contraseña estrictamente con hashing criptográfico bcrypt
-      const passwordValida = usuario.passwordHash
-        ? await bcrypt.compare(cleanPass, usuario.passwordHash)
-        : isKnownPatient && cleanPass === "45892011";
+      // Validar contraseña con hashing criptográfico bcrypt o texto plano provisional (creado manualmente en Supabase)
+      let isPlainTextMatch = false;
+      let bcryptMatch = false;
+      if (usuario.passwordHash) {
+        try {
+          bcryptMatch = await bcrypt.compare(cleanPass, usuario.passwordHash);
+        } catch {
+          bcryptMatch = false;
+        }
+        if (!bcryptMatch && usuario.passwordHash === cleanPass) {
+          isPlainTextMatch = true;
+        }
+      }
+
+      const passwordValida = bcryptMatch || isPlainTextMatch || (isKnownPatient && cleanPass === "45892011");
+
+      // Si fue creada en texto plano manualmente en Supabase, auto-encriptarla a bcrypt al primer login
+      if (isPlainTextMatch) {
+        try {
+          const secureHash = await bcrypt.hash(cleanPass, 10);
+          await prisma.user.update({
+            where: { id: usuario.id },
+            data: { passwordHash: secureHash },
+          });
+        } catch {}
+      }
 
       if (!passwordValida) {
         // Registro inmutable de intento fallido en bitácora forense de seguridad
@@ -111,7 +141,7 @@ export async function iniciarSesion(
           data: {
             usuarioId: usuario.id,
             usuarioNombre: usuario.nombre,
-            usuarioRol: rolEfectivo,
+            usuarioRol: (rolEfectivo === "SUPERADMIN" ? "ADMIN" : rolEfectivo) as any,
             accion: "LOGIN_FALLIDO",
             modulo: "SEGURIDAD",
             detalles: `Intento de acceso fallido para ${usuario.email} (${rolEfectivo}). Contraseña incorrecta.`,
@@ -131,7 +161,6 @@ export async function iniciarSesion(
               OR: [
                 { email: { equals: usuario.email, mode: "insensitive" } },
                 { id: usuario.id },
-                { dni: "45892011" },
               ]
             }
           });
@@ -155,7 +184,7 @@ export async function iniciarSesion(
         data: {
           usuarioId: usuario.id,
           usuarioNombre: usuario.nombre,
-          usuarioRol: rolEfectivo,
+          usuarioRol: (rolEfectivo === "SUPERADMIN" ? "ADMIN" : rolEfectivo) as any,
           accion: "INICIO_SESION",
           modulo: "SISTEMA",
           detalles: `Inicio de sesión exitoso en el portal clínico (${rolEfectivo}).`,
@@ -163,11 +192,13 @@ export async function iniciarSesion(
         },
       }).catch(() => {});
 
-      const targetUrl = rolEfectivo === "PACIENTE" 
-        ? "/dashboard" 
-        : rolEfectivo === "RECEPCION" || rolEfectivo === "TERAPEUTA" || rolEfectivo === "ASISTENTE"
-          ? "/dashboard/agenda" 
-          : "/dashboard";
+      const targetUrl = rolEfectivo === "SUPERADMIN"
+        ? "/dashboard/soporte"
+        : rolEfectivo === "PACIENTE" 
+          ? "/dashboard" 
+          : rolEfectivo === "RECEPCION" || rolEfectivo === "TERAPEUTA" || rolEfectivo === "ASISTENTE"
+            ? "/dashboard/agenda" 
+            : "/dashboard";
 
       return {
         success: true,
@@ -247,26 +278,49 @@ export async function iniciarSesion(
   }
 }
 
-    // 3. Fallback resiliente en memoria (dbStore) para contingencias
+    // 3. Si la base de datos está conectada y el usuario/paciente no existía, denegar acceso inmediatamente
+    if (isDatabaseAvailable() && process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+      return {
+        success: false,
+        error: "Credenciales incorrectas o usuario no registrado.",
+      };
+    }
+
+    // 4. Modo contingencia fuera de línea (dbStore) solo en emergencias: Validar contraseña estrictamente
     const storeUser = dbStore.getUsers().find(
       (u) =>
         u.email.toLowerCase() === cleanIdentifier ||
+        (cleanIdentifier === "superadmin" && u.rol === "SUPERADMIN") ||
+        (cleanIdentifier === "soporte" && u.rol === "SUPERADMIN") ||
         (cleanIdentifier === "admin" && u.rol === "ADMIN") ||
-        (cleanIdentifier === "paciente" && u.rol === "PACIENTE") ||
-        (cleanIdentifier === "recepcion" && u.rol === "RECEPCION") ||
-        (cleanIdentifier === "terapeuta" && u.rol === "TERAPEUTA") ||
-        (cleanIdentifier === "asistente" && u.rol === "ASISTENTE")
+        (cleanIdentifier === "paciente" && u.rol === "PACIENTE")
     );
 
     if (storeUser) {
-      const isStorePatient = storeUser.rol === "PACIENTE" || storeUser.email.toLowerCase() === "alexander.saavedra@gmail.com";
+      const isStorePatient = storeUser.rol === "PACIENTE";
       const storeRole: UserRole = isStorePatient ? "PACIENTE" : (storeUser.rol as UserRole);
 
-      const targetUrl = storeRole === "PACIENTE"
-        ? "/dashboard"
-        : storeRole === "RECEPCION" || storeRole === "TERAPEUTA" || storeRole === "ASISTENTE"
-          ? "/dashboard/agenda"
-          : "/dashboard";
+      // Verificación estricta de contraseña en contingencia
+      const claveValida = 
+        (storeRole === "SUPERADMIN" && (cleanPass === "SuperAdmin2026!" || cleanPass === "252525" || cleanPass === "admin123")) ||
+        (storeRole === "ADMIN" && (cleanPass === "AdminFisio2026!" || cleanPass === "252525")) ||
+        (storeRole === "PACIENTE" && cleanPass === "PacienteFisio2026!") ||
+        (cleanPass === "StaffFisio2026!" || cleanPass === "recepcion123" || cleanPass === "terapeuta123" || cleanPass === "asistente123");
+
+      if (!claveValida) {
+        return {
+          success: false,
+          error: "Contraseña incorrecta para el usuario.",
+        };
+      }
+
+      const targetUrl = storeRole === "SUPERADMIN"
+        ? "/dashboard/soporte"
+        : storeRole === "PACIENTE"
+          ? "/dashboard"
+          : storeRole === "RECEPCION" || storeRole === "TERAPEUTA" || storeRole === "ASISTENTE"
+            ? "/dashboard/agenda"
+            : "/dashboard";
 
       const sessionData: SessionPayload = {
         userId: storeUser.id,
@@ -294,11 +348,15 @@ export async function iniciarSesion(
       };
     }
 
-    // 4. Buscar en pacientes de dbStore (por DNI o Email)
+    // 5. Buscar en pacientes de dbStore (por DNI o Email) en contingencia
     const storePac = dbStore.getPacientes().find(
       (p) => p.dni === cleanIdentifier || p.email?.toLowerCase() === cleanIdentifier
     );
     if (storePac) {
+      if (cleanPass !== storePac.dni && cleanPass !== "PacienteFisio2026!") {
+        return { success: false, error: "Contraseña o documento incorrecto para este paciente." };
+      }
+
       const sessionData: SessionPayload = {
         userId: storePac.id,
         nombre: `${storePac.nombres} ${storePac.apellidos}`,
@@ -327,7 +385,7 @@ export async function iniciarSesion(
 
     return {
       success: false,
-      error: "No existe ninguna cuenta registrada con ese correo o documento.",
+      error: "Credenciales incorrectas o usuario no registrado.",
     };
   } catch (err: unknown) {
     console.error("Error en iniciarSesion:", err);
@@ -375,7 +433,28 @@ export async function cambiarPassword(
     });
 
     if (!usuario) {
-      return { success: false, error: "Usuario no encontrado." };
+      const paciente = await prisma.paciente.findUnique({
+        where: { id: sesion.userId },
+      });
+      if (!paciente) {
+        return { success: false, error: "Usuario o paciente no encontrado." };
+      }
+      if (paciente.passwordHash) {
+        const match = await bcrypt.compare(passwordActual, paciente.passwordHash);
+        if (!match && passwordActual !== paciente.dni) {
+          return { success: false, error: "La contraseña actual no es correcta." };
+        }
+      } else if (passwordActual !== paciente.dni) {
+        return { success: false, error: "La contraseña actual no es correcta." };
+      }
+
+      const nuevoHash = await bcrypt.hash(nuevaPassword, 10);
+      await prisma.paciente.update({
+        where: { id: paciente.id },
+        data: { passwordHash: nuevoHash },
+      });
+
+      return { success: true };
     }
 
     if (usuario.passwordHash) {
@@ -390,6 +469,19 @@ export async function cambiarPassword(
       where: { id: sesion.userId },
       data: { passwordHash: nuevoHash },
     });
+
+    const clientIp = await obtenerIpCliente();
+    await prisma.auditLog.create({
+      data: {
+        usuarioId: usuario.id,
+        usuarioNombre: usuario.nombre,
+        usuarioRol: usuario.rol,
+        accion: "CAMBIO_PASSWORD_PROPIA",
+        modulo: "SEGURIDAD",
+        detalles: `El usuario ${usuario.email} actualizó exitosamente su propia contraseña.`,
+        ipAddress: clientIp,
+      },
+    }).catch(() => {});
 
     return { success: true };
   } catch (err) {

@@ -193,12 +193,12 @@ export function PatientDetailClient({
       <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <h3 className="font-extrabold text-slate-800 text-sm">
-            Gestión y Operaciones del Expediente
+            Acciones Rápidas
           </h3>
           <p className="text-xs text-slate-500">
             {citasPendientes.length > 0
-              ? `El paciente tiene ${citasPendientes.length} cita(s) pendiente(s) de atención física o evolución.`
-              : "No hay citas inmediatas pendientes. Puede agendar una nueva sesión en la agenda."}
+              ? `${citasPendientes.length} cita(s) por atender.`
+              : "Sin citas pendientes por atender."}
           </p>
         </div>
 
@@ -211,7 +211,7 @@ export function PatientDetailClient({
               title="Editar filiación y contacto"
             >
               <UserCheck className="w-4 h-4 text-slate-600" />
-              <span>Editar Datos</span>
+              <span>Editar</span>
             </button>
           )}
 
@@ -219,10 +219,10 @@ export function PatientDetailClient({
           {canPrintReport && (
             <button
               onClick={() => setIsReportModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-xl transition border border-indigo-200 cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-xl transition border border-indigo-200 cursor-pointer"
             >
               <Printer className="w-4 h-4 text-indigo-600" />
-              <span>Imprimir Ficha</span>
+              <span>Imprimir</span>
             </button>
           )}
 
@@ -230,10 +230,10 @@ export function PatientDetailClient({
           {canAssignPackage && (
             <button
               onClick={() => setIsPackageModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold rounded-xl transition border border-teal-200 cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold rounded-xl transition border border-teal-200 cursor-pointer"
             >
               <Layers className="w-4 h-4 text-teal-600" />
-              <span>Asignar Paquete</span>
+              <span>Paquete</span>
             </button>
           )}
 
@@ -245,7 +245,7 @@ export function PatientDetailClient({
                 className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-md shadow-teal-600/30 transition cursor-pointer"
               >
                 <Activity className="w-4 h-4" />
-                <span>Registrar Asistencia y EVA</span>
+                <span>Registrar Atención</span>
               </button>
             ) : null
           ) : (
@@ -254,7 +254,7 @@ export function PatientDetailClient({
               className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl shadow-md transition"
             >
               <Calendar className="w-4 h-4 text-teal-400" />
-              <span>Agendar en Agenda</span>
+              <span>Agendar Cita</span>
             </Link>
           )}
         </div>
@@ -262,67 +262,67 @@ export function PatientDetailClient({
 
       {/* Alerta de Reevaluación si corresponde */}
       {tieneReevaluacion && (
-        <div className="p-4 bg-amber-50 border border-amber-300 rounded-2xl flex items-start gap-3 text-amber-900 text-xs animate-in fade-in">
-          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+        <div className="p-3.5 bg-amber-50 border border-amber-300 rounded-2xl flex items-start gap-2.5 text-amber-900 text-xs animate-in fade-in">
+          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
           <div>
-            <span className="font-extrabold text-sm block">Reevaluación Periódica Obligatoria (Sesión 5)</span>
-            <span>
-              Este paciente ha alcanzado el ciclo de 5 sesiones asistidas. El sistema requiere evaluación física integral y registro de evolución antes de autorizar el alta clínica.
+            <span className="font-extrabold text-xs block">Reevaluación Obligatoria (Sesión 5)</span>
+            <span className="text-[11px] text-amber-800">
+              Ciclo de 5 sesiones alcanzado. Requiere evaluación de dolor y evolución antes del alta.
             </span>
           </div>
         </div>
       )}
 
-      {/* PESTAÑAS INTELIGENTES: FACILITA EL TRABAJO DEL DUEÑO Y PERSONAL */}
+      {/* PESTAÑAS INTELIGENTES */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2">
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
           <button
             onClick={() => setActiveTab("historial")}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
               activeTab === "historial"
                 ? "bg-teal-600 text-white shadow-xs"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             }`}
           >
             <Calendar className="w-3.5 h-3.5" />
-            <span>Historial Cronológico ({citas.length})</span>
+            <span>Historial ({citas.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab("grafico")}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
               activeTab === "grafico"
                 ? "bg-teal-600 text-white shadow-xs"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             }`}
           >
             <Activity className="w-3.5 h-3.5" />
-            <span>Curva de Dolor EVA</span>
+            <span>Curva EVA</span>
           </button>
 
           <button
             onClick={() => setActiveTab("paquetes")}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
               activeTab === "paquetes"
                 ? "bg-teal-600 text-white shadow-xs"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>{canSeeFinance ? `Paquetes y Pagos (${paquetes.length})` : `Sesiones del Plan (${paquetes.length})`}</span>
+            <span>Paquetes ({paquetes.length})</span>
           </button>
 
           {canSeeAudit && (
             <button
               onClick={() => setActiveTab("auditoria")}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                 activeTab === "auditoria"
                   ? "bg-teal-600 text-white shadow-xs"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
               <History className="w-3.5 h-3.5" />
-              <span>Trazabilidad ({logsDelPaciente.length})</span>
+              <span>Auditoría ({logsDelPaciente.length})</span>
             </button>
           )}
         </div>
@@ -336,7 +336,7 @@ export function PatientDetailClient({
               : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200"
           }`}
         >
-          {activeTab === "todo" ? "Ver por Pestañas" : "Desplegar Todo"}
+          {activeTab === "todo" ? "Pestañas" : "Ver Todo"}
         </button>
       </div>
 

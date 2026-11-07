@@ -91,17 +91,17 @@ export function AttendanceEvolutionModal({
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-hidden">
       <div className="bg-white rounded-2xl sm:rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header fijo */}
-        <div className="p-4 sm:p-6 pb-3 border-b border-slate-100 flex items-center justify-between shrink-0">
+        <div className="p-4 sm:p-5 pb-3 border-b border-slate-100 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 sm:p-2.5 bg-teal-50 text-teal-600 rounded-xl shrink-0">
+            <div className="p-2 bg-teal-50 text-teal-600 rounded-xl shrink-0">
               <Activity className="w-5 h-5" />
             </div>
             <div>
               <h3 className="font-bold text-slate-800 text-xs sm:text-sm">
-                Registro de Asistencia y Evolución Clínica
+                Registrar Atención
               </h3>
               <p className="text-[10px] sm:text-[11px] text-slate-500">
-                {paciente.nombres} {paciente.apellidos} (DNI: {paciente.dni})
+                {paciente.nombres} {paciente.apellidos} • {paciente.dni}
               </p>
             </div>
           </div>
@@ -125,7 +125,7 @@ export function AttendanceEvolutionModal({
           {/* Cita a confirmar */}
           <div>
             <label className="block font-semibold text-slate-700 mb-1">
-              Cita Programada a Atender
+              Cita a Atender
             </label>
             <select
               value={citaId}
@@ -139,7 +139,7 @@ export function AttendanceEvolutionModal({
             >
               {citasProgramadas.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {new Date(c.fechaHoraInicio).toLocaleDateString("es-PE")} • {new Date(c.fechaHoraInicio).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} — {c.sala?.nombre || "Sala"} {c.esReevaluacion ? "⚠️ [REEVALUACIÓN OBLIGATORIA]" : ""}
+                  {new Date(c.fechaHoraInicio).toLocaleDateString("es-PE")} • {new Date(c.fechaHoraInicio).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} — {c.sala?.nombre || "Sala"} {c.esReevaluacion ? "⚠️ [REEVALUACIÓN]" : ""}
                 </option>
               ))}
             </select>
@@ -148,7 +148,7 @@ export function AttendanceEvolutionModal({
           {/* Terapeuta Responsable */}
           <div>
             <label className="block font-semibold text-slate-700 mb-1">
-              Terapeuta Responsable de la Atención
+              Terapeuta Responsable
             </label>
             <select
               value={terapeutaId}
@@ -166,13 +166,13 @@ export function AttendanceEvolutionModal({
 
           {/* Banner de Reevaluación */}
           {esReevaluacion && (
-            <div className="p-4 bg-amber-50/80 border border-amber-300 rounded-2xl text-amber-900 text-xs space-y-2">
-              <div className="flex items-center gap-2 font-bold text-sm">
+            <div className="p-3.5 bg-amber-50/80 border border-amber-300 rounded-2xl text-amber-900 text-xs space-y-1">
+              <div className="flex items-center gap-2 font-bold text-xs">
                 <ShieldAlert className="w-4 h-4 text-amber-600" />
-                Hito Clínico: Examen de Reevaluación Periódica (Sesión 5)
+                Hito de Reevaluación (Sesión 5)
               </div>
               <p className="text-[11px] text-amber-800 leading-relaxed">
-                Esta sesión coincide con el hito obligatorio de 5 sesiones asistidas. Complete el protocolo biomecánico para acreditar el progreso y habilitar el alta médica.
+                Complete el protocolo biomecánico para acreditar la evolución del paciente.
               </p>
             </div>
           )}
@@ -318,7 +318,7 @@ export function AttendanceEvolutionModal({
                     className="w-4 h-4 accent-teal-600 rounded cursor-pointer"
                   />
                   <span className="font-bold text-teal-800 text-[11px]">
-                    Acreditar cumplimiento formal de Reevaluación (Desbloquear Alta Médica)
+                    Acreditar Reevaluación (Habilitar Alta)
                   </span>
                 </label>
               )}
@@ -329,16 +329,16 @@ export function AttendanceEvolutionModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition"
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-md shadow-teal-600/30 transition disabled:opacity-50"
+              className="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-md shadow-teal-600/30 transition disabled:opacity-50 cursor-pointer"
             >
-              {loading ? "Guardando Registro..." : "Registrar Atención"}
+              {loading ? "Guardando..." : "Registrar Atención"}
             </button>
           </div>
         </form>

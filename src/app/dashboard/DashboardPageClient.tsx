@@ -86,40 +86,40 @@ export function DashboardPageClient({
   return (
     <div className="space-y-6">
       {/* Bienvenida y Estado Operativo */}
-      <div className="bg-gradient-to-r from-teal-700 via-teal-800 to-emerald-700 p-6 md:p-8 rounded-3xl text-white shadow-lg shadow-teal-900/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-teal-600/50">
+      <div className="bg-gradient-to-r from-teal-700 via-teal-800 to-emerald-700 p-5 md:p-6 rounded-3xl text-white shadow-lg shadow-teal-900/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-teal-600/50">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-teal-100 text-xs font-semibold mb-2 border border-white/20 backdrop-blur-xs">
-            <Building2 className="w-3.5 h-3.5" /> AJ Fisioterapia • San Borja
+          <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-white/15 text-teal-100 text-xs font-semibold mb-1.5 border border-white/20 backdrop-blur-xs">
+            <Building2 className="w-3.5 h-3.5" /> San Borja
           </div>
-          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-            Panel Principal de la Clínica
+          <h1 className="text-xl md:text-2xl font-extrabold tracking-tight">
+            Panel de Control
           </h1>
-          <p className="text-teal-100 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
-            Bienvenido al sistema de AJ Fisioterapia en San Borja. Consulta la agenda del día, el flujo de pacientes y el estado de atención.
+          <p className="text-teal-100 text-xs mt-0.5 max-w-xl">
+            Gestión clínica y operativa de citas, salas y pacientes.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
           <Link
             href="/dashboard/agenda"
-            className="px-4 py-2.5 bg-white hover:bg-teal-50 text-teal-900 text-xs font-bold rounded-xl shadow-md flex items-center gap-2 transition"
+            className="px-3.5 py-2 bg-white hover:bg-teal-50 text-teal-900 text-xs font-bold rounded-xl shadow-md flex items-center gap-1.5 transition"
           >
             <Calendar className="w-4 h-4 text-teal-700" />
-            <span>Ir a Citas</span>
+            <span>Citas</span>
           </Link>
           <button
             type="button"
             onClick={() => setIsAusentismoOpen(true)}
-            className="px-3.5 py-2.5 bg-rose-500/25 hover:bg-rose-500/40 text-white text-xs font-bold rounded-xl border border-rose-300/40 flex items-center gap-1.5 transition backdrop-blur-xs cursor-pointer"
-            title="Ver reporte tabular de ausentismo semanal (no-show)"
+            className="px-3 py-2 bg-rose-500/25 hover:bg-rose-500/40 text-white text-xs font-bold rounded-xl border border-rose-300/40 flex items-center gap-1.5 transition backdrop-blur-xs cursor-pointer"
+            title="Reporte tabular de ausentismo semanal (no-show)"
           >
             <TrendingDown className="w-4 h-4 text-rose-200" />
-            <span>Reporte Ausentismo</span>
+            <span>Ausentismo</span>
           </button>
           {canManageUsers && (
             <Link
               href="/dashboard/usuarios"
-              className="px-4 py-2.5 bg-white/15 hover:bg-white/25 text-white text-xs font-bold rounded-xl border border-white/20 flex items-center gap-2 transition backdrop-blur-xs"
+              className="px-3 py-2 bg-white/15 hover:bg-white/25 text-white text-xs font-bold rounded-xl border border-white/20 flex items-center gap-1.5 transition backdrop-blur-xs"
             >
               <KeyRound className="w-4 h-4 text-teal-200" />
               <span>Equipo</span>
@@ -128,16 +128,16 @@ export function DashboardPageClient({
           {canSeeAudit && (
             <Link
               href="/dashboard/auditoria"
-              className="px-4 py-2.5 bg-white/15 hover:bg-white/25 text-white text-xs font-bold rounded-xl border border-white/20 flex items-center gap-2 transition backdrop-blur-xs"
+              className="px-3 py-2 bg-white/15 hover:bg-white/25 text-white text-xs font-bold rounded-xl border border-white/20 flex items-center gap-1.5 transition backdrop-blur-xs"
             >
               <History className="w-4 h-4 text-teal-200" />
-              <span>Historial</span>
+              <span>Auditoría</span>
             </Link>
           )}
           {canSeeConfig && (
             <Link
               href="/dashboard/configuracion"
-              className="px-4 py-2.5 bg-white/15 hover:bg-white/25 text-white text-xs font-bold rounded-xl border border-white/20 flex items-center gap-2 transition backdrop-blur-xs"
+              className="px-3 py-2 bg-white/15 hover:bg-white/25 text-white text-xs font-bold rounded-xl border border-white/20 flex items-center gap-1.5 transition backdrop-blur-xs"
             >
               <Settings className="w-4 h-4 text-teal-200" />
               <span>Ajustes</span>
@@ -236,8 +236,8 @@ export function DashboardPageClient({
         <div className="lg:col-span-1 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div>
-              <h2 className="font-bold text-slate-900 text-sm">Disponibilidad de Salas Físicas</h2>
-              <p className="text-[11px] text-slate-500">AJ Fisioterapia (San Borja)</p>
+              <h2 className="font-bold text-slate-900 text-sm">Disponibilidad de Salas</h2>
+              <p className="text-[11px] text-slate-500">Sede San Borja</p>
             </div>
             <Link
               href="/dashboard/agenda"
@@ -263,7 +263,7 @@ export function DashboardPageClient({
                     <span className={`w-2 h-2 rounded-full ${sala.estado === "DISPONIBLE" ? "bg-emerald-500" : "bg-amber-500"}`} />
                   </div>
                   <span className="text-[10px] text-slate-500 truncate">
-                    {sala.estado === "MANTENIMIENTO" ? "⚠️ Mantenimiento" : citaEnCurso ? "Ocupada / Reservada" : "Libre"}
+                    {sala.estado === "MANTENIMIENTO" ? "Mantenimiento" : citaEnCurso ? "Ocupada" : "Libre"}
                   </span>
                 </div>
               );
@@ -271,7 +271,7 @@ export function DashboardPageClient({
           </div>
 
           <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-            <span className="text-slate-500">Control Concurrencia Activo</span>
+            <span className="text-slate-500">Concurrencia</span>
             <span className="text-teal-700 font-bold">Sin solapamiento</span>
           </div>
         </div>
@@ -280,14 +280,14 @@ export function DashboardPageClient({
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div>
-              <h2 className="font-bold text-slate-900 text-sm">Próximas Sesiones del Turno</h2>
-              <p className="text-[11px] text-slate-500">Atención personalizada por sala</p>
+              <h2 className="font-bold text-slate-900 text-sm">Sesiones del Turno</h2>
+              <p className="text-[11px] text-slate-500">Atención por sala</p>
             </div>
             <Link
               href="/dashboard/agenda"
               className="text-xs font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1"
             >
-              Ver citas completas <ArrowUpRight className="w-3.5 h-3.5" />
+              Ver todas <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 

@@ -6,9 +6,10 @@ import { Search, CheckCircle2, Clock, Smartphone, CreditCard, DollarSign, FileSp
 
 interface TransactionTableProps {
   transacciones: any[];
+  onVerVoucher?: (pago: any) => void;
 }
 
-export function TransactionTable({ transacciones }: TransactionTableProps) {
+export function TransactionTable({ transacciones, onVerVoucher }: TransactionTableProps) {
   const [filterMethod, setFilterMethod] = useState<string>("TODOS");
   const [search, setSearch] = useState("");
 
@@ -130,12 +131,13 @@ export function TransactionTable({ transacciones }: TransactionTableProps) {
               <th className="py-2.5 px-3 font-semibold">N° Operación</th>
               <th className="py-2.5 px-3 font-semibold">Monto</th>
               <th className="py-2.5 px-3 font-semibold">Estado</th>
+              {onVerVoucher && <th className="py-2.5 px-3 font-semibold text-right">Comprobante</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-6 text-center text-slate-400">
+                <td colSpan={onVerVoucher ? 8 : 7} className="py-6 text-center text-slate-400">
                   No se encontraron pagos con los filtros aplicados.
                 </td>
               </tr>
@@ -171,6 +173,19 @@ export function TransactionTable({ transacciones }: TransactionTableProps) {
                       Verificado
                     </span>
                   </td>
+                  {onVerVoucher && (
+                    <td className="py-3 px-3 text-right">
+                      <button
+                        type="button"
+                        onClick={() => onVerVoucher(item)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-lg transition cursor-pointer"
+                        title="Ver / Imprimir ticket de cobranza"
+                      >
+                        <Printer className="w-3 h-3 text-teal-600" />
+                        <span>Ticket</span>
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))
             )}

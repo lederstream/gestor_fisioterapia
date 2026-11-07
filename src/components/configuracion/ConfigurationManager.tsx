@@ -507,12 +507,12 @@ export function ConfigurationManager({
 
   // Definición de Pestañas
   const TABS: { id: TabType; label: string; icon: any; badge?: string }[] = [
-    { id: "identidad", label: "Marca e Identidad", icon: Building2 },
-    { id: "horarios", label: "Horarios y Agenda", icon: Clock },
-    { id: "salas", label: "Salas y Boxes", icon: Layers, badge: `${salas.length}` },
-    { id: "servicios", label: "Servicios y Precios", icon: DollarSign, badge: `${servicios.length}` },
-    { id: "marketing", label: "Página Web & Reseñas", icon: Globe, badge: `${testimonios.length}` },
-    { id: "politicas", label: "Políticas Clínicas", icon: ShieldCheck },
+    { id: "identidad", label: "Identidad", icon: Building2 },
+    { id: "horarios", label: "Horarios", icon: Clock },
+    { id: "salas", label: "Salas", icon: Layers, badge: `${salas.length}` },
+    { id: "servicios", label: "Servicios", icon: DollarSign, badge: `${servicios.length}` },
+    { id: "marketing", label: "Web", icon: Globe, badge: `${testimonios.length}` },
+    { id: "politicas", label: "Políticas", icon: ShieldCheck },
   ];
 
   return (
@@ -617,7 +617,7 @@ export function ConfigurationManager({
                   className="flex-1 sm:flex-initial px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-xl border border-slate-200 shadow-2xs flex items-center justify-center gap-2 cursor-pointer transition text-xs"
                 >
                   <Upload className="w-3.5 h-3.5 text-teal-600" />
-                  <span>Seleccionar Archivo</span>
+                  <span>Subir Logo</span>
                 </label>
                 <input
                   id="clinic-logo-input"
@@ -632,10 +632,10 @@ export function ConfigurationManager({
                   onClick={handleSaveLogoOnly}
                   disabled={savingLogo || !hasPendingLogo}
                   className="px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold rounded-xl shadow-xs flex items-center gap-1.5 transition cursor-pointer text-xs"
-                  title="Guardar el nuevo logotipo en la base de datos"
+                  title="Guardar el nuevo logotipo"
                 >
                   <Save className="w-3.5 h-3.5" />
-                  <span>{savingLogo ? "Guardando..." : "Guardar Logotipo"}</span>
+                  <span>{savingLogo ? "Guardando..." : "Guardar"}</span>
                 </button>
 
                 <button
@@ -777,7 +777,7 @@ export function ConfigurationManager({
                 className="px-5 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold rounded-xl shadow-xs flex items-center gap-1.5 transition cursor-pointer text-xs"
               >
                 <Save className="w-3.5 h-3.5" />
-                <span>{savingDatos ? "Guardando..." : "Guardar Datos Institucionales"}</span>
+                <span>{savingDatos ? "Guardando..." : "Guardar"}</span>
               </button>
             </div>
 
@@ -1415,9 +1415,9 @@ export function ConfigurationManager({
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-1.5 bg-teal-600 text-white rounded-xl text-xs font-bold shadow-xs hover:bg-teal-700"
+                    className="px-4 py-1.5 bg-teal-600 text-white rounded-xl text-xs font-bold shadow-xs hover:bg-teal-700 cursor-pointer"
                   >
-                    Guardar Testimonio
+                    Guardar
                   </button>
                 </div>
               </form>
@@ -1483,7 +1483,7 @@ export function ConfigurationManager({
               className="px-5 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold rounded-xl shadow-xs text-xs flex items-center gap-1.5 transition cursor-pointer"
             >
               <Save className="w-3.5 h-3.5" />
-              <span>{savingPoliticas ? "Guardando..." : "Guardar Políticas"}</span>
+              <span>{savingPoliticas ? "Guardando..." : "Guardar"}</span>
             </button>
           </div>
 

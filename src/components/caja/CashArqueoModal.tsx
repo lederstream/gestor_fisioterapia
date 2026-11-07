@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { formatCurrency } from "@/lib/utils";
-import { DollarSign, Smartphone, CreditCard, ShieldCheck, CheckCircle2, Lock } from "lucide-react";
+import { DollarSign, Smartphone, CreditCard, ShieldCheck, CheckCircle2, Lock, AlertCircle } from "lucide-react";
+import { registrarCierreCaja } from "@/server/actions/pagos";
+import { useAuth } from "@/lib/auth-context";
 
 interface CashArqueoModalProps {
   isOpen: boolean;
@@ -19,20 +21,42 @@ interface CashArqueoModalProps {
 }
 
 export function CashArqueoModal({ isOpen, onClose, reporte }: CashArqueoModalProps) {
+  const { currentUser } = useAuth();
   const [efectivoContado, setEfectivoContado] = useState<string>(reporte.totalEfectivo.toString());
   const [cerrando, setCerrando] = useState(false);
   const [turnoSellado, setTurnoSellado] = useState(false);
+  const [errorCierre, setErrorCierre] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const diferencia = (parseFloat(efectivoContado) || 0) - reporte.totalEfectivo;
+  const contadoNum = parseFloat(efectivoContado) || 0;
+  const diferencia = contadoNum - reporte.totalEfectivo;
 
-  const handleCerrarTurno = () => {
+  const handleCerrarTurno = async () => {
     setCerrando(true);
-    setTimeout(() => {
-      setCerrando(false);
+    setErrorCierre(null);
+
+    const res = await registrarCierreCaja({
+      totalRecaudado: reporte.totalRecaudado,
+      totalEfectivo: reporte.totalEfectivo,
+      totalYape: reporte.totalYape,
+      totalPlin: reporte.totalPlin,
+      totalPos: reporte.totalPos,
+      efectivoContado: contadoNum,
+      diferencia,
+      usuarioAuditoria: currentUser ? {
+        id: currentUser.id,
+        nombre: currentUser.nombre,
+        rol: currentUser.rol,
+      } : undefined,
+    });
+
+    setCerrando(false);
+    if (res.success) {
       setTurnoSellado(true);
-    }, 700);
+    } else {
+      setErrorCierre(res.error || "No se pudo sellar el turno de caja.");
+    }
   };
 
   return (
@@ -80,6 +104,13 @@ export function CashArqueoModal({ isOpen, onClose, reporte }: CashArqueoModalPro
           </div>
         ) : (
           <div className="space-y-4 text-xs">
+            {errorCierre && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{errorCierre}</span>
+              </div>
+            )}
+
             {/* Resumen por Método */}
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
               <span className="font-bold text-slate-700 block text-xs">

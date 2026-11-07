@@ -47,18 +47,18 @@ export function PatientBookingModal({
     if (paciente) {
       return {
         ...paciente,
-        id: paciente.id || "usr-pac-1",
-        nombres: paciente.nombres || paciente.nombre?.split(" ")[0] || "Alexander",
-        apellidos: paciente.apellidos || paciente.nombre?.split(" ").slice(1).join(" ") || "Saavedra",
+        id: paciente.id || "pac-preview",
+        nombres: paciente.nombres || paciente.nombre?.split(" ")[0] || "Paciente",
+        apellidos: paciente.apellidos || paciente.nombre?.split(" ").slice(1).join(" ") || "Titular",
       };
     }
     return {
-      id: "usr-pac-1",
-      nombres: "Alexander",
-      apellidos: "Saavedra",
-      dni: "45892011",
-      telefono: "987123456",
-      email: "alexander.saavedra@gmail.com",
+      id: "pac-preview",
+      nombres: "Paciente",
+      apellidos: "Titular",
+      dni: "00000000",
+      telefono: "999999999",
+      email: "paciente@clinica.pe",
     };
   }, [paciente]);
 

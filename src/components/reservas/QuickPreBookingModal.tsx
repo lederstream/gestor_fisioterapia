@@ -337,7 +337,7 @@ export function QuickPreBookingModal({
                   <input
                     type="text"
                     required
-                    placeholder="Ej. Alexander Saavedra"
+                    placeholder="Ej. Juan Pérez"
                     value={nombres}
                     onChange={(e) => setNombres(e.target.value)}
                     className="w-full pl-9 pr-3 py-2.5 text-xs sm:text-sm rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-[#0C3E37]/20 focus:border-[#0C3E37] transition"

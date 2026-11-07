@@ -119,9 +119,15 @@ export function CajaClient({ reporte }: CajaClientProps) {
         <div className="lg:col-span-1">
           <PaymentForm
             paquetesConSaldo={reporte.paquetesConSaldo}
-            onPagoRegistrado={() => {
-              // Si hay última transacción, abrir modal de comprobante
-              if (reporte.transacciones.length > 0) {
+            onPagoRegistrado={(nuevoPagoInfo) => {
+              if (nuevoPagoInfo?.pago) {
+                setSelectedVoucherPago({
+                  ...nuevoPagoInfo.pago,
+                  paciente: nuevoPagoInfo.paciente,
+                  paquete: nuevoPagoInfo.paquete,
+                  servicio: nuevoPagoInfo.servicio,
+                });
+              } else if (reporte.transacciones.length > 0) {
                 setSelectedVoucherPago(reporte.transacciones[0]);
               }
             }}
@@ -129,7 +135,10 @@ export function CajaClient({ reporte }: CajaClientProps) {
         </div>
 
         <div className="lg:col-span-2">
-          <TransactionTable transacciones={reporte.transacciones} />
+          <TransactionTable 
+            transacciones={reporte.transacciones} 
+            onVerVoucher={(item) => setSelectedVoucherPago(item)}
+          />
         </div>
       </div>
 

@@ -21,7 +21,8 @@ import {
   LogOut,
   AlertTriangle,
   MessageCircle,
-  Phone
+  Phone,
+  Wrench
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
@@ -50,6 +51,7 @@ const staffNavigation: NavItem[] = [
   { name: "Equipo", href: "/dashboard/usuarios", icon: KeyRound, permission: "usuarios:gestionar" },
   { name: "Historial", href: "/dashboard/auditoria", icon: History, permission: "auditoria:ver" },
   { name: "Configuración", href: "/dashboard/configuracion", icon: Settings, permission: "config:ver" },
+  { name: "Soporte", href: "/dashboard/soporte", icon: Wrench, permission: "sistema:superadmin" },
 ];
 
 const patientNavigation: NavItem[] = [

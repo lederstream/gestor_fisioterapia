@@ -88,12 +88,12 @@ export default async function TratamientoPage() {
   // Garantía defensiva de objeto paciente
   if (!paciente) {
     paciente = {
-      id: sesion?.userId || "usr-pac-1",
-      nombres: sesion?.nombre?.split(" ")[0] || "Alexander",
-      apellidos: sesion?.nombre?.split(" ").slice(1).join(" ") || "Saavedra",
-      email: sesion?.email || "alexander.saavedra@gmail.com",
-      telefono: "987123456",
-      dni: "45892011",
+      id: sesion?.userId || "pac-preview",
+      nombres: sesion?.nombre?.split(" ")[0] || "Paciente",
+      apellidos: sesion?.nombre?.split(" ").slice(1).join(" ") || "Titular",
+      email: sesion?.email || "paciente@clinica.pe",
+      telefono: "999999999",
+      dni: "00000000",
     };
   }
 

@@ -1,9 +1,12 @@
 // Gestor Fisioterapia - Matriz de Permisos y Control de Acceso Basado en Roles (RBAC)
 // AJ Fisioterapia (San Borja) - Desarrollado por Marco Antonio
 
-export type UserRole = "ADMIN" | "RECEPCION" | "TERAPEUTA" | "ASISTENTE" | "PACIENTE";
+export type UserRole = "SUPERADMIN" | "ADMIN" | "RECEPCION" | "TERAPEUTA" | "ASISTENTE" | "PACIENTE";
 
 export type Permission =
+  // SuperAdmin & Soporte
+  | "sistema:superadmin"
+  | "sistema:impersonar"
   // Agenda
   | "agenda:ver"
   | "agenda:agendar"
@@ -36,6 +39,16 @@ export type Permission =
 
 // Matriz estricta de permisos por rol
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
+  SUPERADMIN: [
+    "sistema:superadmin", "sistema:impersonar",
+    "agenda:ver", "agenda:agendar", "agenda:modificar",
+    "caja:ver", "caja:cobrar", "caja:arqueo", "caja:exportar",
+    "pacientes:ver", "pacientes:crear", "pacientes:paquetes",
+    "clinica:ver", "clinica:evolucion", "clinica:reevaluacion", "clinica:reporte",
+    "auditoria:ver", "auditoria:exportar",
+    "config:ver", "config:modificar", "usuarios:gestionar",
+    "portal:reservas", "portal:mis_citas", "portal:mi_progreso"
+  ],
   ADMIN: [
     "agenda:ver", "agenda:agendar", "agenda:modificar",
     "caja:ver", "caja:cobrar", "caja:arqueo", "caja:exportar",
@@ -79,6 +92,16 @@ export interface RoleDetail {
 }
 
 export const ROLE_DETAILS: Record<UserRole, RoleDetail> = {
+  SUPERADMIN: {
+    id: "SUPERADMIN",
+    label: "SuperAdmin (Soporte)",
+    nameExample: "Marco Antonio",
+    title: "Soporte Técnico y Arquitectura de Software",
+    description: "Acceso maestro, auditoría forense, diagnóstico de base de datos e impersonación de roles.",
+    color: "bg-slate-900 text-amber-300 border-amber-400",
+    badge: "bg-slate-900 text-amber-300 border-amber-400",
+    dot: "bg-amber-400",
+  },
   ADMIN: {
     id: "ADMIN",
     label: "Administrador (Gerencia)",
@@ -122,7 +145,7 @@ export const ROLE_DETAILS: Record<UserRole, RoleDetail> = {
   PACIENTE: {
     id: "PACIENTE",
     label: "Paciente / Cliente",
-    nameExample: "Alexander Saavedra",
+    nameExample: "Paciente Titular",
     title: "Usuario / Paciente Clínico",
     description: "Portal privado para consultar citas, sesiones contratadas y avance terapéutico. Restringido de áreas administrativas.",
     color: "bg-emerald-50 text-emerald-700 border-emerald-200",

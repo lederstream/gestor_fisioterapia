@@ -54,33 +54,7 @@ export function desencriptarDatoSensible(textoCifrado: string): string {
   }
 }
 
-/**
- * Genera una contraseña criptográfica aleatoria de alta entropía (OWASP ASVS 4.0)
- * para entrega segura al colaborador por parte del Administrador.
- */
-export function generarClaveAleatoriaSegura(longitud = 12): string {
-  const mayusculas = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // sin O, I para evitar confusión
-  const minusculas = "abcdefghijkmnopqrstuvwxyz"; // sin l
-  const numeros = "23456789"; // sin 0, 1
-  const simbolos = "!@#$%^&*()_+-=";
-
-  const todos = mayusculas + minusculas + numeros + simbolos;
-  const bytes = crypto.randomBytes(longitud);
-  
-  let clave = "";
-  // Garantizar al menos uno de cada conjunto
-  clave += mayusculas[crypto.randomInt(0, mayusculas.length)];
-  clave += minusculas[crypto.randomInt(0, minusculas.length)];
-  clave += numeros[crypto.randomInt(0, numeros.length)];
-  clave += simbolos[crypto.randomInt(0, simbolos.length)];
-
-  for (let i = 4; i < longitud; i++) {
-    clave += todos[bytes[i] % todos.length];
-  }
-
-  // Mezclar los caracteres aleatoriamente
-  return clave.split("").sort(() => crypto.randomInt(-1, 2)).join("");
-}
+export { generarClaveAleatoriaSegura } from "./password-generator";
 
 /**
  * Enmascara un DNI para visualización pública (ej. '45892011' -> '4589****')

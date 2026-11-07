@@ -2,24 +2,28 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { NewPatientModal } from "@/components/pacientes/NewPatientModal";
+import { ImportPatientsModal } from "@/components/pacientes/ImportPatientsModal";
 import { 
   Users, 
   Search, 
   ArrowUpRight, 
   AlertTriangle, 
   UserPlus, 
-  Calendar,
-  CheckCircle2,
-  Layers,
-  MessageSquare,
-  Activity,
-  Copy,
-  Check,
-  SlidersHorizontal,
-  ChevronRight,
-  Filter
+  Calendar, 
+  CheckCircle2, 
+  Layers, 
+  MessageSquare, 
+  Activity, 
+  Copy, 
+  Check, 
+  SlidersHorizontal, 
+  ChevronRight, 
+  Filter,
+  Upload,
+  Download
 } from "lucide-react";
 
 interface PacientesClientProps {
@@ -27,6 +31,7 @@ interface PacientesClientProps {
 }
 
 export function PacientesClient({ initialPacientes }: PacientesClientProps) {
+  const router = useRouter();
   const { hasPermission } = useAuth();
   const canCreatePatient = hasPermission("pacientes:crear");
   const [pacientes, setPacientes] = useState(initialPacientes);
@@ -34,6 +39,7 @@ export function PacientesClient({ initialPacientes }: PacientesClientProps) {
   const [filterType, setFilterType] = useState<"todos" | "reevaluacion" | "paquetes">("todos");
   const [density, setDensity] = useState<"comoda" | "compacta">("comoda");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [copiedPhone, setCopiedPhone] = useState<string | null>(null);
 
@@ -46,6 +52,53 @@ export function PacientesClient({ initialPacientes }: PacientesClientProps) {
     navigator.clipboard.writeText(text);
     setCopiedPhone(id);
     setTimeout(() => setCopiedPhone(null), 2000);
+  };
+
+  // Exportar la base de datos de pacientes a formato CSV / Excel
+  const handleExportCSV = () => {
+    const headers = [
+      "Tipo Documento",
+      "Numero Documento",
+      "Nombres",
+      "Apellidos",
+      "Telefono",
+      "Email",
+      "Fecha Nacimiento",
+      "Paquetes Activos",
+      "Citas Atendidas",
+      "Contacto Emergencia",
+      "Fecha Registro",
+    ];
+
+    const rows = pacientes.map((p) => [
+      p.tipoDocumento || "DNI",
+      p.dni,
+      `"${p.nombres || ""}"`,
+      `"${p.apellidos || ""}"`,
+      p.telefono || "",
+      p.email || "",
+      p.fechaNacimiento ? new Date(p.fechaNacimiento).toISOString().split("T")[0] : "",
+      p.paquetesCount || 0,
+      p.citasCount || 0,
+      `"${p.contactoEmergencia || ""}"`,
+      p.createdAt ? new Date(p.createdAt).toLocaleDateString("es-PE") : "",
+    ]);
+
+    const csvContent =
+      "data:text/csv;charset=utf-8,\uFEFF" +
+      [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute(
+      "download",
+      `Directorio_Pacientes_AJ_Fisioterapia_${new Date().toISOString().split("T")[0]}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    showNotification("Directorio de pacientes exportado en formato Excel / CSV.");
   };
 
   // Calcular edad del paciente a partir de su fecha de nacimiento
@@ -99,18 +152,41 @@ export function PacientesClient({ initialPacientes }: PacientesClientProps) {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight">
-            Directorio Clínico de Pacientes
+            Pacientes
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Fichas clínicas integrales, control de dolor EVA y paquetes de tratamiento en AJ Fisioterapia.
+            Expedientes clínicos y tratamientos activos.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          {/* Botón Exportar CSV / Backup */}
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition cursor-pointer shadow-2xs"
+            title="Exportar base de datos a Excel / CSV"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-500" />
+            <span>Exportar</span>
+          </button>
+
+          {/* Botón Importar Masivo CSV */}
+          {canCreatePatient && (
+            <button
+              onClick={() => setIsImportModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold rounded-xl border border-teal-200/80 transition cursor-pointer shadow-2xs"
+              title="Importar pacientes desde archivo CSV o Excel"
+            >
+              <Upload className="w-3.5 h-3.5 text-teal-600" />
+              <span>Importar</span>
+            </button>
+          )}
+
+          {/* Botón Nuevo Paciente */}
           {canCreatePatient && (
             <button
               onClick={() => setIsModalOpen(true)}
-              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-md shadow-teal-600/25 transition cursor-pointer"
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-md shadow-teal-600/20 transition cursor-pointer"
             >
               <UserPlus className="w-4 h-4" />
               <span>Nuevo Paciente</span>
@@ -127,25 +203,25 @@ export function PacientesClient({ initialPacientes }: PacientesClientProps) {
         <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
           <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Total Pacientes</span>
           <span className="text-xl font-black text-slate-800">{totalPacientes}</span>
-          <p className="text-[10px] text-slate-500">Expedientes activos en clínica</p>
+          <p className="text-[10px] text-slate-500">Activos</p>
         </div>
         <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
-          <span className="text-[10px] uppercase font-bold text-teal-700 block tracking-wider">Con Paquete Activo</span>
+          <span className="text-[10px] uppercase font-bold text-teal-700 block tracking-wider">Con Paquete</span>
           <span className="text-xl font-black text-teal-800">{conPaquete}</span>
-          <p className="text-[10px] text-teal-600">Tratamientos en curso</p>
+          <p className="text-[10px] text-teal-600">En curso</p>
         </div>
         <div className={`p-3.5 rounded-2xl border shadow-2xs space-y-1 ${reevaluacionPendiente > 0 ? "bg-amber-50/70 border-amber-200" : "bg-white border-slate-200"}`}>
           <span className="text-[10px] uppercase font-bold text-amber-800 block tracking-wider flex items-center gap-1">
             <AlertTriangle className="w-3 h-3 text-amber-600" />
-            <span>Reevaluación Pendiente</span>
+            <span>Reevaluación</span>
           </span>
           <span className="text-xl font-black text-amber-900">{reevaluacionPendiente}</span>
-          <p className="text-[10px] text-amber-700">Ciclo de sesión 5 alcanzado</p>
+          <p className="text-[10px] text-amber-700">Hito 5 alcanzado</p>
         </div>
         <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
           <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Sesiones Totales</span>
           <span className="text-xl font-black text-slate-800">{totalCitasAtendidas}</span>
-          <p className="text-[10px] text-slate-500">Historial acumulado</p>
+          <p className="text-[10px] text-slate-500">Historial</p>
         </div>
       </div>
 
@@ -158,7 +234,7 @@ export function PacientesClient({ initialPacientes }: PacientesClientProps) {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por nombres, DNI/CE, pasaporte o teléfono..."
+              placeholder="Buscar por nombre, DNI o teléfono..."
               className="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
           </div>
@@ -426,12 +502,12 @@ export function PacientesClient({ initialPacientes }: PacientesClientProps) {
                             {p.tieneReevaluacionPendiente ? (
                               <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-md border border-amber-300">
                                 <AlertTriangle className="w-3 h-3 text-amber-700" />
-                                Reevaluación Necesaria
+                                Reevaluación
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                En Tratamiento Activo
+                                En Tratamiento
                               </span>
                             )}
                           </div>
@@ -493,6 +569,19 @@ export function PacientesClient({ initialPacientes }: PacientesClientProps) {
             };
             setPacientes((prev) => [formatted, ...prev]);
             showNotification(`Expediente creado para ${nuevo.nombres} ${nuevo.apellidos} con éxito.`);
+          }}
+        />
+      )}
+
+      {/* Modal para Importación Masiva (CSV / Excel) */}
+      {isImportModalOpen && (
+        <ImportPatientsModal
+          isOpen={isImportModalOpen}
+          onClose={() => setIsImportModalOpen(false)}
+          pacientesExistentes={pacientes}
+          onPatientsImported={(count) => {
+            showNotification(`¡Éxito! Se han importado ${count} pacientes nuevos.`);
+            router.refresh();
           }}
         />
       )}

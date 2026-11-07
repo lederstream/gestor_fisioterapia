@@ -365,3 +365,167 @@ export async function actualizarPaciente(
     return { success: false, error: message };
   }
 }
+
+export interface ImportarPacienteItemInput {
+  tipoDocumento?: "DNI" | "CE" | "PASAPORTE" | "CEDULA" | "OTRO";
+  dni: string;
+  primerNombre?: string;
+  segundoNombre?: string;
+  apellidoPaterno?: string;
+  apellidoMaterno?: string;
+  nombres?: string;
+  apellidos?: string;
+  telefono: string;
+  email?: string;
+  fechaNacimiento?: string;
+  contactoEmergenciaNombre?: string;
+  contactoEmergenciaParentesco?: string;
+  contactoEmergenciaTelefono?: string;
+  contactoEmergencia?: string;
+}
+
+export async function importarPacientesMasivo(
+  pacientesList: ImportarPacienteItemInput[]
+): Promise<ServerActionResult<{ importados: number; omitidos: number; pacientes: any[] }>> {
+  try {
+    if (!pacientesList || pacientesList.length === 0) {
+      return { success: false, error: "La lista de pacientes a importar está vacía." };
+    }
+
+    const clientIp = await obtenerIpCliente();
+    const sanitizados: any[] = [];
+    const dnisSet = new Set<string>();
+
+    for (const p of pacientesList) {
+      const cleanDni = (p.dni || "").trim().replace(/\D/g, "");
+      if (!cleanDni) continue;
+      if (dnisSet.has(cleanDni)) continue; // evitar duplicados dentro del mismo lote
+      dnisSet.add(cleanDni);
+
+      const primerNombre = p.primerNombre?.trim() || "";
+      const segundoNombre = p.segundoNombre?.trim() || "";
+      const apellidoPaterno = p.apellidoPaterno?.trim() || "";
+      const apellidoMaterno = p.apellidoMaterno?.trim() || "";
+
+      let nombres = p.nombres?.trim() || [primerNombre, segundoNombre].filter(Boolean).join(" ");
+      let apellidos = p.apellidos?.trim() || [apellidoPaterno, apellidoMaterno].filter(Boolean).join(" ");
+
+      if (!nombres) nombres = "Paciente";
+      if (!apellidos) apellidos = "Registrado";
+
+      let fechaNac = new Date(p.fechaNacimiento || "1995-01-01");
+      if (isNaN(fechaNac.getTime())) fechaNac = new Date("1995-01-01");
+
+      let contactoEmergencia = p.contactoEmergencia?.trim();
+      if (!contactoEmergencia && p.contactoEmergenciaNombre) {
+        contactoEmergencia = `${p.contactoEmergenciaNombre.trim()}${
+          p.contactoEmergenciaParentesco ? ` (${p.contactoEmergenciaParentesco.trim()})` : ""
+        }${p.contactoEmergenciaTelefono ? ` - Tel: ${p.contactoEmergenciaTelefono.trim()}` : ""}`;
+      }
+
+      sanitizados.push({
+        tipoDocumento: p.tipoDocumento || "DNI",
+        dni: cleanDni,
+        primerNombre: primerNombre || undefined,
+        segundoNombre: segundoNombre || undefined,
+        apellidoPaterno: apellidoPaterno || undefined,
+        apellidoMaterno: apellidoMaterno || undefined,
+        nombres,
+        apellidos,
+        telefono: (p.telefono || "999999999").trim().replace(/\D/g, ""),
+        email: p.email?.trim() || undefined,
+        fechaNacimiento: fechaNac.toISOString().split("T")[0],
+        contactoEmergenciaNombre: p.contactoEmergenciaNombre?.trim() || undefined,
+        contactoEmergenciaParentesco: p.contactoEmergenciaParentesco?.trim() || undefined,
+        contactoEmergenciaTelefono: p.contactoEmergenciaTelefono?.trim() || undefined,
+        contactoEmergencia: contactoEmergencia || undefined,
+      });
+    }
+
+    let importadosTotal = 0;
+    let omitidosTotal = 0;
+    const creados: any[] = [];
+
+    // 1. Inserción en PostgreSQL mediante Prisma si está disponible
+    if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
+      try {
+        const dnisParaChequear = Array.from(dnisSet);
+        const yaExistentesDb = await prisma.paciente.findMany({
+          where: { dni: { in: dnisParaChequear } },
+          select: { dni: true },
+        });
+
+        const yaExistentesSet = new Set(yaExistentesDb.map((p) => p.dni));
+
+        for (const item of sanitizados) {
+          if (yaExistentesSet.has(item.dni)) {
+            omitidosTotal++;
+            continue;
+          }
+
+          try {
+            const nuevoDb = await prisma.paciente.create({
+              data: {
+                tipoDocumento: item.tipoDocumento,
+                dni: item.dni,
+                primerNombre: item.primerNombre || null,
+                segundoNombre: item.segundoNombre || null,
+                apellidoPaterno: item.apellidoPaterno || null,
+                apellidoMaterno: item.apellidoMaterno || null,
+                nombres: item.nombres,
+                apellidos: item.apellidos,
+                telefono: item.telefono,
+                email: item.email || null,
+                fechaNacimiento: new Date(item.fechaNacimiento),
+                contactoEmergenciaNombre: item.contactoEmergenciaNombre || null,
+                contactoEmergenciaParentesco: item.contactoEmergenciaParentesco || null,
+                contactoEmergenciaTelefono: item.contactoEmergenciaTelefono || null,
+                contactoEmergencia: item.contactoEmergencia || null,
+              },
+            });
+
+            creados.push(nuevoDb);
+            importadosTotal++;
+          } catch {
+            omitidosTotal++;
+          }
+        }
+
+        await prisma.auditLog.create({
+          data: {
+            accion: "PACIENTES_IMPORTADOS_MASIVO",
+            modulo: "HISTORIA_CLINICA",
+            entidadId: "batch-import",
+            detalles: `Importación masiva: ${importadosTotal} expedientes creados en base de datos (${omitidosTotal} omitidos por DNI duplicado).`,
+            ipAddress: clientIp,
+          },
+        }).catch(() => {});
+      } catch (dbErr) {
+        console.warn("importarPacientesMasivo db error, usando fallback dbStore:", dbErr);
+      }
+    }
+
+    // 2. Sincronización en almacén dbStore
+    const resStore = dbStore.importarPacientes(sanitizados);
+    if (creados.length === 0) {
+      importadosTotal = resStore.importados.length;
+      omitidosTotal = resStore.omitidos;
+      creados.push(...resStore.importados);
+    }
+
+    revalidatePath("/dashboard/pacientes");
+    revalidatePath("/dashboard");
+
+    return {
+      success: true,
+      data: {
+        importados: importadosTotal,
+        omitidos: omitidosTotal,
+        pacientes: creados,
+      },
+    };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Error durante la importación masiva.";
+    return { success: false, error: message };
+  }
+}

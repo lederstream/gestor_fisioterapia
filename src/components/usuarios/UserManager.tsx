@@ -35,9 +35,16 @@ import {
   X,
   Copy,
   CheckCheck,
-  Send
+  Send,
+  Eye,
+  EyeOff,
+  UserCheck,
+  Stethoscope,
+  Activity,
+  Mail,
+  Briefcase
 } from "lucide-react";
-import { generarClaveAleatoriaSegura } from "@/lib/crypto";
+import { generarClaveAleatoriaSegura } from "@/lib/password-generator";
 
 interface UserManagerProps {
   initialUsers: UserItem[];
@@ -49,7 +56,7 @@ export function UserManager({ initialUsers }: UserManagerProps) {
   const [search, setSearch] = useState("");
   const [filterRol, setFilterRol] = useState<string>("TODOS");
 
-  // Modal Nuevo Usuario (Campos Atómicos)
+  // Modal Nuevo Usuario (Diseño Modular y Responsivo)
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [nuevoPrefijo, setNuevoPrefijo] = useState("Lic.");
   const [nuevoPrimerNombre, setNuevoPrimerNombre] = useState("");
@@ -58,10 +65,12 @@ export function UserManager({ initialUsers }: UserManagerProps) {
   const [nuevoApellidoMaterno, setNuevoApellidoMaterno] = useState("");
   const [nuevoEmail, setNuevoEmail] = useState("");
   const [nuevoPassword, setNuevoPassword] = useState("");
+  const [showModalPassword, setShowModalPassword] = useState(false);
   const [nuevoRol, setNuevoRol] = useState<UserRole>("TERAPEUTA");
   const [nuevaEspecialidad, setNuevaEspecialidad] = useState("");
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState<{ tipo: "exito" | "error"; texto: string } | null>(null);
+  const [modalError, setModalError] = useState<string | null>(null);
 
   // Modal de entrega de credenciales recién creadas para el colaborador
   const [credencialesCreadas, setCredencialesCreadas] = useState<{
@@ -159,27 +168,45 @@ export function UserManager({ initialUsers }: UserManagerProps) {
     }
   };
 
-  // Crear usuario con datos atómicos
+  // Crear usuario con datos atómicos y validación amigable
   const handleCrearUsuario = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setMensaje(null);
+    setModalError(null);
 
     const nombresParts = [nuevoPrimerNombre.trim(), nuevoSegundoNombre.trim()].filter(Boolean).join(" ");
     const apellidosParts = [nuevoApellidoPaterno.trim(), nuevoApellidoMaterno.trim()].filter(Boolean).join(" ");
+
+    if (!nuevoPrimerNombre.trim() || !nuevoApellidoPaterno.trim()) {
+      setModalError("Por favor ingrese al menos el Primer Nombre y Apellido Paterno del colaborador.");
+      return;
+    }
+
+    const cleanEmail = nuevoEmail.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes("@") || !cleanEmail.includes(".")) {
+      setModalError("Por favor ingrese un correo electrónico institucional válido (ej. nombre@ajfisioterapia.pe).");
+      return;
+    }
+
+    const passwordFinal = nuevoPassword.trim() || generarClaveAleatoriaSegura(12);
+
+    if (passwordFinal.length < 8) {
+      setModalError("La contraseña inicial debe contener al menos 8 caracteres por seguridad criptográfica.");
+      return;
+    }
+
+    setLoading(true);
+
     const nombreCompletoGenerado = [
       nuevoPrefijo && nuevoPrefijo !== "Sin prefijo" ? nuevoPrefijo : "",
       nombresParts,
       apellidosParts,
     ].filter(Boolean).join(" ");
 
-    const passwordFinal = nuevoPassword.trim() || generarClaveAleatoriaSegura(12);
-
     const res = await crearNuevoUsuario({
       nombre: nombreCompletoGenerado,
-      email: nuevoEmail,
+      email: cleanEmail,
       rol: nuevoRol,
-      especialidad: nuevaEspecialidad || undefined,
+      especialidad: nuevaEspecialidad.trim() || undefined,
       estado: "ACTIVO",
       password: passwordFinal,
     });
@@ -189,6 +216,7 @@ export function UserManager({ initialUsers }: UserManagerProps) {
     if (res.success && res.data) {
       setUsers((prev) => [...prev, res.data!]);
       setIsModalOpen(false);
+      setModalError(null);
       setNuevoPrimerNombre("");
       setNuevoSegundoNombre("");
       setNuevoApellidoPaterno("");
@@ -199,12 +227,12 @@ export function UserManager({ initialUsers }: UserManagerProps) {
       setCredencialesCreadas({
         nombre: res.data.nombre,
         email: res.data.email,
-        rol: ROLE_DETAILS[res.data.rol].label,
+        rol: ROLE_DETAILS[res.data.rol]?.label || res.data.rol,
         passwordTemporal: passwordFinal,
       });
       setCopiado(false);
     } else {
-      setMensaje({ tipo: "error", texto: res.error || "Error al registrar usuario." });
+      setModalError(res.error || "No se pudo registrar el usuario en el sistema.");
     }
   };
 
@@ -232,21 +260,21 @@ export function UserManager({ initialUsers }: UserManagerProps) {
       {/* Header del Módulo */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-xs font-bold mb-1.5">
-            <Shield className="w-3.5 h-3.5" /> Equipo y Permisos de Acceso
+          <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-xs font-bold mb-1">
+            <Shield className="w-3.5 h-3.5" /> Equipo y Permisos
           </div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            Gestión del Equipo
+            Equipo
           </h1>
           <p className="text-xs text-slate-500">
-            Administra al personal de la clínica, asigna sus puestos de trabajo y define a qué áreas pueden acceder.
+            Personal clínico, roles y permisos de acceso.
           </p>
         </div>
 
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-md shadow-teal-600/25 transition"
+            className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-md shadow-teal-600/25 transition cursor-pointer"
           >
             <UserPlus className="w-4 h-4" />
             <span>Nuevo Usuario</span>
@@ -305,25 +333,25 @@ export function UserManager({ initialUsers }: UserManagerProps) {
       <div className="flex border-b border-slate-200 bg-white px-4 rounded-2xl shadow-xs">
         <button
           onClick={() => setActiveTab("usuarios")}
-          className={`flex items-center gap-2 py-3.5 px-4 text-xs font-bold border-b-2 transition -mb-[1px] ${
+          className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition -mb-[1px] cursor-pointer ${
             activeTab === "usuarios"
               ? "border-teal-600 text-teal-700 bg-teal-50/40"
               : "border-transparent text-slate-500 hover:text-slate-800"
           }`}
         >
           <Users className="w-4 h-4" />
-          <span>Usuarios Registrados ({users.length})</span>
+          <span>Usuarios ({users.length})</span>
         </button>
         <button
           onClick={() => setActiveTab("matriz")}
-          className={`flex items-center gap-2 py-3.5 px-4 text-xs font-bold border-b-2 transition -mb-[1px] ${
+          className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition -mb-[1px] cursor-pointer ${
             activeTab === "matriz"
               ? "border-teal-600 text-teal-700 bg-teal-50/40"
               : "border-transparent text-slate-500 hover:text-slate-800"
           }`}
         >
           <ShieldCheck className="w-4 h-4" />
-          <span>Matriz de Permisos por Rol (Auditoría RBAC)</span>
+          <span>Permisos (RBAC)</span>
         </button>
       </div>
 
@@ -565,222 +593,393 @@ export function UserManager({ initialUsers }: UserManagerProps) {
         </div>
       )}
 
-      {/* MODAL CREAR NUEVO USUARIO */}
+      {/* MODAL CREAR NUEVO USUARIO (MODULAR, RESPONSIVO Y AMIGABLE) */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-2xl w-full my-auto shadow-2xl border border-slate-200/80 flex flex-col max-h-[92vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Header Fijo */}
+            <div className="px-6 py-4 sm:px-8 sm:py-5 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-teal-50 text-teal-600 rounded-xl border border-teal-100">
+                <div className="w-10 h-10 rounded-2xl bg-teal-50 text-teal-700 border border-teal-200/80 flex items-center justify-center shadow-xs">
                   <UserPlus className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-slate-900">
-                    Registrar Nuevo Usuario
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 leading-tight">
+                    Nuevo Usuario
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Asigne credenciales y perfil de seguridad
+                    Alta de personal clínico o administrativo
                   </p>
                 </div>
               </div>
               <button
-                onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-700 font-bold p-1 rounded-lg"
+                type="button"
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setModalError(null);
+                }}
+                className="w-8 h-8 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition cursor-pointer"
+                title="Cerrar modal"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCrearUsuario} className="mt-4 space-y-4 text-xs">
-              {/* Nombres y Apellidos Desglosados */}
-              <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/80 space-y-3">
-                <span className="font-bold text-slate-700 text-[11px] block uppercase tracking-wider">
-                  Filiación e Identificación Oficial (Campos Separados)
-                </span>
+            {/* Formulario con Body Scrolleable */}
+            <form onSubmit={handleCrearUsuario} className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-5 text-xs">
+              {/* Alerta de Error dentro del Modal */}
+              {modalError && (
+                <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-3 text-xs text-rose-800 animate-in fade-in duration-150">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <span className="font-semibold leading-relaxed">{modalError}</span>
+                </div>
+              )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">
-                      Título / Grado
-                    </label>
-                    <select
-                      value={nuevoPrefijo}
-                      onChange={(e) => setNuevoPrefijo(e.target.value)}
-                      className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                    >
-                      <option value="Lic.">Lic. (Licenciado)</option>
-                      <option value="Tec.">Tec. (Técnico)</option>
-                      <option value="Dr.">Dr. (Doctor)</option>
-                      <option value="Dra.">Dra. (Doctora)</option>
-                      <option value="Sr.">Sr. (Señor)</option>
-                      <option value="Sra.">Sra. (Señora)</option>
-                      <option value="Sin prefijo">Sin prefijo</option>
-                    </select>
+              {/* BLOQUE 1: Filiación e Información Personal */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-teal-100 text-teal-800 font-black text-[10px] flex items-center justify-center">
+                      1
+                    </span>
+                    <h4 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider">
+                      Datos Personales y Colegiatura
+                    </h4>
+                  </div>
+                  {/* Vista previa en tiempo real */}
+                  <span className="text-[11px] font-bold text-teal-700 bg-teal-50 px-2.5 py-0.5 rounded-full border border-teal-200 max-w-[240px] truncate hidden sm:inline-block">
+                    {[
+                      nuevoPrefijo !== "Sin prefijo" ? nuevoPrefijo : "",
+                      nuevoPrimerNombre,
+                      nuevoApellidoPaterno
+                    ].filter(Boolean).join(" ") || "Nombre preliminar"}
+                  </span>
+                </div>
+
+                <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200/80 space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                    <div className="sm:col-span-4">
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Título / Grado
+                      </label>
+                      <select
+                        value={nuevoPrefijo}
+                        onChange={(e) => setNuevoPrefijo(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-800 font-semibold focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                      >
+                        <option value="Lic.">Lic. (Licenciado Colegiado)</option>
+                        <option value="Tec.">Tec. (Técnico en Terapia)</option>
+                        <option value="Dr.">Dr. (Doctor)</option>
+                        <option value="Dra.">Dra. (Doctora)</option>
+                        <option value="Sr.">Sr. (Señor)</option>
+                        <option value="Sra.">Sra. (Señora)</option>
+                        <option value="Sin prefijo">Sin prefijo</option>
+                      </select>
+                    </div>
+
+                    <div className="sm:col-span-4">
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Primer Nombre <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Ej. Carlos"
+                        value={nuevoPrimerNombre}
+                        onChange={(e) => setNuevoPrimerNombre(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-4">
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Segundo Nombre <span className="text-slate-400 font-normal">(Opcional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej. Enrique"
+                        value={nuevoSegundoNombre}
+                        onChange={(e) => setNuevoSegundoNombre(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Apellido Paterno <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Ej. Mendoza"
+                        value={nuevoApellidoPaterno}
+                        onChange={(e) => setNuevoApellidoPaterno(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Apellido Materno <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Ej. Huamán"
+                        value={nuevoApellidoMaterno}
+                        onChange={(e) => setNuevoApellidoMaterno(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                      />
+                    </div>
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">
-                      Primer Nombre *
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Especialidad o Cargo Clínico
                     </label>
                     <input
                       type="text"
-                      required
-                      placeholder="Ej. Fernando"
-                      value={nuevoPrimerNombre}
-                      onChange={(e) => setNuevoPrimerNombre(e.target.value)}
+                      placeholder="Ej. Lic. Fisioterapia Deportiva y Readaptación"
+                      value={nuevaEspecialidad}
+                      onChange={(e) => setNuevaEspecialidad(e.target.value)}
                       className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
                     />
+                    {/* Sugerencias Rápidas en chips */}
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      <span className="text-[10px] text-slate-400 self-center">Sugerencias:</span>
+                      {[
+                        "Fisioterapia Deportiva",
+                        "Terapia Manual y Columna",
+                        "Rehabilitación Neurológica",
+                        "Técnico en Agentes Físicos",
+                        "Admisión y Caja"
+                      ].map((sug) => (
+                        <button
+                          key={sug}
+                          type="button"
+                          onClick={() => setNuevaEspecialidad(sug)}
+                          className="px-2 py-0.5 rounded-lg bg-white hover:bg-teal-50 text-slate-600 hover:text-teal-700 text-[10px] font-semibold border border-slate-200 hover:border-teal-300 transition cursor-pointer"
+                        >
+                          + {sug}
+                        </button>
+                      ))}
+                    </div>
                   </div>
+                </div>
+              </div>
 
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">
-                      Segundo Nombre
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Ej. Gabriel"
-                      value={nuevoSegundoNombre}
-                      onChange={(e) => setNuevoSegundoNombre(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                    />
-                  </div>
+              {/* BLOQUE 2: Selección de Rol y Nivel de Acceso (Tarjetas Interactivas) */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-teal-100 text-teal-800 font-black text-[10px] flex items-center justify-center">
+                    2
+                  </span>
+                  <h4 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider">
+                    Rol de Seguridad y Permisos
+                  </h4>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">
-                      Apellido Paterno *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Ej. Quispe"
-                      value={nuevoApellidoPaterno}
-                      onChange={(e) => setNuevoApellidoPaterno(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">
-                      Apellido Materno *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Ej. Huamán"
-                      value={nuevoApellidoMaterno}
-                      onChange={(e) => setNuevoApellidoMaterno(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                {/* Previsualización del Nombre Registrado */}
-                <div className="pt-1 text-[11px] text-slate-500 flex items-center gap-1.5">
-                  <span>Nombre en el sistema:</span>
-                  <span className="font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded-lg border border-teal-100">
-                    {[
-                      nuevoPrefijo && nuevoPrefijo !== "Sin prefijo" ? nuevoPrefijo : "",
-                      nuevoPrimerNombre,
-                      nuevoSegundoNombre,
-                      nuevoApellidoPaterno,
-                      nuevoApellidoMaterno,
-                    ].filter(Boolean).join(" ") || "Complete los campos de filiación"}
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Correo Electrónico *
-                </label>
-                <input
-                  type="email"
-                  required
-                  placeholder="usuario@ajfisioterapia.pe"
-                  value={nuevoEmail}
-                  onChange={(e) => setNuevoEmail(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="font-semibold text-slate-700">
-                    Contraseña Inicial de Acceso *
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const pass = generarClaveAleatoriaSegura(12);
-                      setNuevoPassword(pass);
-                    }}
-                    className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-700 hover:text-teal-900 bg-teal-50 px-2 py-0.5 rounded-lg border border-teal-200 transition cursor-pointer"
+                  {/* TERAPEUTA */}
+                  <div
+                    onClick={() => setNuevoRol("TERAPEUTA")}
+                    className={`p-3 rounded-2xl border-2 transition cursor-pointer flex items-start gap-3 ${
+                      nuevoRol === "TERAPEUTA"
+                        ? "border-teal-600 bg-teal-50/60 shadow-xs"
+                        : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                    }`}
                   >
-                    <Sparkles className="w-3 h-3 text-teal-600" />
-                    <span>⚡ Generar Clave Segura</span>
-                  </button>
+                    <div className={`p-2 rounded-xl shrink-0 ${nuevoRol === "TERAPEUTA" ? "bg-teal-600 text-white" : "bg-teal-50 text-teal-700"}`}>
+                      <Stethoscope className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-900 text-xs">TERAPEUTA</span>
+                        {nuevoRol === "TERAPEUTA" && <Check className="w-4 h-4 text-teal-700" />}
+                      </div>
+                      <p className="text-[10px] text-slate-500 leading-tight mt-0.5">
+                        Licenciado Colegiado. Registra escala EVA, evolución médica y reevaluaciones.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* RECEPCION */}
+                  <div
+                    onClick={() => setNuevoRol("RECEPCION")}
+                    className={`p-3 rounded-2xl border-2 transition cursor-pointer flex items-start gap-3 ${
+                      nuevoRol === "RECEPCION"
+                        ? "border-blue-600 bg-blue-50/60 shadow-xs"
+                        : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className={`p-2 rounded-xl shrink-0 ${nuevoRol === "RECEPCION" ? "bg-blue-600 text-white" : "bg-blue-50 text-blue-700"}`}>
+                      <UserCheck className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-900 text-xs">RECEPCIÓN</span>
+                        {nuevoRol === "RECEPCION" && <Check className="w-4 h-4 text-blue-700" />}
+                      </div>
+                      <p className="text-[10px] text-slate-500 leading-tight mt-0.5">
+                        Admisión y Caja. Gestiona agenda de salas, pre-reservas web y cobros Yape/POS.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* ASISTENTE */}
+                  <div
+                    onClick={() => setNuevoRol("ASISTENTE")}
+                    className={`p-3 rounded-2xl border-2 transition cursor-pointer flex items-start gap-3 ${
+                      nuevoRol === "ASISTENTE"
+                        ? "border-amber-600 bg-amber-50/60 shadow-xs"
+                        : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className={`p-2 rounded-xl shrink-0 ${nuevoRol === "ASISTENTE" ? "bg-amber-600 text-white" : "bg-amber-50 text-amber-700"}`}>
+                      <Activity className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-900 text-xs">ASISTENTE</span>
+                        {nuevoRol === "ASISTENTE" && <Check className="w-4 h-4 text-amber-700" />}
+                      </div>
+                      <p className="text-[10px] text-slate-500 leading-tight mt-0.5">
+                        Técnico Clínico. Apoyo en salas y aplicación de agentes físicos (TENS/calor).
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* ADMIN */}
+                  <div
+                    onClick={() => setNuevoRol("ADMIN")}
+                    className={`p-3 rounded-2xl border-2 transition cursor-pointer flex items-start gap-3 ${
+                      nuevoRol === "ADMIN"
+                        ? "border-purple-600 bg-purple-50/60 shadow-xs"
+                        : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className={`p-2 rounded-xl shrink-0 ${nuevoRol === "ADMIN" ? "bg-purple-600 text-white" : "bg-purple-50 text-purple-700"}`}>
+                      <Shield className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-900 text-xs">ADMINISTRADOR</span>
+                        {nuevoRol === "ADMIN" && <Check className="w-4 h-4 text-purple-700" />}
+                      </div>
+                      <p className="text-[10px] text-slate-500 leading-tight mt-0.5">
+                        Dirección y Gerencia. Control total: finanzas, auditoría y usuarios.
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <input
-                  type="text"
-                  required
-                  placeholder="Mínimo 8 caracteres (o haga clic en Generar Clave)"
-                  value={nuevoPassword}
-                  onChange={(e) => setNuevoPassword(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-mono text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none font-bold"
-                />
-                <span className="text-[10px] text-slate-400 block mt-1">
-                  Cifrada irreversiblemente con bcrypt (factor 10). Podrá copiarla al completar el registro.
-                </span>
               </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Rol de Seguridad Asignado *
-                </label>
-                <select
-                  value={nuevoRol}
-                  onChange={(e) => setNuevoRol(e.target.value as UserRole)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-bold focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                >
-                  <option value="TERAPEUTA">TERAPEUTA (Licenciado Colegiado / Escala EVA y Reevaluación)</option>
-                  <option value="ASISTENTE">ASISTENTE (Técnico Terapéutico / Agentes Físicos y Sala)</option>
-                  <option value="RECEPCION">RECEPCIÓN (Caja, Agenda y Admisión)</option>
-                  <option value="ADMIN">ADMIN (Co-Administrador / Gerencia)</option>
-                </select>
-                <span className="text-[10px] text-slate-500 block mt-1">
-                  {ROLE_DETAILS[nuevoRol].description}
-                </span>
+              {/* BLOQUE 3: Credenciales de Inicio de Sesión */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-teal-100 text-teal-800 font-black text-[10px] flex items-center justify-center">
+                    3
+                  </span>
+                  <h4 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider">
+                    Credenciales de Acceso al Sistema
+                  </h4>
+                </div>
+
+                <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200/80 space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Correo Institucional <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                          type="email"
+                          required
+                          placeholder="nombre.apellido@ajfisioterapia.pe"
+                          value={nuevoEmail}
+                          onChange={(e) => setNuevoEmail(e.target.value)}
+                          className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[11px] font-bold text-slate-700">
+                          Contraseña Inicial <span className="text-rose-500">*</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const gen = generarClaveAleatoriaSegura(12);
+                            setNuevoPassword(gen);
+                            setShowModalPassword(true);
+                          }}
+                          className="text-[10px] font-bold text-teal-700 hover:text-teal-900 bg-teal-50 hover:bg-teal-100 px-2 py-0.5 rounded-lg border border-teal-200 transition cursor-pointer flex items-center gap-1"
+                        >
+                          <Sparkles className="w-3 h-3 text-teal-600" />
+                          <span>⚡ Generar Clave</span>
+                        </button>
+                      </div>
+
+                      <div className="relative">
+                        <input
+                          type={showModalPassword ? "text" : "password"}
+                          required
+                          placeholder="Mínimo 8 caracteres"
+                          value={nuevoPassword}
+                          onChange={(e) => setNuevoPassword(e.target.value)}
+                          className="w-full pl-3 pr-9 py-2 bg-white border border-slate-200 rounded-xl text-slate-800 font-mono font-bold text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowModalPassword(!showModalPassword)}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                          tabIndex={-1}
+                        >
+                          {showModalPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-[10px] text-slate-400">
+                    🔒 La contraseña se cifrará con algoritmo bcrypt. Podrás copiarla al completar el registro para entregársela al colaborador.
+                  </p>
+                </div>
               </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Cargo o Especialidad (Opcional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ej: Lic. Terapia Ortopédica / Recepcionista Turno Tarde"
-                  value={nuevaEspecialidad}
-                  onChange={(e) => setNuevaEspecialidad(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                />
-              </div>
-
-              <div className="pt-4 flex items-center justify-end gap-2 border-t border-slate-100">
+              {/* Footer Fijo con botones */}
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3 sticky bottom-0 bg-white">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setModalError(null);
+                  }}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition cursor-pointer text-xs"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-md shadow-teal-600/25 transition disabled:opacity-50"
+                  className="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-extrabold rounded-xl shadow-md shadow-teal-600/25 transition disabled:opacity-50 cursor-pointer flex items-center gap-2 text-xs"
                 >
-                  {loading ? "Registrando..." : "Crear Usuario"}
+                  {loading ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Registrando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-4 h-4" />
+                      <span>Crear Usuario</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -843,7 +1042,7 @@ export function UserManager({ initialUsers }: UserManagerProps) {
                 className="flex-1 py-2.5 px-4 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition cursor-pointer shadow-md shadow-teal-600/20"
               >
                 {copiado ? <CheckCheck className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4" />}
-                <span>{copiado ? "¡Credenciales Copiadas!" : "Copiar para el Colaborador"}</span>
+                <span>{copiado ? "¡Copiado!" : "Copiar Credenciales"}</span>
               </button>
 
               <button
@@ -916,7 +1115,7 @@ export function UserManager({ initialUsers }: UserManagerProps) {
                   disabled={guardandoClave}
                   className="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-xs transition disabled:opacity-50 cursor-pointer"
                 >
-                  {guardandoClave ? "Guardando..." : "Guardar Contraseña"}
+                  {guardandoClave ? "Guardando..." : "Guardar"}
                 </button>
               </div>
             </form>

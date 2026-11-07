@@ -138,10 +138,10 @@ export function EditPatientModal({
             </div>
             <div>
               <h3 className="text-sm font-extrabold text-slate-900">
-                Editar Datos de Paciente
+                Editar Paciente
               </h3>
               <p className="text-[11px] text-slate-500">
-                Ficha clínica institucional ({paciente.tipoDocumento || "DNI"}: {paciente.dni})
+                {paciente.tipoDocumento || "DNI"}: {paciente.dni}
               </p>
             </div>
           </div>
@@ -306,7 +306,7 @@ export function EditPatientModal({
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
               <div className="sm:col-span-6">
                 <label className="block font-medium text-slate-600 mb-1">
-                  Nombre Completo del Contacto
+                  Contacto de Emergencia
                 </label>
                 <input
                   type="text"
@@ -338,7 +338,7 @@ export function EditPatientModal({
 
               <div className="sm:col-span-3">
                 <label className="block font-medium text-slate-600 mb-1">
-                  Teléfono Contacto
+                  Teléfono
                 </label>
                 <input
                   type="tel"
@@ -366,7 +366,7 @@ export function EditPatientModal({
               disabled={loading}
               className="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-xs transition disabled:opacity-50 cursor-pointer"
             >
-              {loading ? "Guardando..." : "Guardar Cambios"}
+              {loading ? "Guardando..." : "Guardar"}
             </button>
           </div>
         </form>

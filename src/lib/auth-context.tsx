@@ -22,6 +22,11 @@ interface AuthContextType {
   hasPermission: (permission: Permission) => boolean;
   roleDetails: typeof ROLE_DETAILS[UserRole];
   setCurrentUser: (user: AuthUser) => void;
+  // Impersonación exclusiva para SUPERADMIN
+  impersonatedRole: UserRole | null;
+  impersonateAs: (role: UserRole | null) => void;
+  isImpersonating: boolean;
+  resetImpersonation: () => void;
 }
 
 const FALLBACK_USER: AuthUser = {
@@ -44,6 +49,33 @@ export function AuthProvider({
   const [currentUser, setCurrentUser] = useState<AuthUser>(initialUser || FALLBACK_USER);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!initialUser);
   const [isLoading, setIsLoading] = useState<boolean>(!initialUser);
+  const [impersonatedRole, setImpersonatedRole] = useState<UserRole | null>(null);
+
+  useEffect(() => {
+    // Restaurar impersonación si estaba guardada en sesión local
+    if (typeof window !== "undefined") {
+      const saved = sessionStorage.getItem("agy_impersonated_role") as UserRole | null;
+      if (saved && (currentUser.rol === "SUPERADMIN" || initialUser?.rol === "SUPERADMIN")) {
+        setImpersonatedRole(saved);
+      }
+    }
+  }, [currentUser.rol, initialUser]);
+
+  const impersonateAs = (role: UserRole | null) => {
+    if (currentUser.rol !== "SUPERADMIN") return;
+    setImpersonatedRole(role);
+    if (typeof window !== "undefined") {
+      if (role) {
+        sessionStorage.setItem("agy_impersonated_role", role);
+      } else {
+        sessionStorage.removeItem("agy_impersonated_role");
+      }
+    }
+  };
+
+  const resetImpersonation = () => {
+    impersonateAs(null);
+  };
 
   useEffect(() => {
     // Si no se proporcionó initialUser desde el servidor, consultar la sesión HTTP-only
@@ -84,10 +116,13 @@ export function AuthProvider({
     }
   };
 
-  const currentRole = currentUser.rol || "RECEPCION";
+  const isImpersonating = currentUser.rol === "SUPERADMIN" && !!impersonatedRole;
+  const currentRole = (isImpersonating ? impersonatedRole : currentUser.rol) || "RECEPCION";
   const roleDetails = ROLE_DETAILS[currentRole] || ROLE_DETAILS["RECEPCION"];
 
   const hasPerm = (permission: Permission) => {
+    // Si es SUPERADMIN y NO está impersonando, tiene acceso absoluto
+    if (currentUser.rol === "SUPERADMIN" && !isImpersonating) return true;
     return checkPerm(currentRole, permission);
   };
 
@@ -102,6 +137,10 @@ export function AuthProvider({
         hasPermission: hasPerm,
         roleDetails,
         setCurrentUser,
+        impersonatedRole,
+        impersonateAs,
+        isImpersonating,
+        resetImpersonation,
       }}
     >
       {children}

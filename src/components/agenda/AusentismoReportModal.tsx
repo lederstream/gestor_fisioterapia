@@ -202,49 +202,46 @@ export function AusentismoReportModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-[#0C3E37] text-white p-6 sm:p-7 relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="bg-[#0C3E37] text-white p-5 sm:p-6 relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <button
             onClick={onClose}
-            className="absolute top-5 right-5 p-2 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition cursor-pointer"
+            className="absolute top-4 right-4 p-2 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition cursor-pointer"
             aria-label="Cerrar modal"
           >
             <X className="w-5 h-5" />
           </button>
 
           <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-[10px] tracking-wider uppercase bg-white/20 px-2.5 py-0.5 rounded-full font-bold">
-                CONTROL OPERATIVO DE RECEPCIÓN & GERENCIA
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[10px] tracking-wider uppercase bg-white/20 px-2 py-0.5 rounded-full font-bold">
+                Control Operativo
               </span>
               <span className="text-xs text-emerald-200 font-semibold">
-                • 6 Salas San Borja
+                • 6 Salas
               </span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2.5">
+            <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
               <TrendingDown className="w-6 h-6 text-rose-300" />
-              Reporte Tabular de Ausentismo (No-Show)
+              Reporte de Ausentismo
             </h2>
-            <p className="text-xs text-stone-200 mt-1 max-w-xl">
-              Monitoreo semanal de pacientes que no asistieron a su cita y cálculo de turnos no reasignados en las 6 salas clínicas.
-            </p>
           </div>
 
           <div className="flex items-center gap-2 pr-8 sm:pr-0">
             <button
               onClick={handleExportCSV}
-              className="px-3.5 py-2 bg-white/15 hover:bg-white/25 text-white font-bold text-xs rounded-xl border border-white/20 transition flex items-center gap-1.5 cursor-pointer"
+              className="px-3 py-1.5 bg-white/15 hover:bg-white/25 text-white font-bold text-xs rounded-xl border border-white/20 transition flex items-center gap-1.5 cursor-pointer"
               title="Exportar a Excel / CSV"
             >
               <FileSpreadsheet className="w-4 h-4 text-emerald-300" />
-              <span>Exportar Excel</span>
+              <span>Excel</span>
             </button>
             <button
               onClick={handlePrint}
-              className="px-3 py-2 bg-white/15 hover:bg-white/25 text-white font-bold text-xs rounded-xl border border-white/20 transition flex items-center gap-1.5 cursor-pointer"
-              title="Imprimir o Guardar PDF"
+              className="px-3 py-1.5 bg-white/15 hover:bg-white/25 text-white font-bold text-xs rounded-xl border border-white/20 transition flex items-center gap-1.5 cursor-pointer"
+              title="Imprimir"
             >
               <Printer className="w-4 h-4" />
-              <span>PDF</span>
+              <span>Imprimir</span>
             </button>
           </div>
         </div>
@@ -252,13 +249,13 @@ export function AusentismoReportModal({
         {/* Content Body */}
         <div className="p-6 space-y-6 overflow-y-auto flex-1">
           {/* Week Selector */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-stone-50 p-4 rounded-2xl border border-stone-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-stone-50 p-3 rounded-2xl border border-stone-200">
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-[#0C3E37]" />
               <span className="text-xs font-bold text-stone-700">
-                Periodo Semanal Analizado:
+                Periodo:
               </span>
-              <span className="text-xs font-black text-[#0B2E28] bg-white px-3 py-1 rounded-lg border border-stone-200 shadow-2xs">
+              <span className="text-xs font-black text-[#0B2E28] bg-white px-2.5 py-1 rounded-lg border border-stone-200 shadow-2xs">
                 {weekData.mondayStr} – {weekData.saturdayStr}
               </span>
             </div>
@@ -269,7 +266,7 @@ export function AusentismoReportModal({
                 onClick={() => setSelectedWeekOffset((prev) => prev - 1)}
                 className="px-2.5 py-1 text-xs font-bold text-stone-600 bg-white border border-stone-200 rounded-lg hover:bg-stone-100 transition cursor-pointer"
               >
-                ← Semana Anterior
+                ← Anterior
               </button>
               {selectedWeekOffset !== 0 && (
                 <button
@@ -277,7 +274,7 @@ export function AusentismoReportModal({
                   onClick={() => setSelectedWeekOffset(0)}
                   className="px-2.5 py-1 text-xs font-bold text-[#0C3E37] bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition cursor-pointer"
                 >
-                  Semana Actual
+                  Actual
                 </button>
               )}
               <button
@@ -286,7 +283,7 @@ export function AusentismoReportModal({
                 onClick={() => setSelectedWeekOffset((prev) => prev + 1)}
                 className="px-2.5 py-1 text-xs font-bold text-stone-600 bg-white border border-stone-200 rounded-lg hover:bg-stone-100 transition cursor-pointer disabled:opacity-40"
               >
-                Semana Siguiente →
+                Siguiente →
               </button>
             </div>
           </div>
@@ -476,26 +473,22 @@ export function AusentismoReportModal({
           </div>
 
           {/* Directriz de Concurrencia y Protocolo Anti No-Show */}
-          <div className="p-4 bg-emerald-50/60 rounded-2xl border border-emerald-200/80 text-xs text-emerald-950 flex items-start gap-3">
-            <CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <span className="font-bold block">Protocolo de Recuperación de Turnos Vacíos:</span>
-              <p className="text-[11px] leading-relaxed text-emerald-800">
-                Al detectar una cita no asistida o cancelada, la recepcionista puede activar el botón <strong>&quot;Detectar Huecos Libres&quot;</strong> en la matriz de las 6 salas para reasignar el cupo a pacientes en lista de espera y mitigar la merma económica.
-              </p>
-            </div>
+          <div className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200/80 text-xs text-emerald-950 flex items-center gap-2.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+            <p className="text-[11px] leading-relaxed text-emerald-800">
+              <strong>Recuperación de cupos:</strong> Use el filtro <em>&quot;Espacios Libres&quot;</em> en la matriz de salas para reasignar turnos cancelados.
+            </p>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="p-4 bg-stone-50 border-t border-stone-200 flex items-center justify-between text-xs text-stone-500">
-          <span>Datos tabulares consolidados con control de concurrencia ACID.</span>
+        <div className="p-4 bg-stone-50 border-t border-stone-200 flex items-center justify-end">
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2 bg-stone-200 hover:bg-stone-300 text-stone-800 font-bold rounded-xl transition cursor-pointer"
+            className="px-5 py-2 bg-stone-200 hover:bg-stone-300 text-stone-800 font-bold rounded-xl transition cursor-pointer text-xs"
           >
-            Cerrar Reporte
+            Cerrar
           </button>
         </div>
       </div>

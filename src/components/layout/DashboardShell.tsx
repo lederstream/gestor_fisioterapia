@@ -6,6 +6,7 @@ import { AuthProvider, AuthUser } from "@/lib/auth-context";
 import { ConfiguracionClinicaItem } from "@/lib/store";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { DashboardNavbar } from "./DashboardNavbar";
+import { ImpersonationBanner } from "./ImpersonationBanner";
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -39,6 +40,7 @@ function ShellInner({
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <ImpersonationBanner />
         <DashboardNavbar
           onToggleMobileMenu={() => setIsMobileOpen((prev) => !prev)}
           initialConfig={initialConfig}

@@ -373,11 +373,6 @@ export function MatrixGrid({
         {/* Filtros Rápidos de Productividad para Recepción */}
         <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider pr-1 flex items-center gap-1">
-              <SlidersHorizontal className="w-3 h-3 text-slate-400" />
-              <span>Filtro Recepción:</span>
-            </span>
-
             <button
               onClick={() => setProductivityFilter("TODAS")}
               className={cn(
@@ -387,7 +382,7 @@ export function MatrixGrid({
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               )}
             >
-              Todas las Citas ({citasActivasDelDia.length})
+              Todas ({citasActivasDelDia.length})
             </button>
 
             <button
@@ -413,28 +408,29 @@ export function MatrixGrid({
               )}
             >
               <Sparkles className="w-3 h-3" />
-              <span>{productivityFilter === "SOLO_LIBRES" ? "Mostrando Solo Libres" : "Detectar Huecos Libres"}</span>
+              <span>{productivityFilter === "SOLO_LIBRES" ? "Solo Libres" : "Espacios Libres"}</span>
             </button>
           </div>
 
-          <div className="text-[11px] text-slate-400 font-medium ml-auto">
-            Actualizado en tiempo real con control de concurrencia
+          <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>En vivo</span>
           </div>
         </div>
       </div>
 
       {/* 2. BARRA DE CONTROL Y SELECTOR DE FECHA */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-teal-50 text-teal-700 rounded-xl border border-teal-100 shrink-0">
-            <CalendarIcon className="w-5 h-5" />
+      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 bg-teal-50 text-teal-700 rounded-xl border border-teal-100 shrink-0">
+            <CalendarIcon className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
-              Control de Citas del Día por Salas
+            <h2 className="text-base font-bold text-slate-900 leading-tight">
+              Citas por Sala
             </h2>
-            <p className="text-xs text-slate-500">
-              Mostrando {displayedSalas.length} de {salas.length} salas de atención ({salasDisponibles.length} operativas).
+            <p className="text-[11px] text-slate-500">
+              {salasDisponibles.length} de {salas.length} salas operativas
             </p>
           </div>
         </div>
@@ -447,7 +443,7 @@ export function MatrixGrid({
             onChange={(e) => setFilterTerapeuta(e.target.value)}
             className="px-2.5 py-1.5 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
           >
-            <option value="TODOS">Todo el Personal ({terapeutas.length})</option>
+            <option value="TODOS">Personal ({terapeutas.length})</option>
             {terapeutas.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.nombre} {t.rol === "ASISTENTE" ? "• Asistente" : "• Terapeuta"}
@@ -498,11 +494,10 @@ export function MatrixGrid({
           <button
             onClick={() => setIsAusentismoOpen(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200/90 text-xs font-bold rounded-xl transition cursor-pointer"
-            title="Ver reporte semanal de ausentismo de pacientes y turnos no reasignados"
+            title="Reporte semanal de ausentismo"
           >
             <TrendingDown className="w-4 h-4 text-rose-600" />
-            <span className="hidden sm:inline">Reporte Ausentismo</span>
-            <span className="sm:hidden">No-Show</span>
+            <span>Ausentismo</span>
           </button>
 
           <button
@@ -510,7 +505,7 @@ export function MatrixGrid({
             className="flex items-center gap-1.5 px-3.5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-xs transition ml-auto sm:ml-0 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>Agendar Cita</span>
+            <span>Agendar</span>
           </button>
         </div>
       </div>
@@ -824,10 +819,10 @@ export function MatrixGrid({
                   </div>
                   <div>
                     <h3 className="font-extrabold text-slate-900 text-sm">
-                      {isRescheduling ? "Reprogramar Turno de Cita" : "Gestión Operativa de Cita"}
+                      {isRescheduling ? "Reprogramar Turno" : "Detalle de Cita"}
                     </h3>
-                    <p className="text-[11px] text-slate-500">
-                      ID: {selectedCitaDetail.id} • {selectedCitaDetail.estado}
+                    <p className="text-[11px] text-slate-500 font-mono">
+                      {selectedCitaDetail.estado}
                     </p>
                   </div>
                 </div>
@@ -853,18 +848,15 @@ export function MatrixGrid({
                     </div>
                   )}
 
-                  <div className="p-3 bg-teal-50/70 border border-teal-200 rounded-xl space-y-1">
-                    <span className="font-bold text-teal-900 block text-xs">
+                  <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                    <span className="font-bold text-slate-800 text-xs">
                       Paciente: {paciente?.nombres} {paciente?.apellidos}
                     </span>
-                    <p className="text-[11px] text-teal-800">
-                      Modifique el horario, sala o fisioterapeuta. El sistema validará automáticamente que no existan conflictos de concurrencia.
-                    </p>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block font-semibold text-slate-700 mb-1">Nueva Fecha *</label>
+                      <label className="block font-semibold text-slate-700 mb-1">Nueva Fecha</label>
                       <input
                         type="date"
                         required
@@ -875,7 +867,7 @@ export function MatrixGrid({
                     </div>
 
                     <div>
-                      <label className="block font-semibold text-slate-700 mb-1">Nueva Hora *</label>
+                      <label className="block font-semibold text-slate-700 mb-1">Nueva Hora</label>
                       <input
                         type="time"
                         required
@@ -888,7 +880,7 @@ export function MatrixGrid({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block font-semibold text-slate-700 mb-1">Nueva Sala Física *</label>
+                      <label className="block font-semibold text-slate-700 mb-1">Sala Física</label>
                       <select
                         value={rescheduleSalaId}
                         onChange={(e) => setRescheduleSalaId(e.target.value)}
@@ -896,14 +888,14 @@ export function MatrixGrid({
                       >
                         {salas.map((s) => (
                           <option key={s.id} value={s.id} disabled={s.estado === "MANTENIMIENTO"}>
-                            {s.nombre} {s.estado === "MANTENIMIENTO" ? "(⚠️ En Mantenimiento)" : ""}
+                            {s.nombre} {s.estado === "MANTENIMIENTO" ? "(Mantenimiento)" : ""}
                           </option>
                         ))}
                       </select>
                     </div>
 
                     <div>
-                      <label className="block font-semibold text-slate-700 mb-1">Terapeuta Responsable *</label>
+                      <label className="block font-semibold text-slate-700 mb-1">Terapeuta</label>
                       <select
                         value={rescheduleTerapeutaId}
                         onChange={(e) => setRescheduleTerapeutaId(e.target.value)}
@@ -933,7 +925,7 @@ export function MatrixGrid({
                       className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-xs transition disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
                     >
                       <RefreshCw className={cn("w-3.5 h-3.5", rescheduleLoading && "animate-spin")} />
-                      <span>{rescheduleLoading ? "Guardando..." : "Confirmar Reprogramación"}</span>
+                      <span>{rescheduleLoading ? "Guardando..." : "Guardar"}</span>
                     </button>
                   </div>
                 </div>
@@ -1036,30 +1028,21 @@ export function MatrixGrid({
 
                   {/* Alerta de Reevaluación */}
                   {selectedCitaDetail.esReevaluacion && (
-                    <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-900 space-y-1">
-                      <p className="font-bold flex items-center gap-1.5 text-xs">
-                        <AlertTriangle className="w-4 h-4 text-amber-600" />
-                        Reevaluación Clínica Obligatoria
-                      </p>
-                      <p className="text-[11px] text-amber-800 leading-tight">
-                        Esta sesión coincide con el hito de 5 sesiones asistidas. El terapeuta debe registrar la escala EVA y el test biomecánico antes de dar de alta.
-                      </p>
+                    <div className="p-2.5 bg-amber-50 border border-amber-300 rounded-xl text-amber-900 flex items-center gap-2 text-xs font-semibold">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>Reevaluación clínica obligatoria (Hito 5 sesiones)</span>
                     </div>
                   )}
 
-                  {/* Botones de Cambio de Estado Rápido y Reprogramar */}
-                  <div className="pt-2 border-t border-slate-100 space-y-2">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Acciones Operativas</span>
+                  {/* Botones de Acción */}
+                  <div className="pt-2 border-t border-slate-100 space-y-1.5">
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      
-                      {/* Botón Reprogramar Turno */}
                       <button
                         type="button"
                         onClick={() => handleStartReschedule(selectedCitaDetail)}
-                        className="py-2 px-2 bg-teal-50 hover:bg-teal-100 text-teal-800 font-bold rounded-xl border border-teal-200 text-center transition cursor-pointer text-xs flex items-center justify-center gap-1"
-                        title="Cambiar fecha, hora o sala"
+                        className="py-2 px-2 bg-teal-50 hover:bg-teal-100 text-teal-800 font-bold rounded-xl border border-teal-200 text-center transition cursor-pointer text-xs flex items-center justify-center gap-1.5"
                       >
-                        <RefreshCw className="w-3 h-3 text-teal-600" />
+                        <RefreshCw className="w-3.5 h-3.5 text-teal-600" />
                         <span>Reprogramar</span>
                       </button>
 
@@ -1077,9 +1060,10 @@ export function MatrixGrid({
                             setCitas((prev) => prev.map((c) => c.id === selectedCitaDetail.id ? { ...c, estado: "CONFIRMADA", confirmadoPorNombre: respNombre } : c));
                             setSelectedCitaDetail((prev: any) => ({ ...prev, estado: "CONFIRMADA", confirmadoPorNombre: respNombre }));
                           }}
-                          className="py-2 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl border border-blue-200 text-center transition cursor-pointer text-xs"
+                          className="py-2 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl border border-blue-200 text-center transition cursor-pointer text-xs flex items-center justify-center gap-1.5"
                         >
-                          Confirmar Cita
+                          <Check className="w-3.5 h-3.5 text-blue-600" />
+                          <span>Confirmar</span>
                         </button>
                       )}
 
@@ -1091,25 +1075,27 @@ export function MatrixGrid({
                             setCitas((prev) => prev.map((c) => c.id === selectedCitaDetail.id ? { ...c, estado: "NO_ASISTIO" } : c));
                             setSelectedCitaDetail((prev: any) => ({ ...prev, estado: "NO_ASISTIO" }));
                           }}
-                          className="py-2 px-2 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-xl border border-amber-200 text-center transition cursor-pointer text-xs"
+                          className="py-2 px-2 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-xl border border-amber-200 text-center transition cursor-pointer text-xs flex items-center justify-center gap-1.5"
                         >
-                          No Asistió
+                          <Clock className="w-3.5 h-3.5 text-amber-600" />
+                          <span>No asistió</span>
                         </button>
                       )}
 
                       {selectedCitaDetail.estado !== "CANCELADA" && selectedCitaDetail.estado !== "ATENDIDA" && (
                         <button
                           onClick={async () => {
-                            if (confirm("¿Está seguro de cancelar esta cita? La sala quedará libre para agendar.")) {
+                            if (confirm("¿Cancelar cita y liberar la sala?")) {
                               const { actualizarEstadoCita } = await import("@/server/actions/citas");
                               await actualizarEstadoCita(selectedCitaDetail.id, "CANCELADA");
                               setCitas((prev) => prev.map((c) => c.id === selectedCitaDetail.id ? { ...c, estado: "CANCELADA" } : c));
                               setSelectedCitaDetail((prev: any) => ({ ...prev, estado: "CANCELADA" }));
                             }
                           }}
-                          className="py-2 px-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl border border-rose-200 text-center transition cursor-pointer text-xs"
+                          className="py-2 px-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl border border-rose-200 text-center transition cursor-pointer text-xs flex items-center justify-center gap-1.5"
                         >
-                          Cancelar Cita
+                          <X className="w-3.5 h-3.5 text-rose-600" />
+                          <span>Cancelar</span>
                         </button>
                       )}
                     </div>
@@ -1119,10 +1105,10 @@ export function MatrixGrid({
                   <div className="pt-3 flex items-center justify-between border-t border-slate-100">
                     <Link
                       href={`/dashboard/pacientes/${selectedCitaDetail.pacienteId}`}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold rounded-xl border border-teal-200 transition"
+                      className="inline-flex items-center gap-1.5 px-3 py-2 bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold rounded-xl border border-teal-200 transition"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
-                      <span>Ver Expediente y EVA</span>
+                      <span>Ficha Paciente</span>
                     </Link>
 
                     <button

@@ -7,7 +7,7 @@ import { CreditCard, Smartphone, DollarSign, CheckCircle2, AlertCircle } from "l
 
 interface PaymentFormProps {
   paquetesConSaldo: any[];
-  onPagoRegistrado?: () => void;
+  onPagoRegistrado?: (pagoData?: any) => void;
 }
 
 export function PaymentForm({ paquetesConSaldo, onPagoRegistrado }: PaymentFormProps) {
@@ -57,7 +57,14 @@ export function PaymentForm({ paquetesConSaldo, onPagoRegistrado }: PaymentFormP
       );
       setMonto("");
       setNumeroOperacion("");
-      if (onPagoRegistrado) onPagoRegistrado();
+      if (onPagoRegistrado) {
+        onPagoRegistrado({
+          pago: res.data?.pago,
+          paquete: res.data?.paquete,
+          paciente: selectedPaquete?.paciente,
+          servicio: selectedPaquete?.servicio,
+        });
+      }
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : "Error inesperado");
     } finally {

@@ -132,11 +132,8 @@ export function NewAppointmentModal({
             </div>
             <div>
               <h3 className="text-sm font-extrabold text-slate-900">
-                Agendar Nueva Cita Terapéutica
+                Agendar Cita
               </h3>
-              <p className="text-[11px] text-slate-500">
-                Asignación inteligente de sala física, fisioterapeuta y paquete
-              </p>
             </div>
           </div>
           <button
@@ -369,7 +366,7 @@ export function NewAppointmentModal({
               disabled={loading}
               className="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-xs transition disabled:opacity-50 cursor-pointer"
             >
-              {loading ? "Agendando..." : "Confirmar Cita"}
+              {loading ? "Agendando..." : "Agendar"}
             </button>
           </div>
         </form>

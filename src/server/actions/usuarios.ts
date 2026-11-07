@@ -47,10 +47,10 @@ export async function crearNuevoUsuario(data: {
     const clientIp = await obtenerIpCliente();
 
     // Verificación estricta de autorización RBAC en backend
-    if (!sesion || sesion.rol !== "ADMIN") {
+    if (!sesion || (sesion.rol !== "ADMIN" && sesion.rol !== "SUPERADMIN")) {
       return {
         success: false,
-        error: "Acceso denegado: Solo el Administrador General dispone de autorización para dar de alta nuevo personal del centro.",
+        error: "Acceso denegado: Solo el Administrador General o SuperAdmin dispone de autorización para dar de alta nuevo personal del centro.",
       };
     }
 
@@ -88,7 +88,7 @@ export async function crearNuevoUsuario(data: {
           data: {
             nombre: data.nombre.trim(),
             email: cleanEmail,
-            rol: data.rol,
+            rol: data.rol as any,
             especialidad: data.especialidad?.trim() || null,
             estado: data.estado || "ACTIVO",
             passwordHash,
@@ -106,7 +106,7 @@ export async function crearNuevoUsuario(data: {
             detalles: `Usuario ${nuevoDb.nombre} (${nuevoDb.rol}) creado en el sistema.`,
             ipAddress: clientIp,
           },
-        });
+        }).catch((auditErr) => console.warn("AuditLog warning al crear usuario:", auditErr));
 
         revalidatePath("/dashboard/usuarios");
         revalidatePath("/dashboard/configuracion");
@@ -128,7 +128,11 @@ export async function crearNuevoUsuario(data: {
         if (dbErr.code === "P2002") {
           return { success: false, error: `El correo ${cleanEmail} ya está registrado.` };
         }
-        console.warn("crearNuevoUsuario db error, usando fallback dbStore:", dbErr);
+        console.error("crearNuevoUsuario db error:", dbErr);
+        return { 
+          success: false, 
+          error: dbErr?.message ? `Error en base de datos: ${dbErr.message}` : "Error al registrar usuario en la base de datos." 
+        };
       }
     }
 
@@ -159,10 +163,10 @@ export async function modificarRolUsuario(
     const clientIp = await obtenerIpCliente();
 
     // Verificación estricta de autorización RBAC en backend
-    if (!sesion || sesion.rol !== "ADMIN") {
+    if (!sesion || (sesion.rol !== "ADMIN" && sesion.rol !== "SUPERADMIN")) {
       return {
         success: false,
-        error: "Acceso denegado: Solo el Administrador General dispone de autorización para reasignar roles.",
+        error: "Acceso denegado: Solo el Administrador General o SuperAdmin dispone de autorización para reasignar roles.",
       };
     }
 
@@ -178,7 +182,6 @@ export async function modificarRolUsuario(
         if (usuarioTarget) {
           const esPacienteTarget = 
             usuarioTarget.rol === "PACIENTE" || 
-            usuarioTarget.email.toLowerCase() === "alexander.saavedra@gmail.com" || 
             usuarioTarget.especialidad?.toLowerCase().includes("paciente");
 
           if (esPacienteTarget && nuevoRol !== "PACIENTE") {
@@ -198,7 +201,7 @@ export async function modificarRolUsuario(
 
         const actualizadoDb = await prisma.user.update({
           where: { id: usuarioId },
-          data: { rol: nuevoRol },
+          data: { rol: nuevoRol as any },
         });
 
         await prisma.auditLog.create({
@@ -259,8 +262,8 @@ export async function cambiarEstadoUsuario(
 ): Promise<ServerActionResult<UserItem>> {
   try {
     const sesion = await obtenerSesionServidor();
-    if (!sesion || sesion.rol !== "ADMIN") {
-      return { success: false, error: "Acceso denegado: Solo el Administrador puede activar o suspender cuentas de usuario." };
+    if (!sesion || (sesion.rol !== "ADMIN" && sesion.rol !== "SUPERADMIN")) {
+      return { success: false, error: "Acceso denegado: Solo el Administrador o SuperAdmin puede activar o suspender cuentas de usuario." };
     }
 
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
@@ -308,8 +311,8 @@ export async function eliminarUsuarioSistema(
 ): Promise<ServerActionResult<UserItem>> {
   try {
     const sesion = await obtenerSesionServidor();
-    if (!sesion || sesion.rol !== "ADMIN") {
-      return { success: false, error: "Acceso denegado: Solo el Administrador puede dar de baja cuentas de usuario." };
+    if (!sesion || (sesion.rol !== "ADMIN" && sesion.rol !== "SUPERADMIN")) {
+      return { success: false, error: "Acceso denegado: Solo el Administrador o SuperAdmin puede dar de baja cuentas de usuario." };
     }
 
     const clientIp = await obtenerIpCliente();
@@ -363,7 +366,7 @@ export async function eliminarUsuarioSistema(
     revalidatePath("/dashboard/configuracion");
     revalidatePath("/dashboard/auditoria");
 
-    return { success: true, data: eliminado };
+    return { success: true, data: (eliminado as UserItem) || undefined };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Error al eliminar usuario.";
     return { success: false, error: message };
