@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { agendarCitaSchema, type AgendarCitaInput } from "@/lib/validations";
 import { dbStore } from "@/lib/store";
 import { obtenerIpCliente } from "./auditoria";
+import { obtenerSesionServidor } from "@/lib/auth-server";
 
 import { prisma } from "@/lib/prisma";
 
@@ -33,20 +34,103 @@ export async function agendarCita(
     const inicio = new Date(validated.fechaHoraInicio);
     const fin = new Date(inicio.getTime() + duracionMinutos * 60000);
 
+    // Obtener sesión activa si no se proporcionó auditoría explícita
+    const sesion = await obtenerSesionServidor();
+    const finalAuditoria = usuarioAuditoria || (sesion ? {
+      id: sesion.userId,
+      nombre: sesion.nombre,
+      rol: sesion.rol,
+    } : {
+      nombre: "Recepción AJ Fisioterapia",
+      rol: "RECEPCION",
+    });
+
     // Si existe conexión real configurada a PostgreSQL en la nube (Supabase / Neon), ejecutar en transacción atómica
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       try {
         const resultadoTx = await prisma.$transaction(async (tx: any) => {
-          const sala = await tx.sala.findUnique({ where: { id: validated.salaId } });
-          if (!sala) throw new Error("La sala física seleccionada no existe.");
+          // 1. Resolver sala física existente o crear fallback
+          let sala = await tx.sala.findUnique({ where: { id: validated.salaId } });
+          if (!sala) {
+            sala = await tx.sala.findFirst({
+              where: {
+                OR: [
+                  { nombre: validated.salaId },
+                  { estado: "DISPONIBLE" },
+                ],
+              },
+            });
+            if (!sala) {
+              sala = await tx.sala.create({
+                data: {
+                  nombre: "Sala 1",
+                  estado: "DISPONIBLE",
+                },
+              });
+            }
+          }
           if (sala.estado === "MANTENIMIENTO") {
             throw new Error(`La ${sala.nombre} se encuentra temporalmente en MANTENIMIENTO.`);
           }
+          const actualSalaId = sala.id;
+
+          // 2. Resolver terapeuta o profesional asignado
+          let terapeuta = await tx.user.findUnique({ where: { id: validated.terapeutaId } });
+          if (!terapeuta) {
+            terapeuta = await tx.user.findFirst({
+              where: {
+                estado: "ACTIVO",
+                rol: { in: ["TERAPEUTA", "ASISTENTE", "ADMIN", "SUPERADMIN"] },
+              },
+            });
+            if (!terapeuta) {
+              terapeuta = await tx.user.findFirst();
+            }
+          }
+          if (!terapeuta) {
+            throw new Error("No hay personal profesional disponible para asignar a la cita.");
+          }
+          const actualTerapeutaId = terapeuta.id;
+
+          // 3. Resolver paciente
+          let paciente = await tx.paciente.findUnique({ where: { id: validated.pacienteId } });
+          if (!paciente) {
+            paciente = await tx.paciente.findFirst({
+              where: {
+                OR: [
+                  { dni: validated.pacienteId },
+                  { email: validated.pacienteId },
+                ],
+              },
+            });
+            if (!paciente) {
+              // Buscar en memoria para crear registro en Supabase si es necesario
+              const mockPac = dbStore.getPacientes().find(p => p.id === validated.pacienteId || p.dni === validated.pacienteId);
+              if (mockPac) {
+                paciente = await tx.paciente.create({
+                  data: {
+                    nombres: mockPac.nombres,
+                    apellidos: mockPac.apellidos,
+                    dni: mockPac.dni,
+                    telefono: mockPac.telefono,
+                    email: mockPac.email || null,
+                    fechaNacimiento: new Date(mockPac.fechaNacimiento || "1990-01-01"),
+                  },
+                });
+              } else {
+                paciente = await tx.paciente.findFirst();
+              }
+            }
+          }
+          if (!paciente) {
+            throw new Error("El paciente seleccionado no se encuentra registrado en el sistema.");
+          }
+          const actualPacienteId = paciente.id;
 
           // Validar solapamiento de sala en DB
           const solapamientoSala = await tx.cita.findFirst({
             where: {
-              salaId: validated.salaId,
+              salaId: actualSalaId,
               estado: { not: "CANCELADA" },
               AND: [
                 { fechaHoraInicio: { lt: fin } },
@@ -61,7 +145,7 @@ export async function agendarCita(
           // Validar solapamiento de terapeuta en DB
           const solapamientoTerapeuta = await tx.cita.findFirst({
             where: {
-              terapeutaId: validated.terapeutaId,
+              terapeutaId: actualTerapeutaId,
               estado: { not: "CANCELADA" },
               AND: [
                 { fechaHoraInicio: { lt: fin } },
@@ -70,52 +154,55 @@ export async function agendarCita(
             },
           });
           if (solapamientoTerapeuta) {
-            throw new Error("Conflicto de Terapeuta: El profesional ya cuenta con otra atención asignada en ese bloque horario.");
+            throw new Error(`Conflicto de Terapeuta: ${terapeuta.nombre} ya cuenta con otra atención asignada en ese bloque horario.`);
           }
 
           // Validar saldo de paquete
           let esReevaluacion = validated.esReevaluacion || false;
+          let actualPaqueteId: string | null = null;
           if (validated.paqueteId) {
             const paquete = await tx.tratamientoPaquete.findUnique({
               where: { id: validated.paqueteId },
               include: { citas: true },
             });
-            if (!paquete) throw new Error("El paquete de sesiones especificado no existe.");
-            const citasActivas = paquete.citas.filter((c: any) => c.estado !== "CANCELADA");
-            if (citasActivas.length >= paquete.totalSesiones) {
-              throw new Error(`Saldo de sesiones agotado: El paquete cuenta con ${paquete.totalSesiones} sesiones y ya están cubiertas.`);
-            }
-            if ((citasActivas.length + 1) % 5 === 0) {
-              esReevaluacion = true;
+            if (paquete) {
+              actualPaqueteId = paquete.id;
+              const citasActivas = paquete.citas.filter((c: any) => c.estado !== "CANCELADA");
+              if (citasActivas.length >= paquete.totalSesiones) {
+                throw new Error(`Saldo de sesiones agotado: El paquete cuenta con ${paquete.totalSesiones} sesiones y ya están cubiertas.`);
+              }
+              if ((citasActivas.length + 1) % 5 === 0) {
+                esReevaluacion = true;
+              }
             }
           }
 
-          // Inserción atómica
+          // Inserción atómica en base de datos
           const nuevaCitaDb = await tx.cita.create({
             data: {
-              pacienteId: validated.pacienteId,
-              paqueteId: validated.paqueteId || null,
-              terapeutaId: validated.terapeutaId,
-              salaId: validated.salaId,
+              pacienteId: actualPacienteId,
+              paqueteId: actualPaqueteId,
+              terapeutaId: actualTerapeutaId,
+              salaId: actualSalaId,
               fechaHoraInicio: inicio,
               fechaHoraFin: fin,
               estado: "PROGRAMADA",
               esReevaluacion,
               notasCita: validated.notasCita || null,
-              creadoPorNombre: usuarioAuditoria?.nombre || "Recepción AJ Fisioterapia",
+              creadoPorNombre: `${finalAuditoria.nombre} (${finalAuditoria.rol})`,
             },
           });
 
           // Trazabilidad y auditoría
           await tx.auditLog.create({
             data: {
-              usuarioId: usuarioAuditoria?.id,
-              usuarioNombre: usuarioAuditoria?.nombre || "Recepción AJ Fisioterapia",
-              usuarioRol: usuarioAuditoria?.rol || "RECEPCION",
+              usuarioId: finalAuditoria.id,
+              usuarioNombre: finalAuditoria.nombre,
+              usuarioRol: finalAuditoria.rol,
               accion: "CITA_CREADA",
               modulo: "AGENDA",
               entidadId: nuevaCitaDb.id,
-              detalles: `Cita agendada para el paciente ${validated.pacienteId} en ${sala.nombre}. ${esReevaluacion ? "[HITO REEVALUACIÓN OBLIGATORIA]" : ""}${validated.notasCita ? ` [Notas: ${validated.notasCita}]` : ""}`,
+              detalles: `Cita agendada para ${paciente.nombres} ${paciente.apellidos} en ${sala.nombre} con ${terapeuta.nombre}. ${esReevaluacion ? "[HITO REEVALUACIÓN OBLIGATORIA]" : ""}${validated.notasCita ? ` [Notas: ${validated.notasCita}]` : ""}`,
               ipAddress: clientIp,
             },
           });
@@ -133,7 +220,7 @@ export async function agendarCita(
           duracionMinutos: validated.duracionMinutos,
           esReevaluacion: validated.esReevaluacion,
           notasCita: validated.notasCita,
-          usuarioAuditoria,
+          usuarioAuditoria: finalAuditoria,
           ipAddress: clientIp,
         });
 
@@ -163,7 +250,7 @@ export async function agendarCita(
       fechaHoraInicio: validated.fechaHoraInicio,
       duracionMinutos: validated.duracionMinutos,
       esReevaluacion: validated.esReevaluacion,
-      usuarioAuditoria,
+      usuarioAuditoria: finalAuditoria,
       ipAddress: clientIp,
     });
 
@@ -224,13 +311,41 @@ export async function obtenerCitasAgenda(fechaIso?: string) {
         }),
         prisma.sala.findMany({ orderBy: { nombre: "asc" } }),
         prisma.user.findMany({
-          where: { rol: { in: ["TERAPEUTA", "ASISTENTE"] } },
+          where: { rol: { in: ["TERAPEUTA", "ASISTENTE", "ADMIN", "SUPERADMIN"] }, estado: "ACTIVO" },
           orderBy: { nombre: "asc" },
         }),
         prisma.servicio.findMany({ orderBy: { orden: "asc" } }),
         prisma.tratamientoPaquete.findMany(),
-        prisma.paciente.findMany(),
+        prisma.paciente.findMany({ orderBy: { apellidos: "asc" } }),
       ]);
+
+      let finalSalas = salasDb;
+      if (finalSalas.length === 0) {
+        const salasData = [
+          { nombre: "Sala 1", estado: "DISPONIBLE" as const },
+          { nombre: "Sala 2", estado: "DISPONIBLE" as const },
+          { nombre: "Sala 3", estado: "DISPONIBLE" as const },
+          { nombre: "Sala 4", estado: "DISPONIBLE" as const },
+          { nombre: "Sala 5", estado: "DISPONIBLE" as const },
+          { nombre: "Sala 6", estado: "DISPONIBLE" as const },
+        ];
+        for (const s of salasData) {
+          await prisma.sala.upsert({
+            where: { nombre: s.nombre },
+            update: {},
+            create: s,
+          }).catch(() => {});
+        }
+        finalSalas = await prisma.sala.findMany({ orderBy: { nombre: "asc" } });
+      }
+
+      let finalTerapeutas = terapeutasDb;
+      if (finalTerapeutas.length === 0) {
+        finalTerapeutas = await prisma.user.findMany({
+          where: { estado: "ACTIVO" },
+          orderBy: { nombre: "asc" },
+        });
+      }
 
       const citasFormateadas = citasDb.map((c) => ({
         id: c.id,
@@ -272,13 +387,13 @@ export async function obtenerCitasAgenda(fechaIso?: string) {
       return {
         fecha: startOfDay.toISOString(),
         citas: citasFormateadas,
-        salas: salasDb.map((s) => ({
+        salas: finalSalas.map((s) => ({
           id: s.id,
           nombre: s.nombre,
           estado: s.estado as any,
           capacidadSimultanea: 1,
         })),
-        terapeutas: terapeutasDb.map((t) => ({
+        terapeutas: finalTerapeutas.map((t) => ({
           id: t.id,
           nombre: t.nombre,
           email: t.email,

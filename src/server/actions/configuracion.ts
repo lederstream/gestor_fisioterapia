@@ -65,11 +65,30 @@ export async function obtenerConfiguracionCompleta() {
 
   try {
     if (isDatabaseAvailable() && process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
-      const [salasDb, serviciosDb, personalDb] = await Promise.all([
-        prisma.sala.findMany(),
+      let [salasDb, serviciosDb, personalDb] = await Promise.all([
+        prisma.sala.findMany({ orderBy: { nombre: "asc" } }),
         prisma.servicio.findMany({ orderBy: { orden: "asc" } }),
-        prisma.user.findMany(),
+        prisma.user.findMany({ orderBy: { nombre: "asc" } }),
       ]);
+
+      if (!salasDb || salasDb.length === 0) {
+        const salasData = [
+          { nombre: "Sala 1", estado: "DISPONIBLE" as const },
+          { nombre: "Sala 2", estado: "DISPONIBLE" as const },
+          { nombre: "Sala 3", estado: "DISPONIBLE" as const },
+          { nombre: "Sala 4", estado: "DISPONIBLE" as const },
+          { nombre: "Sala 5", estado: "DISPONIBLE" as const },
+          { nombre: "Sala 6", estado: "DISPONIBLE" as const },
+        ];
+        for (const s of salasData) {
+          await prisma.sala.upsert({
+            where: { nombre: s.nombre },
+            update: {},
+            create: s,
+          }).catch(() => {});
+        }
+        salasDb = await prisma.sala.findMany({ orderBy: { nombre: "asc" } });
+      }
 
       if (salasDb && salasDb.length > 0) {
         salas = salasDb.map((s) => ({

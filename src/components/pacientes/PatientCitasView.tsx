@@ -13,13 +13,13 @@ import {
   MessageCircle, 
   Sparkles,
   CalendarDays,
-  Download,
   ExternalLink,
-  Plus
+  Plus,
+  Check
 } from "lucide-react";
 import { formatTime } from "@/lib/utils";
 import { PatientBookingModal } from "./PatientBookingModal";
-import { createGoogleCalendarUrl, downloadIcsFile } from "@/lib/calendar";
+import { createGoogleCalendarUrl } from "@/lib/calendar";
 
 interface PatientCitasViewProps {
   citas: any[];
@@ -103,9 +103,11 @@ export function PatientCitasView({
       year: "numeric",
     });
 
+    const isActiva = cita.estado === "PROGRAMADA" || cita.estado === "CONFIRMADA";
+
     const calendarEvent = {
       title: `Sesión Fisioterapia • ${clinicConfig.nombreComercial}`,
-      description: `Sesión de fisioterapia con ${terapeuta?.nombre || "Lic. Fisioterapeuta"} en ${sala?.nombre || "Sala 1"}. Traer ropa deportiva cómoda.`,
+      description: `Sesión con ${terapeuta?.nombre || "Lic. Fisioterapeuta"} en ${sala?.nombre || "Sala"}. Traer ropa deportiva cómoda.`,
       location: clinicConfig.direccion,
       startDate: cita.fechaHoraInicio,
       endDate: cita.fechaHoraFin || new Date(fechaObj.getTime() + 45 * 60000).toISOString(),
@@ -114,94 +116,96 @@ export function PatientCitasView({
     return (
       <div
         key={cita.id}
-        className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-teal-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group"
+        className={`bg-white p-4 sm:p-5 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group ${
+          isActiva ? "border-slate-200 shadow-xs hover:border-teal-400" : "border-slate-100 bg-slate-50/50 opacity-80"
+        }`}
       >
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-700 flex flex-col items-center justify-center shrink-0 border border-teal-100 group-hover:scale-105 transition-transform">
+        <div className="flex items-start gap-3.5">
+          <div className={`w-11 h-11 rounded-xl flex flex-col items-center justify-center shrink-0 border ${
+            isActiva ? "bg-teal-50 text-teal-800 border-teal-200" : "bg-slate-100 text-slate-500 border-slate-200"
+          }`}>
             <span className="text-[10px] font-bold uppercase">{fechaObj.toLocaleDateString("es-PE", { month: "short" })}</span>
             <span className="text-base font-black leading-none">{fechaObj.getDate()}</span>
           </div>
 
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-bold text-slate-900 text-sm capitalize">{fechaTexto}</span>
+              <span className="font-bold text-slate-900 text-xs sm:text-sm capitalize">{fechaTexto}</span>
               <span
-                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
                   cita.estado === "CONFIRMADA"
                     ? "bg-blue-50 text-blue-700 border-blue-200"
                     : cita.estado === "PROGRAMADA"
                     ? "bg-teal-50 text-teal-700 border-teal-200"
                     : cita.estado === "ATENDIDA"
                     ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                    : "bg-rose-50 text-rose-700 border-rose-200"
+                    : "bg-slate-100 text-slate-500 border-slate-300"
                 }`}
               >
-                {cita.estado}
+                {cita.estado === "ATENDIDA" ? "Completada" : cita.estado}
               </span>
-              {cita.esReevaluacion && (
+              {cita.esReevaluacion && isActiva && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                  <AlertTriangle className="w-3 h-3 text-amber-600" /> Hito Reevaluación (Sesión 5)
+                  <AlertTriangle className="w-3 h-3 text-amber-600" /> Hito Reevaluación
                 </span>
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 pt-0.5">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 pt-0.5">
               <span className="inline-flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5 text-slate-400" />
                 {formatTime(cita.fechaHoraInicio)} - {formatTime(cita.fechaHoraFin || new Date(fechaObj.getTime() + 45 * 60000))}
               </span>
               <span className="inline-flex items-center gap-1">
                 <User className="w-3.5 h-3.5 text-teal-600" />
-                {terapeuta?.nombre || "Lic. Fisioterapeuta asignado"}
+                {terapeuta?.nombre || "Lic. Asignado"}
               </span>
               <span className="inline-flex items-center gap-1">
                 <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-                {clinicConfig.nombreComercial} • {sala?.nombre || "Sala 1"}
+                {sala?.nombre || "Sala"}
               </span>
             </div>
 
-            {/* Pauta Clínica Recomendada */}
-            <div className="text-[11px] text-teal-700 bg-teal-50/60 px-2.5 py-1 rounded-lg border border-teal-100/70 inline-block mt-1">
-              💡 Asistir con ropa deportiva ligera y llegar 5 minutos antes de la hora indicada.
-            </div>
+            {isActiva && (
+              <div className="text-[11px] text-teal-700 bg-teal-50/60 px-2.5 py-0.5 rounded-md border border-teal-100/70 inline-block mt-0.5 font-medium">
+                💡 Llegar 5 minutos antes con ropa deportiva ligera.
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Acciones del Paciente */}
-        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 self-end sm:self-center shrink-0">
-          {/* Botón Sincronizar Google Calendar */}
-          <a
-            href={createGoogleCalendarUrl(calendarEvent)}
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Añadir a Google Calendar"
-            className="p-2 bg-slate-50 hover:bg-blue-50 hover:text-blue-700 text-slate-600 text-xs rounded-xl border border-slate-200 hover:border-blue-300 transition flex items-center gap-1"
-          >
-            <ExternalLink className="w-3.5 h-3.5 text-blue-600" />
-            <span className="hidden md:inline">Calendar</span>
-          </a>
+        {/* Acciones del Paciente: Solo activas si la cita está pendiente */}
+        <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+          {isActiva ? (
+            <>
+              <a
+                href={createGoogleCalendarUrl(calendarEvent)}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Añadir a Google Calendar"
+                className="px-2.5 py-1.5 bg-slate-50 hover:bg-blue-50 hover:text-blue-700 text-slate-600 text-xs font-semibold rounded-xl border border-slate-200 hover:border-blue-300 transition flex items-center gap-1"
+              >
+                <ExternalLink className="w-3.5 h-3.5 text-blue-600" />
+                <span>Calendar</span>
+              </a>
 
-          {/* Botón Descargar .ics */}
-          <button
-            type="button"
-            onClick={() => downloadIcsFile(calendarEvent, `cita-${fechaObj.toISOString().split("T")[0]}.ics`)}
-            title="Descargar archivo para Apple Calendar u Outlook (.ics)"
-            className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs rounded-xl border border-slate-200 transition cursor-pointer"
-          >
-            <Download className="w-3.5 h-3.5" />
-          </button>
-
-          {/* Coordinar por WhatsApp */}
-          <a
-            href={`https://wa.me/${cleanWhatsapp}?text=Hola,%20soy%20el%20paciente%20${encodeURIComponent(paciente?.nombres ? `${paciente.nombres} ${paciente.apellidos}` : (paciente?.nombre || "Paciente"))}%20y%20quisiera%20consultar%20sobre%20mi%20cita%20del%20${encodeURIComponent(fechaTexto)}%20a%20las%20${formatTime(cita.fechaHoraInicio)}.`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl border border-emerald-200 transition flex items-center gap-1.5"
-            title="Reprogramar o consultar por WhatsApp"
-          >
-            <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Coordinar</span>
-          </a>
+              <a
+                href={`https://wa.me/${cleanWhatsapp}?text=Hola,%20soy%20el%20paciente%20${encodeURIComponent(paciente?.nombres ? `${paciente.nombres} ${paciente.apellidos}` : (paciente?.nombre || "Paciente"))}%20y%20quisiera%20consultar%20sobre%20mi%20cita%20del%20${encodeURIComponent(fechaTexto)}%20a%20las%20${formatTime(cita.fechaHoraInicio)}.`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5"
+                title="Coordinar o consultar por WhatsApp"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span>Coordinar</span>
+              </a>
+            </>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-lg">
+              <Check className="w-3.5 h-3.5 text-slate-400" />
+              Finalizada
+            </span>
+          )}
         </div>
       </div>
     );
@@ -213,23 +217,23 @@ export function PatientCitasView({
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
           <div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
-              <CalendarDays className="w-6 h-6 text-teal-600" />
-              Mis Citas de Terapia
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+              <CalendarDays className="w-5 h-5 sm:w-6 sm:h-6 text-teal-600" />
+              Mis Citas
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Consulta los horarios confirmados, terapeuta a cargo y sala asignada para tu tratamiento en {clinicConfig.nombreComercial}.
+            <p className="text-xs text-slate-500 mt-0.5">
+              Horarios confirmados y salas asignadas para tu recuperación.
             </p>
           </div>
 
-          {/* Botón In-App: Abre el modal sin abandonar el portal */}
+          {/* Botón Reservar */}
           <button
             type="button"
             onClick={() => setIsBookingOpen(true)}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-bold text-xs rounded-xl shadow-md shadow-teal-600/20 transition cursor-pointer active:scale-95"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer active:scale-95"
           >
-            <Sparkles className="w-4 h-4" />
-            <span>Reservar Nueva Cita</span>
+            <Plus className="w-4 h-4" />
+            <span>Reservar Cita</span>
           </button>
         </div>
 
