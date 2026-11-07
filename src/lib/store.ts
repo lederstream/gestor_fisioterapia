@@ -186,27 +186,27 @@ export interface ConfiguracionClinicaItem {
   updatedAt: string;
 }
 
-// Semilla inicial estricta del negocio AJ Fisioterapia
+// Semilla inicial estricta del negocio AJ Fisioterapia sincronizada con UUIDs de Supabase
 const initialUsers: UserItem[] = [
-  { id: "usr-superadmin-1", nombre: "Marco Antonio (Soporte)", email: "superadmin@sistema.pe", rol: "SUPERADMIN", especialidad: "Soporte Técnico y Arquitectura de Software", estado: "ACTIVO" },
-  { id: "usr-admin-1", nombre: "Marco Yana", email: "marco.yana@ajfisioterapia.pe", rol: "ADMIN", especialidad: "Gerencia y Dirección Clínica", estado: "ACTIVO" },
-  { id: "usr-rec-1", nombre: "Karin Palacios", email: "karin.palacios@ajfisioterapia.pe", rol: "RECEPCION", estado: "ACTIVO" },
-  { id: "usr-rec-2", nombre: "Laura Peña", email: "recepcion2@ajfisioterapia.pe", rol: "RECEPCION", estado: "ACTIVO" },
-  { id: "usr-ter-1", nombre: "Lic. Jeiser Vasquez", email: "jeiser.vasquez@ajfisioterapia.pe", rol: "TERAPEUTA", especialidad: "Lic. Fisioterapia Deportiva y Readaptación", estado: "ACTIVO" },
-  { id: "usr-ter-2", nombre: "Lic. Andrea Rivas", email: "andrea.rivas@ajfisioterapia.pe", rol: "TERAPEUTA", especialidad: "Lic. Terapia Manual Ortopédica y Columna", estado: "ACTIVO" },
-  { id: "usr-ter-3", nombre: "Lic. Javier Ponce", email: "javier.ponce@ajfisioterapia.pe", rol: "TERAPEUTA", especialidad: "Lic. Biomecánica y Reeducación Postural", estado: "ACTIVO" },
-  { id: "usr-ter-4", nombre: "Lic. Valeria Soto", email: "valeria.soto@ajfisioterapia.pe", rol: "TERAPEUTA", especialidad: "Lic. Neurorehabilitación y Adulto Mayor", estado: "ACTIVO" },
-  { id: "usr-tec-1", nombre: "Tec. Miguel Torres", email: "miguel.torres@ajfisioterapia.pe", rol: "ASISTENTE", especialidad: "Técnico en Agentes Físicos y Electroterapia", estado: "ACTIVO" },
-  { id: "usr-tec-2", nombre: "Tec. Diana Paredes", email: "diana.paredes@ajfisioterapia.pe", rol: "ASISTENTE", especialidad: "Técnico en Masoterapia y Crioterapia", estado: "ACTIVO" },
+  { id: "74c88f79-9934-477f-aafa-3a5df589a719", nombre: "Marco Antonio (Soporte)", email: "superadmin@sistema.pe", rol: "SUPERADMIN", especialidad: "Soporte Técnico y Arquitectura de Software", estado: "ACTIVO" },
+  { id: "0be4bd87-af0e-420c-a7d9-49a59580b578", nombre: "Marco Yana", email: "marco.yana@ajfisioterapia.pe", rol: "ADMIN", especialidad: "Gerencia y Dirección Clínica", estado: "ACTIVO" },
+  { id: "ce71dcfe-6031-4b6c-b6fa-a60e9a64755f", nombre: "Karin Palacios", email: "karin.palacios@ajfisioterapia.pe", rol: "RECEPCION", estado: "ACTIVO" },
+  { id: "9d7d5050-5289-4eb3-922e-8b362a6e45c5", nombre: "Laura Peña", email: "recepcion2@ajfisioterapia.pe", rol: "RECEPCION", estado: "ACTIVO" },
+  { id: "58782c42-8e79-47c7-b9a0-73929c852161", nombre: "Lic. Jeiser Vasquez", email: "jeiser.vasquez@ajfisioterapia.pe", rol: "TERAPEUTA", especialidad: "Lic. Fisioterapia Deportiva y Readaptación", estado: "ACTIVO" },
+  { id: "9ddfb347-0e7d-4176-8d13-6d15bdcc6e9c", nombre: "Lic. Andrea Rivas", email: "andrea.rivas@ajfisioterapia.pe", rol: "TERAPEUTA", especialidad: "Lic. Terapia Manual Ortopédica y Columna", estado: "ACTIVO" },
+  { id: "1173afcb-a989-422c-9408-b67600799cb9", nombre: "Lic. Javier Ponce", email: "javier.ponce@ajfisioterapia.pe", rol: "TERAPEUTA", especialidad: "Lic. Biomecánica y Reeducación Postural", estado: "ACTIVO" },
+  { id: "99cb2db8-a16b-47b0-ae87-8204092d4419", nombre: "Lic. Valeria Soto", email: "valeria.soto@ajfisioterapia.pe", rol: "TERAPEUTA", especialidad: "Lic. Neurorehabilitación y Adulto Mayor", estado: "ACTIVO" },
+  { id: "c5003923-27d6-4ae2-a652-34ffd4e45c64", nombre: "Tec. Miguel Torres", email: "miguel.torres@ajfisioterapia.pe", rol: "ASISTENTE", especialidad: "Técnico en Agentes Físicos y Electroterapia", estado: "ACTIVO" },
+  { id: "110703d3-15f3-4009-aa6a-50066e5fb0ab", nombre: "Tec. Diana Paredes", email: "diana.paredes@ajfisioterapia.pe", rol: "ASISTENTE", especialidad: "Técnico en Masoterapia y Crioterapia", estado: "ACTIVO" },
 ];
 
 const initialSalas: SalaItem[] = [
-  { id: "sala-1", nombre: "Sala 1", estado: "DISPONIBLE", equipamiento: "Camilla hidráulica, TENS, Ultrasonido terapéutico", capacidadSimultanea: 1 },
-  { id: "sala-2", nombre: "Sala 2", estado: "DISPONIBLE", equipamiento: "Camilla quiropráctica, Láser de alta intensidad", capacidadSimultanea: 1 },
-  { id: "sala-3", nombre: "Sala 3", estado: "DISPONIBLE", equipamiento: "Gimnasio funcional, Espalderas, Balones bobath", capacidadSimultanea: 1 },
-  { id: "sala-4", nombre: "Sala 4", estado: "DISPONIBLE", equipamiento: "Crioterapia compresiva Game Ready, Magnetoterapia", capacidadSimultanea: 1 },
-  { id: "sala-5", nombre: "Sala 5", estado: "DISPONIBLE", equipamiento: "Tracción cervical y lumbar computarizada", capacidadSimultanea: 1 },
-  { id: "sala-6", nombre: "Sala 6", estado: "DISPONIBLE", equipamiento: "Punción seca, Ondas de choque focales", capacidadSimultanea: 1 },
+  { id: "15823224-a08a-4ef1-85db-bdf91da8ff90", nombre: "Sala 1", estado: "DISPONIBLE", equipamiento: "Camilla hidráulica, TENS, Ultrasonido terapéutico", capacidadSimultanea: 1 },
+  { id: "5a3ef60f-93e4-4b0c-84c2-6f72a8f0c225", nombre: "Sala 2", estado: "DISPONIBLE", equipamiento: "Camilla quiropráctica, Láser de alta intensidad", capacidadSimultanea: 1 },
+  { id: "7d5e2bfe-1202-481b-aa1e-10dccd3f5d72", nombre: "Sala 3", estado: "DISPONIBLE", equipamiento: "Gimnasio funcional, Espalderas, Balones bobath", capacidadSimultanea: 1 },
+  { id: "b91d6319-c270-4553-8543-627a31ffd86e", nombre: "Sala 4", estado: "DISPONIBLE", equipamiento: "Crioterapia compresiva Game Ready, Magnetoterapia", capacidadSimultanea: 1 },
+  { id: "0ed8ea5b-4690-4d69-a767-e8948854cb23", nombre: "Sala 5", estado: "DISPONIBLE", equipamiento: "Tracción cervical y lumbar computarizada", capacidadSimultanea: 1 },
+  { id: "4e288257-e065-4998-ac95-a6efdd6c983e", nombre: "Sala 6", estado: "DISPONIBLE", equipamiento: "Punción seca, Ondas de choque focales", capacidadSimultanea: 1 },
 ];
 
 const initialServicios: ServicioItem[] = [

@@ -62,23 +62,23 @@ export function PatientBookingModal({
     };
   }, [paciente]);
 
-  // Lista de terapeutas clínica con Lic. Jeiser Vasquez como predeterminado
+  // Lista de terapeutas de la clínica sincronizados con IDs oficiales de Supabase
   const listaTerapeutas = useMemo(() => {
     if (terapeutas && terapeutas.length > 0) return terapeutas;
     return [
-      { id: "usr-ter-1", nombre: "Lic. Jeiser Vasquez", especialidad: "Lic. Fisioterapia Deportiva (CTMP 12480)" },
-      { id: "usr-ter-2", nombre: "Lic. Andrea Rivas", especialidad: "Lic. Fisioterapia Traumatológica (CTMP 14920)" },
-      { id: "usr-ter-4", nombre: "Lic. Valeria Soto", especialidad: "Lic. Fisioterapia y Neurorehabilitación" },
+      { id: "58782c42-8e79-47c7-b9a0-73929c852161", nombre: "Lic. Jeiser Vasquez", especialidad: "Lic. Fisioterapia Deportiva (CTMP 12480)" },
+      { id: "9ddfb347-0e7d-4176-8d13-6d15bdcc6e9c", nombre: "Lic. Andrea Rivas", especialidad: "Lic. Fisioterapia Traumatológica (CTMP 14920)" },
+      { id: "99cb2db8-a16b-47b0-ae87-8204092d4419", nombre: "Lic. Valeria Soto", especialidad: "Lic. Fisioterapia y Neurorehabilitación" },
     ];
   }, [terapeutas]);
 
-  // Lista de salas físicas disponibles
+  // Lista de salas físicas disponibles sincronizadas con IDs oficiales de Supabase
   const listaSalas = useMemo(() => {
     if (salas && salas.length > 0) return salas.filter((s) => s.estado === "DISPONIBLE");
     return [
-      { id: "sala-1", nombre: "Sala 1 - Fisioterapia Deportiva & TMR", estado: "DISPONIBLE" },
-      { id: "sala-2", nombre: "Sala 2 - Columna y Dolor Miofascial", estado: "DISPONIBLE" },
-      { id: "sala-3", nombre: "Sala 3 - Neurorehabilitación & Magneto", estado: "DISPONIBLE" },
+      { id: "15823224-a08a-4ef1-85db-bdf91da8ff90", nombre: "Sala 1 - Fisioterapia Deportiva & TMR", estado: "DISPONIBLE" },
+      { id: "5a3ef60f-93e4-4b0c-84c2-6f72a8f0c225", nombre: "Sala 2 - Columna y Dolor Miofascial", estado: "DISPONIBLE" },
+      { id: "7d5e2bfe-1202-481b-aa1e-10dccd3f5d72", nombre: "Sala 3 - Neurorehabilitación & Magneto", estado: "DISPONIBLE" },
     ];
   }, [salas]);
 
@@ -114,8 +114,8 @@ export function PatientBookingModal({
   const esHitoReevaluacion = sesionProyectada % 5 === 0;
 
   // Form State
-  const [selectedTerapeutaId, setSelectedTerapeutaId] = useState(listaTerapeutas[0]?.id || "usr-ter-1");
-  const [selectedSalaId, setSelectedSalaId] = useState(listaSalas[0]?.id || "sala-1");
+  const [selectedTerapeutaId, setSelectedTerapeutaId] = useState(listaTerapeutas[0]?.id || "58782c42-8e79-47c7-b9a0-73929c852161");
+  const [selectedSalaId, setSelectedSalaId] = useState(listaSalas[0]?.id || "15823224-a08a-4ef1-85db-bdf91da8ff90");
 
   useEffect(() => {
     if (listaTerapeutas.length > 0 && !listaTerapeutas.some((t) => t.id === selectedTerapeutaId)) {

@@ -52,8 +52,9 @@ export function MatrixGrid({
   servicios,
   configuracion,
 }: MatrixGridProps) {
-  const { currentUser, hasPermission } = useAuth();
+  const { currentUser, hasPermission, currentRole } = useAuth();
   const canSeeFinance = hasPermission("caja:ver");
+  const canEditConfig = hasPermission("config:modificar") || currentRole === "ADMIN" || currentRole === "SUPERADMIN";
   const [citas, setCitas] = useState(initialCitas);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -617,18 +618,22 @@ export function MatrixGrid({
                     Clínica Cerrada el día {diaSemanaClave.charAt(0).toUpperCase() + diaSemanaClave.slice(1)}
                   </h4>
                   <p className="text-xs text-slate-500 mt-1">
-                    La configuración institucional de AJ Fisioterapia establece que este día no tiene atención clínica. Puedes seleccionar otra fecha en la barra superior o modificar los días de atención en Configuración.
+                    {canEditConfig
+                      ? "La configuración institucional establece que este día no tiene atención clínica. Puedes seleccionar otra fecha o modificar los días y horas de atención en Configuración."
+                      : "La clínica se encuentra cerrada en este día según el cronograma institucional. Puedes seleccionar otra fecha en la barra superior."}
                   </p>
                 </div>
-                <div className="pt-1">
-                  <Link
-                    href="/dashboard/configuracion"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white text-teal-700 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold shadow-2xs transition"
-                  >
-                    <SlidersHorizontal className="w-3.5 h-3.5" />
-                    <span>Ajustar Horarios de Atención</span>
-                  </Link>
-                </div>
+                {canEditConfig && (
+                  <div className="pt-1">
+                    <Link
+                      href="/dashboard/configuracion"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white text-teal-700 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold shadow-2xs transition"
+                    >
+                      <SlidersHorizontal className="w-3.5 h-3.5" />
+                      <span>Ajustar Horarios de Atención</span>
+                    </Link>
+                  </div>
+                )}
               </div>
             ) : (
             <div className="divide-y divide-slate-100">

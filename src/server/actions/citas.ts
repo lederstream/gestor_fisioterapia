@@ -85,26 +85,24 @@ export async function agendarCita(
           }
           const actualSalaId = sala.id;
 
-          // 2. Resolver terapeuta o profesional asignado de forma segura
+          // 2. Resolver terapeuta o profesional asignado por su ID oficial (UUID)
           let terapeuta: any = null;
           if (isUuid(validated.terapeutaId)) {
-            terapeuta = await tx.user.findUnique({ where: { id: validated.terapeutaId } });
+            terapeuta = await tx.user.findFirst({
+              where: {
+                id: validated.terapeutaId,
+                estado: "ACTIVO",
+              },
+            });
           }
           if (!terapeuta) {
-            // Mapeo defensivo para alias o códigos de prueba (usr-ter-1, usr-ter-2, etc.)
-            const mockTherapists: Record<string, string> = {
-              "usr-ter-1": "jeiser",
-              "usr-ter-2": "andrea",
-              "usr-ter-3": "javier",
-              "usr-ter-4": "valeria",
-            };
-            const keyword = mockTherapists[validated.terapeutaId] || validated.terapeutaId;
+            // Búsqueda por email o nombre si se seleccionó directamente por identificador de texto
             terapeuta = await tx.user.findFirst({
               where: {
                 estado: "ACTIVO",
                 OR: [
-                  { email: { contains: keyword, mode: "insensitive" } },
-                  { nombre: { contains: keyword, mode: "insensitive" } },
+                  { email: { equals: validated.terapeutaId, mode: "insensitive" } },
+                  { nombre: { contains: validated.terapeutaId, mode: "insensitive" } },
                 ],
               },
             });
@@ -115,17 +113,6 @@ export async function agendarCita(
                   rol: { in: ["TERAPEUTA", "ASISTENTE"] },
                 },
               });
-            }
-            if (!terapeuta) {
-              terapeuta = await tx.user.findFirst({
-                where: {
-                  estado: "ACTIVO",
-                  rol: { in: ["ADMIN", "SUPERADMIN"] },
-                },
-              });
-            }
-            if (!terapeuta) {
-              terapeuta = await tx.user.findFirst();
             }
           }
           if (!terapeuta) {
