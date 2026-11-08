@@ -379,19 +379,6 @@ const initialAuditLogs: AuditLogItem[] = [
   },
 ];
 
-const STORE_LEGACY_MAP: Record<string, string> = {
-  "usr-ter-1": "58782c42-8e79-47c7-b9a0-73929c852161",
-  "usr-ter-2": "9ddfb347-0e7d-4176-8d13-6d15bdcc6e9c",
-  "usr-ter-3": "1173afcb-a989-422c-9408-b67600799cb9",
-  "usr-ter-4": "99cb2db8-a16b-47b0-ae87-8204092d4419",
-  "sala-1": "15823224-a08a-4ef1-85db-bdf91da8ff90",
-  "sala-2": "5a3ef60f-93e4-4b0c-84c2-6f72a8f0c225",
-  "sala-3": "7d5e2bfe-1202-481b-aa1e-10dccd3f5d72",
-  "sala-4": "b91d6319-c270-4553-8543-627a31ffd86e",
-  "sala-5": "0ed8ea5b-4690-4d69-a767-e8948854cb23",
-  "sala-6": "4e288257-e065-4998-ac95-a6efdd6c983e",
-};
-
 class GestorFisioStore {
   private users: UserItem[] = [...initialUsers];
   private salas: SalaItem[] = [...initialSalas];
@@ -878,19 +865,12 @@ class GestorFisioStore {
     const inicioIso = inicio.toISOString();
     const finIso = fin.toISOString();
 
-    const mappedSalaId = (params.salaId && STORE_LEGACY_MAP[params.salaId]) ? STORE_LEGACY_MAP[params.salaId] : params.salaId;
-    let sala = this.salas.find((s) => s.id === mappedSalaId || s.id === params.salaId);
-    if (!sala) {
-      sala = this.salas.find((s) => 
-        s.nombre.toLowerCase() === params.salaId?.toLowerCase() ||
-        s.nombre.toLowerCase().replace(/\s+/g, "-") === params.salaId?.toLowerCase()
-      );
-    }
+    let sala = this.salas.find((s) => s.id === params.salaId || s.nombre.toLowerCase() === params.salaId?.toLowerCase());
     if (!sala && this.salas.length > 0) {
       sala = this.salas[0];
     }
     if (!sala) {
-      sala = { id: params.salaId || "15823224-a08a-4ef1-85db-bdf91da8ff90", nombre: "Sala 1", estado: "DISPONIBLE", capacidadSimultanea: 1 };
+      sala = { id: params.salaId || "sala-1", nombre: "Sala 1", estado: "DISPONIBLE", capacidadSimultanea: 1 };
       this.salas.push(sala);
     }
     params.salaId = sala.id;
@@ -899,11 +879,7 @@ class GestorFisioStore {
       throw new Error(`La ${sala.nombre} se encuentra temporalmente en MANTENIMIENTO.`);
     }
 
-    const mappedTerapeutaId = (params.terapeutaId && STORE_LEGACY_MAP[params.terapeutaId]) ? STORE_LEGACY_MAP[params.terapeutaId] : params.terapeutaId;
-    let terapeuta = this.users.find((u) => u.id === mappedTerapeutaId || u.id === params.terapeutaId);
-    if (!terapeuta) {
-      terapeuta = this.users.find((u) => u.nombre.toLowerCase().includes(params.terapeutaId?.toLowerCase()));
-    }
+    let terapeuta = this.users.find((u) => u.id === params.terapeutaId || u.nombre.toLowerCase().includes(params.terapeutaId?.toLowerCase()));
     if (!terapeuta && this.users.length > 0) {
       terapeuta = this.users.find((u) => u.rol === "TERAPEUTA") || this.users[0];
     }
@@ -1071,14 +1047,7 @@ class GestorFisioStore {
     const inicio = new Date(params.nuevaFechaHoraInicio);
     const fin = new Date(inicio.getTime() + duracion * 60000);
 
-    const mappedSalaId = (params.nuevaSalaId && STORE_LEGACY_MAP[params.nuevaSalaId]) ? STORE_LEGACY_MAP[params.nuevaSalaId] : params.nuevaSalaId;
-    let sala = this.salas.find((s) => s.id === mappedSalaId || s.id === params.nuevaSalaId);
-    if (!sala) {
-      sala = this.salas.find((s) => 
-        s.nombre.toLowerCase() === params.nuevaSalaId?.toLowerCase() ||
-        s.nombre.toLowerCase().replace(/\s+/g, "-") === params.nuevaSalaId?.toLowerCase()
-      );
-    }
+    let sala = this.salas.find((s) => s.id === params.nuevaSalaId || s.nombre.toLowerCase() === params.nuevaSalaId?.toLowerCase());
     if (!sala && this.salas.length > 0) {
       sala = this.salas[0];
     }
@@ -1089,8 +1058,7 @@ class GestorFisioStore {
       throw new Error(`La ${sala.nombre} se encuentra temporalmente en MANTENIMIENTO.`);
     }
 
-    const mappedTerapeutaId = (params.nuevoTerapeutaId && STORE_LEGACY_MAP[params.nuevoTerapeutaId]) ? STORE_LEGACY_MAP[params.nuevoTerapeutaId] : params.nuevoTerapeutaId;
-    let terapeuta = this.users.find((u) => u.id === mappedTerapeutaId || u.id === params.nuevoTerapeutaId);
+    let terapeuta = this.users.find((u) => u.id === params.nuevoTerapeutaId || u.nombre.toLowerCase().includes(params.nuevoTerapeutaId?.toLowerCase()));
     if (!terapeuta && this.users.length > 0) {
       terapeuta = this.users.find(u => u.rol === "TERAPEUTA") || this.users[0];
     }

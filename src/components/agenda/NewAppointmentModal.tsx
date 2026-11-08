@@ -56,28 +56,8 @@ export function NewAppointmentModal({
   prefilledTime,
   onCitaAgendada,
 }: NewAppointmentModalProps) {
-  // Salas de respaldo sincronizadas con UUIDs de Supabase
-  const effectiveSalas = useMemo(() => {
-    if (salas && salas.length > 0) return salas;
-    return [
-      { id: "15823224-a08a-4ef1-85db-bdf91da8ff90", nombre: "Sala 1", estado: "DISPONIBLE" },
-      { id: "5a3ef60f-93e4-4b0c-84c2-6f72a8f0c225", nombre: "Sala 2", estado: "DISPONIBLE" },
-      { id: "7d5e2bfe-1202-481b-aa1e-10dccd3f5d72", nombre: "Sala 3", estado: "DISPONIBLE" },
-      { id: "b91d6319-c270-4553-8543-627a31ffd86e", nombre: "Sala 4", estado: "DISPONIBLE" },
-      { id: "0ed8ea5b-4690-4d69-a767-e8948854cb23", nombre: "Sala 5", estado: "DISPONIBLE" },
-      { id: "4e288257-e065-4998-ac95-a6efdd6c983e", nombre: "Sala 6", estado: "DISPONIBLE" },
-    ];
-  }, [salas]);
-
-  // Terapeutas de respaldo sincronizados con UUIDs de Supabase
-  const effectiveTerapeutas = useMemo(() => {
-    if (terapeutas && terapeutas.length > 0) return terapeutas;
-    return [
-      { id: "58782c42-8e79-47c7-b9a0-73929c852161", nombre: "Lic. Jeiser Vasquez", rol: "TERAPEUTA", especialidad: "Lic. Fisioterapia Deportiva" },
-      { id: "9ddfb347-0e7d-4176-8d13-6d15bdcc6e9c", nombre: "Lic. Andrea Rivas", rol: "TERAPEUTA", especialidad: "Lic. Fisioterapia Traumatológica" },
-      { id: "99cb2db8-a16b-47b0-ae87-8204092d4419", nombre: "Lic. Valeria Soto", rol: "TERAPEUTA", especialidad: "Lic. Neurorehabilitación" },
-    ];
-  }, [terapeutas]);
+  const effectiveSalas = salas || [];
+  const effectiveTerapeutas = terapeutas || [];
 
   const [pacienteId, setPacienteId] = useState(pacientes[0]?.id || "");
   const [searchPatient, setSearchPatient] = useState("");

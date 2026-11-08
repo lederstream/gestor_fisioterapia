@@ -89,3 +89,4 @@ export function formatPeruDateFull(date: Date | string | number = new Date()): s
     day: "numeric",
   }).format(d);
 }
+

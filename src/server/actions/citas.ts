@@ -22,19 +22,6 @@ export function isUuid(id?: string | null): boolean {
   return typeof id === "string" && UUID_REGEX.test(id);
 }
 
-export const LEGACY_ID_MAP: Record<string, string> = {
-  "usr-ter-1": "58782c42-8e79-47c7-b9a0-73929c852161", // Lic. Jeiser Vasquez
-  "usr-ter-2": "9ddfb347-0e7d-4176-8d13-6d15bdcc6e9c", // Lic. Andrea Rivas
-  "usr-ter-3": "1173afcb-a989-422c-9408-b67600799cb9", // Lic. Javier Ponce
-  "usr-ter-4": "99cb2db8-a16b-47b0-ae87-8204092d4419", // Lic. Valeria Soto
-  "sala-1": "15823224-a08a-4ef1-85db-bdf91da8ff90",
-  "sala-2": "5a3ef60f-93e4-4b0c-84c2-6f72a8f0c225",
-  "sala-3": "7d5e2bfe-1202-481b-aa1e-10dccd3f5d72",
-  "sala-4": "b91d6319-c270-4553-8543-627a31ffd86e",
-  "sala-5": "0ed8ea5b-4690-4d69-a767-e8948854cb23",
-  "sala-6": "4e288257-e065-4998-ac95-a6efdd6c983e",
-};
-
 export interface ServerActionResult<T = unknown> {
   success: boolean;
   data?: T;
@@ -48,20 +35,13 @@ export interface ServerActionResult<T = unknown> {
  * 2. Valida terapeuta disponible sin solapamiento horario.
  * 3. Valida saldo de sesiones disponibles del paquete del paciente.
  * 4. Aplica regla clínica: Si la sesión es múltiplo de 5, activa la bandera 'esReevaluacion'.
- * 5. Soporte transaccional atómico ACID con prisma.$transaction cuando hay base de datos conectada.
  */
 export async function agendarCita(
   input: AgendarCitaInput,
   usuarioAuditoria?: { id?: string; nombre: string; rol: any }
 ): Promise<ServerActionResult> {
   try {
-    const rawTerapeutaId = (input.terapeutaId && LEGACY_ID_MAP[input.terapeutaId]) ? LEGACY_ID_MAP[input.terapeutaId] : input.terapeutaId;
-    const rawSalaId = (input.salaId && LEGACY_ID_MAP[input.salaId]) ? LEGACY_ID_MAP[input.salaId] : input.salaId;
-    const validated = agendarCitaSchema.parse({
-      ...input,
-      terapeutaId: rawTerapeutaId,
-      salaId: rawSalaId,
-    });
+    const validated = agendarCitaSchema.parse(input);
     const clientIp = await obtenerIpCliente();
     const duracionMinutos = validated.duracionMinutos || 45;
     const inicio = new Date(validated.fechaHoraInicio);
