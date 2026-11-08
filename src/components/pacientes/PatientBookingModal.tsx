@@ -65,9 +65,13 @@ export function PatientBookingModal({
 
   // Lista de terapeutas clínicos activos (excluye estrictamente roles administrativos y SuperAdmin)
   const listaTerapeutas = useMemo(() => {
-    return (terapeutas || []).filter(
-      (t: any) => (t.rol === "TERAPEUTA" || t.rol === "ASISTENTE" || !t.rol) && t.rol !== "SUPERADMIN" && t.rol !== "ADMIN"
-    );
+    return (terapeutas || []).filter((t: any) => {
+      const rol = String(t.rol || "").toUpperCase();
+      const nombre = String(t.nombre || "").toLowerCase();
+      if (rol === "SUPERADMIN" || rol === "ADMIN" || rol === "RECEPCION" || rol === "PACIENTE") return false;
+      if (nombre.includes("soporte") || nombre.includes("superadmin") || nombre.includes("super administrador")) return false;
+      return rol === "TERAPEUTA" || rol === "ASISTENTE";
+    });
   }, [terapeutas]);
 
   // Lista de salas físicas disponibles dinámicas

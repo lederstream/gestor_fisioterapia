@@ -389,10 +389,10 @@ export async function obtenerCitasAgenda(fechaIso?: string) {
         finalSalas = await prisma.sala.findMany({ orderBy: { nombre: "asc" } });
       }
 
-      let finalTerapeutas = terapeutasDb;
+      let finalTerapeutas = terapeutasDb.filter((t) => t.rol === "TERAPEUTA" || t.rol === "ASISTENTE");
       if (finalTerapeutas.length === 0) {
         finalTerapeutas = await prisma.user.findMany({
-          where: { estado: "ACTIVO" },
+          where: { rol: { in: ["TERAPEUTA", "ASISTENTE"] }, estado: "ACTIVO" },
           orderBy: { nombre: "asc" },
         });
       }

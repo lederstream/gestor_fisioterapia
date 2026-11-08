@@ -311,7 +311,7 @@ export function PatientCitasView({
         onClose={() => setIsBookingOpen(false)}
         paciente={paciente}
         paquetes={paquetes}
-        terapeutas={personal?.filter((u: any) => u.rol === "TERAPEUTA" || !u.rol)}
+        terapeutas={personal?.filter((u: any) => u.rol === "TERAPEUTA" || u.rol === "ASISTENTE")}
         salas={salas}
         servicios={servicios}
         onSuccess={(nuevaCita) => {
