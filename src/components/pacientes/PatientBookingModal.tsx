@@ -63,9 +63,11 @@ export function PatientBookingModal({
     };
   }, [paciente]);
 
-  // Lista de terapeutas de la clínica dinámicos
+  // Lista de terapeutas clínicos activos (excluye estrictamente roles administrativos y SuperAdmin)
   const listaTerapeutas = useMemo(() => {
-    return terapeutas || [];
+    return (terapeutas || []).filter(
+      (t: any) => (t.rol === "TERAPEUTA" || t.rol === "ASISTENTE" || !t.rol) && t.rol !== "SUPERADMIN" && t.rol !== "ADMIN"
+    );
   }, [terapeutas]);
 
   // Lista de salas físicas disponibles dinámicas

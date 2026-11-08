@@ -141,7 +141,7 @@ export async function iniciarSesion(
           data: {
             usuarioId: usuario.id,
             usuarioNombre: usuario.nombre,
-            usuarioRol: (rolEfectivo === "SUPERADMIN" ? "ADMIN" : rolEfectivo) as any,
+            usuarioRol: rolEfectivo as any,
             accion: "LOGIN_FALLIDO",
             modulo: "SEGURIDAD",
             detalles: `Intento de acceso fallido para ${usuario.email} (${rolEfectivo}). Contraseña incorrecta.`,
@@ -184,7 +184,7 @@ export async function iniciarSesion(
         data: {
           usuarioId: usuario.id,
           usuarioNombre: usuario.nombre,
-          usuarioRol: (rolEfectivo === "SUPERADMIN" ? "ADMIN" : rolEfectivo) as any,
+          usuarioRol: rolEfectivo as any,
           accion: "INICIO_SESION",
           modulo: "SISTEMA",
           detalles: `Inicio de sesión exitoso en el portal clínico (${rolEfectivo}).`,

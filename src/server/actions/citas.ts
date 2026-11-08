@@ -361,7 +361,7 @@ export async function obtenerCitasAgenda(fechaIso?: string) {
         }),
         prisma.sala.findMany({ orderBy: { nombre: "asc" } }),
         prisma.user.findMany({
-          where: { rol: { in: ["TERAPEUTA", "ASISTENTE", "ADMIN", "SUPERADMIN"] }, estado: "ACTIVO" },
+          where: { rol: { in: ["TERAPEUTA", "ASISTENTE"] }, estado: "ACTIVO" },
           orderBy: { nombre: "asc" },
         }),
         prisma.servicio.findMany({ orderBy: { orden: "asc" } }),

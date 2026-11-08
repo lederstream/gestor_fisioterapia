@@ -33,11 +33,24 @@ export async function obtenerIpCliente(): Promise<string> {
   }
 }
 
-export function esLogDeSuperAdmin(log: { usuarioRol?: string | null; usuarioNombre?: string | null; detalles?: string | null }): boolean {
+export function esLogDeSuperAdmin(
+  log: { usuarioRol?: string | null; usuarioNombre?: string | null; detalles?: string | null; usuarioId?: string | null },
+  superAdminIds: string[] = []
+): boolean {
+  if (log.usuarioId && superAdminIds.includes(log.usuarioId)) return true;
   const rol = String(log.usuarioRol || "").toUpperCase();
+  if (rol === "SUPERADMIN") return true;
   const nombre = String(log.usuarioNombre || "").toLowerCase();
   const detalles = String(log.detalles || "").toLowerCase();
-  return rol === "SUPERADMIN" || nombre.includes("superadmin") || detalles.includes("superadmin");
+  return (
+    nombre.includes("superadmin") ||
+    nombre.includes("super admin") ||
+    nombre.includes("super administrador") ||
+    nombre.includes("soporte") ||
+    detalles.includes("superadmin") ||
+    detalles.includes("super admin") ||
+    detalles.includes("super administrador")
+  );
 }
 
 export async function obtenerLogsAuditoria(filtros?: FiltrosAuditoria): Promise<AuditLogItem[]> {
@@ -46,12 +59,33 @@ export async function obtenerLogsAuditoria(filtros?: FiltrosAuditoria): Promise<
 
   if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
     try {
+      let superAdminIds: string[] = [];
+      if (!esSuperAdmin) {
+        try {
+          const superAdmins = await prisma.user.findMany({
+            where: { rol: "SUPERADMIN" },
+            select: { id: true },
+          });
+          superAdminIds = superAdmins.map((u) => u.id);
+        } catch {}
+      }
+
       const logsDb = await prisma.auditLog.findMany({
         where: esSuperAdmin ? undefined : {
-          NOT: [
-            { usuarioRol: "SUPERADMIN" },
-            { usuarioNombre: { contains: "superadmin", mode: "insensitive" } },
-            { detalles: { contains: "superadmin", mode: "insensitive" } },
+          AND: [
+            { usuarioRol: { not: "SUPERADMIN" } },
+            ...(superAdminIds.length > 0 ? [{ usuarioId: { notIn: superAdminIds } }] : []),
+            {
+              NOT: [
+                { usuarioNombre: { contains: "superadmin", mode: "insensitive" } },
+                { usuarioNombre: { contains: "super admin", mode: "insensitive" } },
+                { usuarioNombre: { contains: "super administrador", mode: "insensitive" } },
+                { usuarioNombre: { contains: "soporte", mode: "insensitive" } },
+                { detalles: { contains: "superadmin", mode: "insensitive" } },
+                { detalles: { contains: "super admin", mode: "insensitive" } },
+                { detalles: { contains: "super administrador", mode: "insensitive" } },
+              ],
+            },
           ],
         },
         orderBy: {
@@ -61,7 +95,7 @@ export async function obtenerLogsAuditoria(filtros?: FiltrosAuditoria): Promise<
       });
 
       const formateados: AuditLogItem[] = logsDb
-        .filter((l) => (esSuperAdmin ? true : !esLogDeSuperAdmin(l)))
+        .filter((l) => (esSuperAdmin ? true : !esLogDeSuperAdmin(l, superAdminIds)))
         .map((l) => ({
           id: l.id,
           usuarioId: l.usuarioId,

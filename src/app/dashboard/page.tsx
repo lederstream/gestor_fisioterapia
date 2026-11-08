@@ -44,7 +44,12 @@ export default async function DashboardPage() {
             NOT: [
               { usuarioRol: "SUPERADMIN" },
               { usuarioNombre: { contains: "superadmin", mode: "insensitive" } },
+              { usuarioNombre: { contains: "super admin", mode: "insensitive" } },
+              { usuarioNombre: { contains: "super administrador", mode: "insensitive" } },
+              { usuarioNombre: { contains: "soporte", mode: "insensitive" } },
               { detalles: { contains: "superadmin", mode: "insensitive" } },
+              { detalles: { contains: "super admin", mode: "insensitive" } },
+              { detalles: { contains: "super administrador", mode: "insensitive" } },
             ],
           },
           orderBy: { createdAt: "desc" },

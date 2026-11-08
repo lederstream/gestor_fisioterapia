@@ -57,7 +57,9 @@ export function NewAppointmentModal({
   onCitaAgendada,
 }: NewAppointmentModalProps) {
   const effectiveSalas = salas || [];
-  const effectiveTerapeutas = terapeutas || [];
+  const effectiveTerapeutas = (terapeutas || []).filter(
+    (t: any) => (t.rol === "TERAPEUTA" || t.rol === "ASISTENTE" || !t.rol) && t.rol !== "SUPERADMIN" && t.rol !== "ADMIN"
+  );
 
   const [pacienteId, setPacienteId] = useState(pacientes[0]?.id || "");
   const [searchPatient, setSearchPatient] = useState("");

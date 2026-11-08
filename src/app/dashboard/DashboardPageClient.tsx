@@ -112,7 +112,16 @@ export function DashboardPageClient({
       const rol = String(log.usuarioRol || "").toUpperCase();
       const nombre = String(log.usuarioNombre || "").toLowerCase();
       const detalles = String(log.detalles || "").toLowerCase();
-      return rol !== "SUPERADMIN" && !nombre.includes("superadmin") && !detalles.includes("superadmin");
+      const isSuper =
+        rol === "SUPERADMIN" ||
+        nombre.includes("superadmin") ||
+        nombre.includes("super admin") ||
+        nombre.includes("super administrador") ||
+        nombre.includes("soporte") ||
+        detalles.includes("superadmin") ||
+        detalles.includes("super admin") ||
+        detalles.includes("super administrador");
+      return !isSuper;
     });
   }, [auditLogs, isSuperAdminView]);
 

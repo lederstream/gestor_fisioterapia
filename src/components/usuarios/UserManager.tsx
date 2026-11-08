@@ -43,12 +43,16 @@ import {
   Briefcase
 } from "lucide-react";
 import { generarClaveAleatoriaSegura } from "@/lib/password-generator";
+import { useAuth } from "@/lib/auth-context";
 
 interface UserManagerProps {
   initialUsers: UserItem[];
 }
 
 export function UserManager({ initialUsers }: UserManagerProps) {
+  const { currentRole, currentUser } = useAuth();
+  const esSuperAdminViewer = currentRole === "SUPERADMIN" || currentUser?.rol === "SUPERADMIN";
+
   const [users, setUsers] = useState<UserItem[]>(initialUsers);
   const [search, setSearch] = useState("");
   const [filterRol, setFilterRol] = useState<string>("TODOS");
@@ -107,6 +111,8 @@ export function UserManager({ initialUsers }: UserManagerProps) {
 
   // Filtrado de usuarios
   const filteredUsers = users.filter((u) => {
+    // Cuenta raíz SuperAdmin 100% invisible para el administrador clínico y demás personal
+    if (!esSuperAdminViewer && u.rol === "SUPERADMIN") return false;
     if (filterRol !== "TODOS" && u.rol !== filterRol) return false;
     if (search) {
       const q = search.toLowerCase();

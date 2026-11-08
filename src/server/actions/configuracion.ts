@@ -59,17 +59,23 @@ export async function obtenerConfiguracionClinica(): Promise<ConfiguracionClinic
 }
 
 export async function obtenerConfiguracionCompleta() {
+  const sesion = await obtenerSesionServidor();
+  const isSuperadminViewer = sesion?.rol === "SUPERADMIN";
+
   const configuracion = await obtenerConfiguracionClinica();
   let salas = dbStore.getSalas();
   let servicios = dbStore.getServicios();
-  let personal = dbStore.getUsers();
+  let personal = dbStore.getUsers().filter((u) => isSuperadminViewer || u.rol !== "SUPERADMIN");
 
   try {
     if (isDatabaseAvailable() && process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       let [salasDb, serviciosDb, personalDb] = await Promise.all([
         prisma.sala.findMany({ orderBy: { nombre: "asc" } }),
         prisma.servicio.findMany({ orderBy: { orden: "asc" } }),
-        prisma.user.findMany({ orderBy: { nombre: "asc" } }),
+        prisma.user.findMany({
+          where: isSuperadminViewer ? {} : { rol: { not: "SUPERADMIN" } },
+          orderBy: { nombre: "asc" },
+        }),
       ]);
 
       if (!salasDb || salasDb.length === 0) {
