@@ -250,32 +250,32 @@ INSERT INTO public.servicios (nombre, categoria_tag, descripcion, duracion_minut
     ('Neurorehabilitación funcional', 'NEUROLÓGICA', 'Rehabilitación neuromuscular para ACV, Parkinson y parálisis facial.', 60, 80.00, 65.00, 6);
 
 -- 5.4. Personal y Usuarios Administrativos/Clínicos
--- Contraseñas iniciales (el sistema las auto-encripta con bcrypt al primer inicio de sesión):
+-- Hasheados nativamente con bcrypt (factor de costo 10) usando pgcrypto:
 -- Superadmin:  SuperAdmin2026!
 -- Admin:        AdminClinico2026!
 -- Recepción:    Recepcion2026!
 -- Terapeutas:   Terapeuta2026!
 -- Asistentes:   Asistente2026!
 INSERT INTO public.users (nombre, email, rol, especialidad, estado, password_hash) VALUES
-    ('Super Administrador', 'superadmin@sistema.pe', 'SUPERADMIN', 'Auditoría Global & Infraestructura TI', 'ACTIVO', 'SuperAdmin2026!'),
-    ('Marco Antonio Yana', 'gerencia@ajfisioterapia.pe', 'ADMIN', 'Director Clínico & Gerencia General', 'ACTIVO', 'AdminClinico2026!'),
-    ('Ana Ramos', 'recepcion1@ajfisioterapia.pe', 'RECEPCION', 'Coordinadora de Citas y Caja', 'ACTIVO', 'Recepcion2026!'),
-    ('Laura Peña', 'recepcion2@ajfisioterapia.pe', 'RECEPCION', 'Atención al Paciente y Turnos', 'ACTIVO', 'Recepcion2026!'),
-    ('Lic. Jeiser Vásquez', 'jeiser.vasquez@ajfisioterapia.pe', 'TERAPEUTA', 'Lic. Fisioterapia Deportiva y Readaptación', 'ACTIVO', 'Terapeuta2026!'),
-    ('Lic. Andrea Rivas', 'andrea.rivas@ajfisioterapia.pe', 'TERAPEUTA', 'Lic. Terapia Manual Ortopédica y Columna', 'ACTIVO', 'Terapeuta2026!'),
-    ('Lic. Javier Ponce', 'javier.ponce@ajfisioterapia.pe', 'TERAPEUTA', 'Lic. Biomecánica y Reeducación Postural', 'ACTIVO', 'Terapeuta2026!'),
-    ('Lic. Valeria Soto', 'valeria.soto@ajfisioterapia.pe', 'TERAPEUTA', 'Lic. Neurorehabilitación y Adulto Mayor', 'ACTIVO', 'Terapeuta2026!'),
-    ('Tec. Miguel Torres', 'miguel.torres@ajfisioterapia.pe', 'ASISTENTE', 'Técnico en Agentes Físicos y Electroterapia', 'ACTIVO', 'Asistente2026!'),
-    ('Tec. Diana Paredes', 'diana.paredes@ajfisioterapia.pe', 'ASISTENTE', 'Técnico en Masoterapia y Crioterapia', 'ACTIVO', 'Asistente2026!');
+    ('Super Administrador', 'superadmin@sistema.pe', 'SUPERADMIN', 'Auditoría Global & Infraestructura TI', 'ACTIVO', crypt('SuperAdmin2026!', gen_salt('bf', 10))),
+    ('Marco Antonio Yana', 'gerencia@ajfisioterapia.pe', 'ADMIN', 'Director Clínico & Gerencia General', 'ACTIVO', crypt('AdminClinico2026!', gen_salt('bf', 10))),
+    ('Ana Ramos', 'recepcion1@ajfisioterapia.pe', 'RECEPCION', 'Coordinadora de Citas y Caja', 'ACTIVO', crypt('Recepcion2026!', gen_salt('bf', 10))),
+    ('Laura Peña', 'recepcion2@ajfisioterapia.pe', 'RECEPCION', 'Atención al Paciente y Turnos', 'ACTIVO', crypt('Recepcion2026!', gen_salt('bf', 10))),
+    ('Lic. Jeiser Vásquez', 'jeiser.vasquez@ajfisioterapia.pe', 'TERAPEUTA', 'Lic. Fisioterapia Deportiva y Readaptación', 'ACTIVO', crypt('Terapeuta2026!', gen_salt('bf', 10))),
+    ('Lic. Andrea Rivas', 'andrea.rivas@ajfisioterapia.pe', 'TERAPEUTA', 'Lic. Terapia Manual Ortopédica y Columna', 'ACTIVO', crypt('Terapeuta2026!', gen_salt('bf', 10))),
+    ('Lic. Javier Ponce', 'javier.ponce@ajfisioterapia.pe', 'TERAPEUTA', 'Lic. Biomecánica y Reeducación Postural', 'ACTIVO', crypt('Terapeuta2026!', gen_salt('bf', 10))),
+    ('Lic. Valeria Soto', 'valeria.soto@ajfisioterapia.pe', 'TERAPEUTA', 'Lic. Neurorehabilitación y Adulto Mayor', 'ACTIVO', crypt('Terapeuta2026!', gen_salt('bf', 10))),
+    ('Tec. Miguel Torres', 'miguel.torres@ajfisioterapia.pe', 'ASISTENTE', 'Técnico en Agentes Físicos y Electroterapia', 'ACTIVO', crypt('Asistente2026!', gen_salt('bf', 10))),
+    ('Tec. Diana Paredes', 'diana.paredes@ajfisioterapia.pe', 'ASISTENTE', 'Técnico en Masoterapia y Crioterapia', 'ACTIVO', crypt('Asistente2026!', gen_salt('bf', 10)));
 
--- 5.5. Pacientes Iniciales Reales (Con DNI peruano oficial y clave provisional igual a su DNI)
+-- 5.5. Pacientes Iniciales Reales (Con DNI peruano oficial y clave hasheada con bcrypt igual a su DNI)
 INSERT INTO public.pacientes (
     tipo_documento, dni, nombres, apellidos, telefono, email, fecha_nacimiento, password_hash
 ) VALUES
-    ('DNI', '45892011', 'Juan Carlos', 'Morales Díaz', '987654321', 'juan.morales@gmail.com', '1988-06-14', '45892011'),
-    ('DNI', '10234567', 'María Elena', 'Vargas Prado', '976543210', 'maria.vargas@gmail.com', '1992-09-22', '10234567'),
-    ('DNI', '72345678', 'Alexander', 'Rodríguez Castro', '965432109', 'alexander.rodriguez@gmail.com', '1995-03-30', '72345678'),
-    ('DNI', '08912345', 'Rosa Patricia', 'Flores Vega', '954321098', 'rosa.flores@gmail.com', '1980-11-15', '08912345');
+    ('DNI', '45892011', 'Juan Carlos', 'Morales Díaz', '987654321', 'juan.morales@gmail.com', '1988-06-14', crypt('45892011', gen_salt('bf', 10))),
+    ('DNI', '10234567', 'María Elena', 'Vargas Prado', '976543210', 'maria.vargas@gmail.com', '1992-09-22', crypt('10234567', gen_salt('bf', 10))),
+    ('DNI', '72345678', 'Alexander', 'Rodríguez Castro', '965432109', 'alexander.rodriguez@gmail.com', '1995-03-30', crypt('72345678', gen_salt('bf', 10))),
+    ('DNI', '08912345', 'Rosa Patricia', 'Flores Vega', '954321098', 'rosa.flores@gmail.com', '1980-11-15', crypt('08912345', gen_salt('bf', 10)));
 
 -- 5.6. Paquetes de Tratamiento Activos
 INSERT INTO public.tratamientos_paquetes (
