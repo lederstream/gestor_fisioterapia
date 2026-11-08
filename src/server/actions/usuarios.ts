@@ -151,7 +151,7 @@ export async function crearNuevoUsuario(data: {
     }
 
     const usuario = dbStore.crearUsuario(data, {
-      id: sesion?.userId || "usr-admin-1",
+      id: sesion?.userId || undefined,
       nombre: sesion?.nombre || "Administrador",
       rol: (sesion?.rol as any) || "ADMIN",
     });
@@ -268,7 +268,7 @@ export async function modificarRolUsuario(
     }
 
     const usuario = dbStore.actualizarRolUsuario(usuarioId, nuevoRol, {
-      id: sesion?.userId || "usr-admin-1",
+      id: sesion?.userId || undefined,
       nombre: sesion?.nombre || "Administrador",
       rol: (sesion?.rol as any) || "ADMIN",
     });
@@ -396,7 +396,7 @@ export async function eliminarUsuarioSistema(
     }
 
     const eliminado = dbStore.eliminarUsuario(usuarioId, {
-      id: sesion?.userId || "usr-admin-1",
+      id: sesion?.userId || undefined,
       nombre: sesion?.nombre || "Administrador",
       rol: (sesion?.rol as any) || "ADMIN",
     });

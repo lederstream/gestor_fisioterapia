@@ -30,7 +30,7 @@ interface AuthContextType {
 }
 
 const FALLBACK_USER: AuthUser = {
-  id: "usr-guest",
+  id: "00000000-0000-0000-0000-000000000000",
   nombre: "Usuario Clínico",
   email: "usuario@ajfisioterapia.pe",
   rol: "RECEPCION",

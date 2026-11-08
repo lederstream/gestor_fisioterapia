@@ -367,7 +367,7 @@ const initialConfiguracion: ConfiguracionClinicaItem = {
 const initialAuditLogs: AuditLogItem[] = [
   {
     id: "log-1",
-    usuarioId: "usr-admin-1",
+    usuarioId: undefined,
     usuarioNombre: "Marco Antonio (Administrador)",
     usuarioRol: "ADMIN",
     accion: "SISTEMA_INICIALIZADO",
@@ -413,7 +413,7 @@ class GestorFisioStore {
     return { ...this.configuracion };
   }
 
-  actualizarConfiguracion(data: Partial<ConfiguracionClinicaItem>, usuarioInfo?: { id: string; nombre: string; rol: any }) {
+  actualizarConfiguracion(data: Partial<ConfiguracionClinicaItem>, usuarioInfo?: { id?: string; nombre: string; rol: any }) {
     this.configuracion = {
       ...this.configuracion,
       ...data,
@@ -440,7 +440,7 @@ class GestorFisioStore {
     }
 
     this.registrarAuditLog({
-      usuarioId: usuarioInfo?.id || "usr-admin-1",
+      usuarioId: usuarioInfo?.id || undefined,
       usuarioNombre: usuarioInfo?.nombre || "Marco Antonio (Administrador)",
       usuarioRol: usuarioInfo?.rol || "ADMIN",
       accion: "CONFIGURACION_ACTUALIZADA",
@@ -533,7 +533,7 @@ class GestorFisioStore {
     this.salas[index].estado = nuevoEstado;
 
     this.registrarAuditLog({
-      usuarioId: "usr-admin-1",
+      usuarioId: undefined,
       usuarioNombre: "Marco Antonio (Administrador)",
       usuarioRol: "ADMIN",
       accion: "SALA_ESTADO_CAMBIADO",
@@ -557,7 +557,7 @@ class GestorFisioStore {
     this.configuracion.totalSalasFisicas = this.salas.length;
 
     this.registrarAuditLog({
-      usuarioId: "usr-admin-1",
+      usuarioId: undefined,
       usuarioNombre: "Marco Antonio (Administrador)",
       usuarioRol: "ADMIN",
       accion: "SALA_CREADA",
@@ -587,7 +587,7 @@ class GestorFisioStore {
     if (equipamiento !== undefined) this.salas[index].equipamiento = equipamiento;
 
     this.registrarAuditLog({
-      usuarioId: "usr-admin-1",
+      usuarioId: undefined,
       usuarioNombre: "Marco Antonio (Administrador)",
       usuarioRol: "ADMIN",
       accion: "SALA_EDITADA",
@@ -607,7 +607,7 @@ class GestorFisioStore {
     this.configuracion.totalSalasFisicas = this.salas.length;
 
     this.registrarAuditLog({
-      usuarioId: "usr-admin-1",
+      usuarioId: undefined,
       usuarioNombre: "Marco Antonio (Administrador)",
       usuarioRol: "ADMIN",
       accion: "SALA_ELIMINADA",
@@ -653,7 +653,7 @@ class GestorFisioStore {
     };
 
     this.registrarAuditLog({
-      usuarioId: "usr-admin-1",
+      usuarioId: undefined,
       usuarioNombre: "Marco Antonio (Administrador)",
       usuarioRol: "ADMIN",
       accion: "SERVICIO_ACTUALIZADO",
@@ -686,7 +686,7 @@ class GestorFisioStore {
     this.servicios.push(nuevoServicio);
 
     this.registrarAuditLog({
-      usuarioId: "usr-admin-1",
+      usuarioId: undefined,
       usuarioNombre: "Marco Antonio (Administrador)",
       usuarioRol: "ADMIN",
       accion: "SERVICIO_CREADO",
@@ -707,7 +707,7 @@ class GestorFisioStore {
     const eliminado = this.servicios.splice(index, 1)[0];
 
     this.registrarAuditLog({
-      usuarioId: "usr-admin-1",
+      usuarioId: undefined,
       usuarioNombre: "Marco Antonio (Administrador)",
       usuarioRol: "ADMIN",
       accion: "SERVICIO_ELIMINADO",
@@ -739,7 +739,7 @@ class GestorFisioStore {
     if (especialidad !== undefined) this.users[index].especialidad = especialidad;
 
     this.registrarAuditLog({
-      usuarioId: "usr-admin-1",
+      usuarioId: undefined,
       usuarioNombre: "Marco Antonio (Administrador)",
       usuarioRol: "ADMIN",
       accion: "PERSONAL_ACTUALIZADO",
@@ -754,7 +754,7 @@ class GestorFisioStore {
   actualizarEstadoUsuario(
     usuarioId: string,
     nuevoEstado: "ACTIVO" | "INACTIVO",
-    auditUser?: { id: string; nombre: string; rol: any }
+    auditUser?: { id?: string; nombre: string; rol: any }
   ) {
     return this.actualizarUsuario(usuarioId, nuevoEstado);
   }
@@ -769,7 +769,7 @@ class GestorFisioStore {
       estado?: "ACTIVO" | "INACTIVO";
       password?: string;
     },
-    auditUser?: { id: string; nombre: string; rol: any }
+    auditUser?: { id?: string; nombre: string; rol: any }
   ) {
     if (!data.nombre || !data.email) throw new Error("Nombre y correo electrónico son requeridos.");
     if (this.users.some((u) => u.email.toLowerCase() === data.email.toLowerCase())) {
@@ -777,7 +777,7 @@ class GestorFisioStore {
     }
 
     const nuevo: UserItem = {
-      id: `usr-${Date.now()}`,
+      id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `usr-${Date.now()}`,
       nombre: data.nombre,
       email: data.email,
       rol: data.rol,
@@ -788,7 +788,7 @@ class GestorFisioStore {
     this.users.push(nuevo);
 
     this.registrarAuditLog({
-      usuarioId: auditUser?.id || "usr-admin-1",
+      usuarioId: auditUser?.id || undefined,
       usuarioNombre: auditUser?.nombre || "Marco Antonio (Administrador)",
       usuarioRol: auditUser?.rol || "ADMIN",
       accion: "USUARIO_CREADO",
@@ -804,7 +804,7 @@ class GestorFisioStore {
   actualizarRolUsuario(
     usuarioId: string, 
     nuevoRol: UserRole,
-    auditUser?: { id: string; nombre: string; rol: any }
+    auditUser?: { id?: string; nombre: string; rol: any }
   ) {
     const index = this.users.findIndex((u) => u.id === usuarioId);
     if (index === -1) throw new Error("Usuario no encontrado.");
@@ -813,7 +813,7 @@ class GestorFisioStore {
     this.users[index].rol = nuevoRol;
 
     this.registrarAuditLog({
-      usuarioId: auditUser?.id || "usr-admin-1",
+      usuarioId: auditUser?.id || undefined,
       usuarioNombre: auditUser?.nombre || "Marco Antonio (Administrador)",
       usuarioRol: auditUser?.rol || "ADMIN",
       accion: "USUARIO_ROL_CAMBIADO",
@@ -826,14 +826,14 @@ class GestorFisioStore {
   }
 
   // Eliminar / Desvincular Usuario del Sistema
-  eliminarUsuario(usuarioId: string, auditUser?: { id: string; nombre: string; rol: any }) {
+  eliminarUsuario(usuarioId: string, auditUser?: { id?: string; nombre: string; rol: any }) {
     const index = this.users.findIndex((u) => u.id === usuarioId);
     if (index === -1) throw new Error("Usuario no encontrado.");
     const eliminado = this.users[index];
     this.users.splice(index, 1);
 
     this.registrarAuditLog({
-      usuarioId: auditUser?.id || "usr-admin-1",
+      usuarioId: auditUser?.id || undefined,
       usuarioNombre: auditUser?.nombre || "Marco Antonio (Administrador)",
       usuarioRol: auditUser?.rol || "ADMIN",
       accion: "USUARIO_ELIMINADO",
@@ -870,7 +870,12 @@ class GestorFisioStore {
       sala = this.salas[0];
     }
     if (!sala) {
-      sala = { id: params.salaId || "sala-1", nombre: "Sala 1", estado: "DISPONIBLE", capacidadSimultanea: 1 };
+      sala = { 
+        id: params.salaId || (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : "00000000-0000-0000-0000-000000000001"), 
+        nombre: "Sala Principal", 
+        estado: "DISPONIBLE", 
+        capacidadSimultanea: 1 
+      };
       this.salas.push(sala);
     }
     params.salaId = sala.id;
@@ -959,7 +964,7 @@ class GestorFisioStore {
 
     // Registro de Auditoría
     this.registrarAuditLog({
-      usuarioId: params.usuarioAuditoria?.id || "usr-rec-1",
+      usuarioId: params.usuarioAuditoria?.id || undefined,
       usuarioNombre: params.usuarioAuditoria?.nombre || "Recepción AJ Fisioterapia",
       usuarioRol: params.usuarioAuditoria?.rol || "RECEPCION",
       accion: "CITA_CREADA",
@@ -1016,7 +1021,7 @@ class GestorFisioStore {
     const responsableRol = usuarioInfo?.rol || "RECEPCION";
 
     this.registrarAuditLog({
-      usuarioId: usuarioInfo?.id || "usr-rec-1",
+      usuarioId: usuarioInfo?.id || undefined,
       usuarioNombre: responsableNombre,
       usuarioRol: responsableRol,
       accion: nuevoEstado === "CONFIRMADA" ? "CITA_ACEPTADA_CONFIRMADA" : "CITA_ESTADO_CAMBIADO",
@@ -1113,7 +1118,7 @@ class GestorFisioStore {
     const paciente = this.pacientes.find((p) => p.id === citaActual.pacienteId);
 
     this.registrarAuditLog({
-      usuarioId: params.usuarioAuditoria?.id || "usr-rec-1",
+      usuarioId: params.usuarioAuditoria?.id || undefined,
       usuarioNombre: params.usuarioAuditoria?.nombre || "Recepción AJ Fisioterapia",
       usuarioRol: params.usuarioAuditoria?.rol || "RECEPCION",
       accion: "CITA_REPROGRAMADA",
@@ -1194,7 +1199,7 @@ class GestorFisioStore {
     const paciente = this.pacientes.find((p) => p.id === cita.pacienteId);
 
     this.registrarAuditLog({
-      usuarioId: params.usuarioAuditoria?.id || terapeuta?.id || "usr-ter-1",
+      usuarioId: params.usuarioAuditoria?.id || terapeuta?.id || undefined,
       usuarioNombre: params.usuarioAuditoria?.nombre || terapeuta?.nombre || "Terapeuta Clínico",
       usuarioRol: "TERAPEUTA",
       accion: "ASISTENCIA_REGISTRADA",
@@ -1288,7 +1293,7 @@ class GestorFisioStore {
     const paciente = this.pacientes.find((p) => p.id === paq.pacienteId);
 
     this.registrarAuditLog({
-      usuarioId: params.usuarioAuditoria?.id || "usr-rec-1",
+      usuarioId: params.usuarioAuditoria?.id || undefined,
       usuarioNombre: params.usuarioAuditoria?.nombre || "Caja AJ Fisioterapia",
       usuarioRol: "RECEPCION",
       accion: "PAGO_REGISTRADO",
@@ -1335,7 +1340,7 @@ class GestorFisioStore {
     this.pacientes.push(nuevo);
 
     this.registrarAuditLog({
-      usuarioId: "usr-rec-1",
+      usuarioId: undefined,
       usuarioNombre: "Recepción AJ Fisioterapia",
       usuarioRol: "RECEPCION",
       accion: "PACIENTE_CREADO",
@@ -1389,7 +1394,7 @@ class GestorFisioStore {
 
     if (importados.length > 0) {
       this.registrarAuditLog({
-        usuarioId: "usr-admin-1",
+        usuarioId: undefined,
         usuarioNombre: "Administración AJ Fisioterapia",
         usuarioRol: "ADMIN",
         accion: "PACIENTES_IMPORTADOS_MASIVO",
@@ -1441,7 +1446,7 @@ class GestorFisioStore {
 
     const actualizado = this.pacientes[index];
     this.registrarAuditLog({
-      usuarioId: "usr-rec-1",
+      usuarioId: undefined,
       usuarioNombre: "Recepción AJ Fisioterapia",
       usuarioRol: "RECEPCION",
       accion: "PACIENTE_ACTUALIZADO",
@@ -1476,7 +1481,7 @@ class GestorFisioStore {
     const servicio = this.servicios.find((s) => s.id === params.servicioId);
 
     this.registrarAuditLog({
-      usuarioId: "usr-rec-1",
+      usuarioId: undefined,
       usuarioNombre: "Recepción AJ Fisioterapia",
       usuarioRol: "RECEPCION",
       accion: "PAQUETE_CREADO",

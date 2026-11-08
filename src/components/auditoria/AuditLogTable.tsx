@@ -641,7 +641,7 @@ export function AuditLogTable({ initialLogs }: AuditLogTableProps) {
                     Rol: {selectedLog.usuarioRol}
                   </span>
                 </div>
-                <span className="text-[11px] text-slate-500 block font-mono">ID Usuario: {selectedLog.usuarioId || "usr-rec-1"}</span>
+                <span className="text-[11px] text-slate-500 block font-mono">ID Usuario: {selectedLog.usuarioId || "—"}</span>
               </div>
 
               {/* Timestamp e IP */}

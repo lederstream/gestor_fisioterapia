@@ -511,7 +511,7 @@ export async function actualizarEstadoCita(
   try {
     const clientIp = await obtenerIpCliente();
     const infoConIp = {
-      ...(usuarioInfo || { id: "usr-rec-1", nombre: "Recepción AJ Fisioterapia", rol: "RECEPCION" }),
+      ...(usuarioInfo || { id: undefined, nombre: "Recepción AJ Fisioterapia", rol: "RECEPCION" }),
       ipAddress: clientIp,
     };
     const actualizada = dbStore.actualizarEstadoCita(citaId, nuevoEstado, infoConIp);
@@ -623,7 +623,7 @@ export async function reprogramarCita(params: {
       nuevaSalaId: params.nuevaSalaId,
       nuevoTerapeutaId: params.nuevoTerapeutaId,
       duracionMinutos: params.duracionMinutos,
-      usuarioAuditoria: params.usuarioInfo || { id: "usr-rec-1", nombre: "Recepción AJ Fisioterapia", rol: "RECEPCION" },
+      usuarioAuditoria: params.usuarioInfo || { id: undefined, nombre: "Recepción AJ Fisioterapia", rol: "RECEPCION" },
       ipAddress: clientIp,
     });
 

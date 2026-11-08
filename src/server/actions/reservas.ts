@@ -180,7 +180,7 @@ export async function solicitarReservaPublica(
               : "Pre-reserva web (Apertura de HC física en primera cita presencial)",
           },
           {
-            id: "usr-portal-publico",
+            id: undefined,
             nombre: "Portal Web de Pacientes",
             rol: "PACIENTE",
           }

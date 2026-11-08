@@ -144,7 +144,7 @@ export async function inicializarAdministradorRaiz(formData: {
     // 5. Cifrado irreversible bcrypt con factor de costo 10
     const passwordHash = await bcrypt.hash(cleanPass, 10);
 
-    let nuevoAdminId = `usr-admin-${Date.now()}`;
+    let nuevoAdminId: string | undefined = undefined;
 
     // 6. Persistencia en Base de Datos Principal (Supabase)
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
@@ -168,7 +168,7 @@ export async function inicializarAdministradorRaiz(formData: {
         especialidad: cleanEsp,
         estado: "ACTIVO",
       }, {
-        id: "setup-boot",
+        id: undefined,
         nombre: "Instalador del Sistema",
         rol: "ADMIN",
       });
@@ -178,7 +178,7 @@ export async function inicializarAdministradorRaiz(formData: {
     // 7. Registro de Auditoría Inmutable del Hito de Inicialización
     await prisma.auditLog.create({
       data: {
-        usuarioId: nuevoAdminId,
+        usuarioId: nuevoAdminId || undefined,
         usuarioNombre: cleanNombre,
         usuarioRol: "ADMIN",
         accion: "SISTEMA_INICIALIZADO_ADMIN_RAIZ",

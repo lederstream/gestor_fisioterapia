@@ -179,8 +179,8 @@ export function PatientBookingModal({
       const [startHourStr] = horario.split(" - ");
       const fechaHoraInicio = createPeruDate(fecha, startHourStr.trim());
 
-      if (!pacienteData) {
-        setErrorMsg("No se ha seleccionado ningún paciente para esta reserva.");
+      if (!pacienteData || !pacienteData.id || pacienteData.id === "pac-preview") {
+        setErrorMsg("No se ha identificado una cuenta de paciente activa en el sistema para agendar la cita. Por favor inicie sesión o contacte a recepción.");
         setLoading(false);
         return;
       }

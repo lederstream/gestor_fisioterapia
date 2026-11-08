@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { dbStore, ConfiguracionClinicaItem } from "@/lib/store";
 import { ServerActionResult } from "./citas";
 import { prisma, isDatabaseAvailable, markDatabaseError } from "@/lib/prisma";
+import { obtenerSesionServidor } from "@/lib/auth-server";
 
 export async function obtenerConfiguracionClinica(): Promise<ConfiguracionClinicaItem> {
   try {
@@ -142,10 +143,11 @@ export async function guardarConfiguracionClinica(
   data: Partial<ConfiguracionClinicaItem>
 ): Promise<ServerActionResult<ConfiguracionClinicaItem>> {
   try {
+    const sesion = await obtenerSesionServidor();
     const actualizada = dbStore.actualizarConfiguracion(data, {
-      id: "usr-admin-1",
-      nombre: "Marco Yana (Administrador)",
-      rol: "ADMIN",
+      id: sesion?.userId || undefined,
+      nombre: sesion?.nombre || "Administración Clínica",
+      rol: sesion?.rol || "ADMIN",
     });
 
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
