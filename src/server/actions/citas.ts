@@ -361,7 +361,7 @@ export async function obtenerCitasAgenda(fechaIso?: string) {
         }),
         prisma.sala.findMany({ orderBy: { nombre: "asc" } }),
         prisma.user.findMany({
-          where: { rol: { in: ["TERAPEUTA", "ASISTENTE"] }, estado: "ACTIVO" },
+          where: { rol: "TERAPEUTA", estado: "ACTIVO" },
           orderBy: { nombre: "asc" },
         }),
         prisma.servicio.findMany({ orderBy: { orden: "asc" } }),
@@ -389,10 +389,10 @@ export async function obtenerCitasAgenda(fechaIso?: string) {
         finalSalas = await prisma.sala.findMany({ orderBy: { nombre: "asc" } });
       }
 
-      let finalTerapeutas = terapeutasDb.filter((t) => t.rol === "TERAPEUTA" || t.rol === "ASISTENTE");
+      let finalTerapeutas = terapeutasDb.filter((t) => t.rol === "TERAPEUTA");
       if (finalTerapeutas.length === 0) {
         finalTerapeutas = await prisma.user.findMany({
-          where: { rol: { in: ["TERAPEUTA", "ASISTENTE"] }, estado: "ACTIVO" },
+          where: { rol: "TERAPEUTA", estado: "ACTIVO" },
           orderBy: { nombre: "asc" },
         });
       }

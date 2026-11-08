@@ -454,7 +454,7 @@ class GestorFisioStore {
 
   // Métodos de lectura
   getUsers() { return [...this.users]; }
-  getTerapeutas() { return this.users.filter((u) => (u.rol === "TERAPEUTA" || u.rol === "ASISTENTE") && u.estado === "ACTIVO"); }
+  getTerapeutas() { return this.users.filter((u) => u.rol === "TERAPEUTA" && u.estado === "ACTIVO"); }
   getAsistentes() { return this.users.filter((u) => u.rol === "ASISTENTE" && u.estado === "ACTIVO"); }
 
   getSalas() { return [...this.salas]; }

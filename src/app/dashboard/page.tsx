@@ -56,7 +56,7 @@ export default async function DashboardPage() {
           take: 8,
         }),
         prisma.historiaEvolucion.findMany({ take: 20 }),
-        prisma.user.findMany({ where: { rol: { in: ["TERAPEUTA", "ASISTENTE"] } } }),
+        prisma.user.findMany({ where: { rol: "TERAPEUTA", estado: "ACTIVO" } }),
         prisma.servicio.findMany({ orderBy: { orden: "asc" } }),
       ]);
 

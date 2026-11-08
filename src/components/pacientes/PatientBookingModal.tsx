@@ -63,14 +63,14 @@ export function PatientBookingModal({
     };
   }, [paciente]);
 
-  // Lista de terapeutas clínicos activos (excluye estrictamente roles administrativos y SuperAdmin)
+  // Lista de fisioterapeutas colegiados activos habilitados para atención clínica directa
   const listaTerapeutas = useMemo(() => {
     return (terapeutas || []).filter((t: any) => {
       const rol = String(t.rol || "").toUpperCase();
       const nombre = String(t.nombre || "").toLowerCase();
-      if (rol === "SUPERADMIN" || rol === "ADMIN" || rol === "RECEPCION" || rol === "PACIENTE") return false;
+      if (rol !== "TERAPEUTA") return false;
       if (nombre.includes("soporte") || nombre.includes("superadmin") || nombre.includes("super administrador")) return false;
-      return rol === "TERAPEUTA" || rol === "ASISTENTE";
+      return true;
     });
   }, [terapeutas]);
 

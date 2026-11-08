@@ -61,10 +61,10 @@ export function NewAppointmentModal({
     return (terapeutas || []).filter((t: any) => {
       const rol = String(t.rol || "").toUpperCase();
       const nombre = String(t.nombre || "").toLowerCase();
-      // Exclusión estricta de SuperAdmin, Admin, Soporte y roles que no sean de atención clínica
-      if (rol === "SUPERADMIN" || rol === "ADMIN" || rol === "RECEPCION" || rol === "PACIENTE") return false;
+      // Exclusión estricta: Únicamente licenciados fisioterapeutas habilitados para atención clínica directa
+      if (rol !== "TERAPEUTA") return false;
       if (nombre.includes("soporte") || nombre.includes("superadmin") || nombre.includes("super administrador")) return false;
-      return rol === "TERAPEUTA" || rol === "ASISTENTE";
+      return true;
     });
   }, [terapeutas]);
 
@@ -408,11 +408,10 @@ export function NewAppointmentModal({
                   className="w-full px-3 py-2 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 focus:border-teal-500 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition cursor-pointer appearance-none pr-8"
                 >
                   {effectiveTerapeutas.map((t) => {
-                    const rolTexto = t.rol === "ASISTENTE" ? "Asistente Clínico" : "Lic. Fisioterapeuta";
-                    const espTexto = t.especialidad ? ` • ${t.especialidad}` : "";
+                    const espTexto = t.especialidad ? ` • ${t.especialidad}` : " • Lic. Fisioterapeuta";
                     return (
                       <option key={t.id} value={t.id}>
-                        {t.nombre} ({rolTexto}{espTexto})
+                        {t.nombre} ({espTexto.replace(/^ • /, "")})
                       </option>
                     );
                   })}
