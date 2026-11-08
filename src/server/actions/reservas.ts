@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { dbStore } from "@/lib/store";
 import { agendarCita, ServerActionResult } from "./citas";
 import { prisma } from "@/lib/prisma";
+import { createPeruDate } from "@/lib/date-utils";
 
 export interface SolicitarReservaPublicaInput {
   dni: string;
@@ -122,9 +123,9 @@ export async function solicitarReservaPublica(
       pacienteData = pac;
     }
 
-    // 2. Determinar horario y fecha de inicio
+    // 2. Determinar horario y fecha de inicio sincronizada con la zona horaria de Perú (UTC-5)
     const horaInicioStr = input.horario.split(" - ")[0] || "09:00";
-    const fechaHoraInicio = new Date(`${input.fecha}T${horaInicioStr}:00`);
+    const fechaHoraInicio = createPeruDate(input.fecha, horaInicioStr);
 
     if (isNaN(fechaHoraInicio.getTime())) {
       return { success: false, error: "Fecha u horario seleccionado inválido." };

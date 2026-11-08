@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { formatCurrency, formatTime, formatDateTime, cn } from "@/lib/utils";
@@ -50,6 +50,30 @@ export function DashboardPageClient({
 }: DashboardPageClientProps) {
   const { currentRole, hasPermission, roleDetails, currentUser } = useAuth();
   const [isAusentismoOpen, setIsAusentismoOpen] = useState(false);
+  const [livePeruTime, setLivePeruTime] = useState<string>("");
+  const [livePeruDate, setLivePeruDate] = useState<string>("");
+
+  useEffect(() => {
+    const update = () => {
+      const now = new Date();
+      setLivePeruTime(new Intl.DateTimeFormat("es-PE", {
+        timeZone: "America/Lima",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      }).format(now));
+      setLivePeruDate(new Intl.DateTimeFormat("es-PE", {
+        timeZone: "America/Lima",
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+      }).format(now));
+    };
+    update();
+    const timer = setInterval(update, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Si el usuario activo es PACIENTE, renderizar exclusivamente su portal clínico privado
   if (currentRole === "PACIENTE") {
@@ -102,8 +126,19 @@ export function DashboardPageClient({
       {/* Bienvenida y Estado Operativo */}
       <div className="bg-gradient-to-r from-teal-700 via-teal-800 to-emerald-700 p-5 md:p-6 rounded-3xl text-white shadow-lg shadow-teal-900/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-teal-600/50">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-white/15 text-teal-100 text-xs font-semibold mb-1.5 border border-white/20 backdrop-blur-xs">
-            <Building2 className="w-3.5 h-3.5" /> San Borja
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-white/15 text-teal-100 text-xs font-semibold border border-white/20 backdrop-blur-xs">
+              <Building2 className="w-3.5 h-3.5" /> San Borja
+            </div>
+            {livePeruTime && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-black/25 text-white text-xs font-medium border border-white/20 backdrop-blur-xs">
+                <Clock className="w-3.5 h-3.5 text-teal-300 animate-pulse" />
+                <span className="capitalize">{livePeruDate}</span>
+                <span className="text-white/40">•</span>
+                <span className="font-mono font-bold text-amber-300">{livePeruTime}</span>
+                <span className="text-[9px] bg-white/20 px-1 py-0.2 rounded font-extrabold text-teal-100">PERÚ</span>
+              </div>
+            )}
           </div>
           <h1 className="text-xl md:text-2xl font-extrabold tracking-tight">
             Panel de Control

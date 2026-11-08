@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { formatTime, cn, formatCurrency } from "@/lib/utils";
+import { getPeruDateString, getPeruHour, formatPeruTime, createPeruDate } from "@/lib/date-utils";
 import { 
   Clock, 
   Calendar as CalendarIcon, 
@@ -56,7 +57,15 @@ export function MatrixGrid({
   const canSeeFinance = hasPermission("caja:ver");
   const canEditConfig = hasPermission("config:modificar") || currentRole === "ADMIN" || currentRole === "SUPERADMIN";
   const [citas, setCitas] = useState(initialCitas);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
+  const [selectedDate, setSelectedDate] = useState(() => getPeruDateString());
+  const [livePeruTime, setLivePeruTime] = useState<string>("");
+
+  useEffect(() => {
+    const update = () => setLivePeruTime(formatPeruTime(new Date(), "12h"));
+    update();
+    const t = setInterval(update, 1000);
+    return () => clearInterval(t);
+  }, []);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [prefilledSalaId, setPrefilledSalaId] = useState<string | undefined>(undefined);
   const [prefilledTime, setPrefilledTime] = useState<string | undefined>(undefined);
@@ -171,10 +180,10 @@ export function MatrixGrid({
     setIsModalOpen(true);
   };
 
-  // Citas del día seleccionado
+  // Citas del día seleccionado (Sincronizado con Fecha Perú)
   const citasDelDia = useMemo(() => {
     return citas.filter((c) => {
-      const dStr = new Date(c.fechaHoraInicio).toISOString().split("T")[0];
+      const dStr = getPeruDateString(c.fechaHoraInicio);
       if (dStr !== selectedDate) return false;
       if (filterTerapeuta !== "TODOS" && c.terapeutaId !== filterTerapeuta) return false;
       if (productivityFilter === "POR_CONFIRMAR" && c.estado !== "PROGRAMADA") return false;
@@ -182,10 +191,10 @@ export function MatrixGrid({
     });
   }, [citas, selectedDate, filterTerapeuta, productivityFilter]);
 
-  // Métricas de Saturación y Ocupación Clínica del Día
+  // Métricas de Saturación y Ocupación Clínica del Día (Sincronizado con Fecha Perú)
   const citasActivasDelDia = useMemo(() => {
     return citas.filter((c) => {
-      const dStr = new Date(c.fechaHoraInicio).toISOString().split("T")[0];
+      const dStr = getPeruDateString(c.fechaHoraInicio);
       return dStr === selectedDate && c.estado !== "CANCELADA";
     });
   }, [citas, selectedDate]);
@@ -203,8 +212,7 @@ export function MatrixGrid({
     return timeSlots.map((slot) => {
       const slotH = parseInt(slot.split(":")[0], 10);
       const citasSlot = citasActivasDelDia.filter((c) => {
-        const cDate = new Date(c.fechaHoraInicio);
-        return cDate.getHours() === slotH;
+        return getPeruHour(c.fechaHoraInicio) === slotH;
       });
       const ratio = salasDisponibles.length > 0 ? citasSlot.length / salasDisponibles.length : 0;
       return {
@@ -220,7 +228,7 @@ export function MatrixGrid({
 
   const getCitasCountPorSala = (salaId: string) => {
     return citas.filter((c) => {
-      const dStr = new Date(c.fechaHoraInicio).toISOString().split("T")[0];
+      const dStr = getPeruDateString(c.fechaHoraInicio);
       return dStr === selectedDate && c.salaId === salaId && c.estado !== "CANCELADA";
     }).length;
   };
@@ -253,9 +261,7 @@ export function MatrixGrid({
 
     try {
       const { reprogramarCita } = await import("@/server/actions/citas");
-      const [h, m] = rescheduleTime.split(":").map(Number);
-      const [y, mo, d] = rescheduleDate.split("-").map(Number);
-      const nuevaFecha = new Date(y, mo - 1, d, h, m);
+      const nuevaFecha = createPeruDate(rescheduleDate, rescheduleTime);
 
       const usuarioInfo = currentUser ? {
         id: currentUser.id,
@@ -455,9 +461,9 @@ export function MatrixGrid({
           <div className="flex items-center gap-1">
             <button
               onClick={() => {
-                const d = new Date(selectedDate);
-                d.setDate(d.getDate() - 1);
-                setSelectedDate(d.toISOString().split("T")[0]);
+                const [y, m, d] = selectedDate.split("-").map(Number);
+                const prev = new Date(y, m - 1, d - 1);
+                setSelectedDate(getPeruDateString(prev));
               }}
               className="p-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition cursor-pointer"
               aria-label="Día anterior"
@@ -474,9 +480,9 @@ export function MatrixGrid({
 
             <button
               onClick={() => {
-                const d = new Date(selectedDate);
-                d.setDate(d.getDate() + 1);
-                setSelectedDate(d.toISOString().split("T")[0]);
+                const [y, m, d] = selectedDate.split("-").map(Number);
+                const next = new Date(y, m - 1, d + 1);
+                setSelectedDate(getPeruDateString(next));
               }}
               className="p-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition cursor-pointer"
               aria-label="Día siguiente"
@@ -486,11 +492,22 @@ export function MatrixGrid({
           </div>
 
           <button
-            onClick={() => setSelectedDate(new Date().toISOString().split("T")[0])}
+            onClick={() => setSelectedDate(getPeruDateString())}
             className="px-2.5 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition cursor-pointer"
           >
             Hoy
           </button>
+
+          {/* Reloj Oficial Sincronizado en Tiempo Real */}
+          {livePeruTime && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 border border-teal-200 text-teal-900 text-xs shadow-2xs font-medium">
+              <Clock className="w-3.5 h-3.5 text-teal-600 shrink-0 animate-pulse" />
+              <span className="font-mono font-bold tracking-tight">{livePeruTime}</span>
+              <span className="text-[9px] font-extrabold text-teal-800 bg-teal-100/90 px-1 py-0.2 rounded border border-teal-200/80">
+                HORA PERÚ
+              </span>
+            </div>
+          )}
 
           <button
             onClick={() => setIsAusentismoOpen(true)}
@@ -692,8 +709,7 @@ export function MatrixGrid({
                     {displayedSalas.map((sala) => {
                       const appointment = citasDelDia.find((c) => {
                         if (c.salaId !== sala.id) return false;
-                        const cDate = new Date(c.fechaHoraInicio);
-                        return cDate.getHours() === slotHour;
+                        return getPeruHour(c.fechaHoraInicio) === slotHour;
                       });
 
                       const statusStyle = appointment ? getStatusBadge(appointment.estado) : null;

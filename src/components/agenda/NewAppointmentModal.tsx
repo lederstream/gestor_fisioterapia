@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { agendarCita } from "@/server/actions/citas";
 import { cn } from "@/lib/utils";
+import { getPeruDateString, createPeruDate } from "@/lib/date-utils";
 import { 
   AlertCircle, 
   CheckCircle2, 
@@ -84,7 +85,7 @@ export function NewAppointmentModal({
   const [paqueteId, setPaqueteId] = useState("");
   const [salaId, setSalaId] = useState(prefilledSalaId || effectiveSalas[0]?.id || "");
   const [terapeutaId, setTerapeutaId] = useState(effectiveTerapeutas[0]?.id || "");
-  const [fecha, setFecha] = useState(prefilledDate || new Date().toISOString().split("T")[0]);
+  const [fecha, setFecha] = useState(prefilledDate || getPeruDateString());
   const [hora, setHora] = useState(prefilledTime || "09:00");
   const [duracion, setDuracion] = useState(45);
   const [esReevaluacion, setEsReevaluacion] = useState(false);
@@ -160,9 +161,7 @@ export function NewAppointmentModal({
     }
 
     try {
-      const [hour, minute] = hora.split(":").map(Number);
-      const [year, month, day] = fecha.split("-").map(Number);
-      const fechaHoraInicio = new Date(year, month - 1, day, hour, minute);
+      const fechaHoraInicio = createPeruDate(fecha, hora);
 
       const res = await agendarCita({
         pacienteId,
@@ -189,11 +188,11 @@ export function NewAppointmentModal({
     }
   };
 
-  const setFechaHoy = () => setFecha(new Date().toISOString().split("T")[0]);
+  const setFechaHoy = () => setFecha(getPeruDateString());
   const setFechaManana = () => {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    setFecha(d.toISOString().split("T")[0]);
+    const [y, m, d] = getPeruDateString().split("-").map(Number);
+    const next = new Date(y, m - 1, d + 1);
+    setFecha(getPeruDateString(next));
   };
 
   return (

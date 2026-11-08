@@ -18,6 +18,7 @@ import {
   CalendarCheck
 } from "lucide-react";
 import { formatCurrency, formatTime, formatDateTime } from "@/lib/utils";
+import { getPeruDateString, createPeruDate } from "@/lib/date-utils";
 import { agendarCita } from "@/server/actions/citas";
 import { createGoogleCalendarUrl, downloadIcsFile } from "@/lib/calendar";
 
@@ -131,9 +132,9 @@ export function PatientBookingModal({
   
   // Fecha: Por defecto mañana si ya es tarde hoy, o hoy si es temprano
   const initialDateStr = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 1); // día siguiente
-    return d.toISOString().split("T")[0];
+    const [y, m, d] = getPeruDateString().split("-").map(Number);
+    const next = new Date(y, m - 1, d + 1);
+    return getPeruDateString(next);
   }, []);
 
   const [fecha, setFecha] = useState(initialDateStr);
@@ -186,9 +187,7 @@ export function PatientBookingModal({
 
     try {
       const [startHourStr] = horario.split(" - ");
-      const [sh, sm] = startHourStr.split(":").map(Number);
-      const [y, m, d] = fecha.split("-").map(Number);
-      const fechaHoraInicio = new Date(y, m - 1, d, sh, sm, 0);
+      const fechaHoraInicio = createPeruDate(fecha, startHourStr.trim());
 
       if (!pacienteData) {
         setErrorMsg("No se ha seleccionado ningún paciente para esta reserva.");
@@ -488,7 +487,7 @@ export function PatientBookingModal({
                   <input
                     type="date"
                     required
-                    min={new Date().toISOString().split("T")[0]}
+                    min={getPeruDateString()}
                     value={fecha}
                     onChange={(e) => setFecha(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-semibold focus:ring-2 focus:ring-teal-500 focus:outline-none"

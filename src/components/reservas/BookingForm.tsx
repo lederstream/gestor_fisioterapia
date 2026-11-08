@@ -14,6 +14,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { getPeruDateString } from "@/lib/date-utils";
 
 import { solicitarReservaPublica } from "@/server/actions/reservas";
 
@@ -32,7 +33,7 @@ export function BookingForm({ servicios, configuracion }: BookingFormProps) {
   const [apellidoMaterno, setApellidoMaterno] = useState("");
   const [telefono, setTelefono] = useState("");
   const [email, setEmail] = useState("");
-  const [fecha, setFecha] = useState(new Date().toISOString().split("T")[0]);
+  const [fecha, setFecha] = useState(() => getPeruDateString());
   const [horario, setHorario] = useState("09:00 - 10:00");
   const [motivo, setMotivo] = useState("");
   const [loading, setLoading] = useState(false);

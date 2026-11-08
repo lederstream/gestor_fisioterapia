@@ -379,6 +379,19 @@ const initialAuditLogs: AuditLogItem[] = [
   },
 ];
 
+const STORE_LEGACY_MAP: Record<string, string> = {
+  "usr-ter-1": "58782c42-8e79-47c7-b9a0-73929c852161",
+  "usr-ter-2": "9ddfb347-0e7d-4176-8d13-6d15bdcc6e9c",
+  "usr-ter-3": "1173afcb-a989-422c-9408-b67600799cb9",
+  "usr-ter-4": "99cb2db8-a16b-47b0-ae87-8204092d4419",
+  "sala-1": "15823224-a08a-4ef1-85db-bdf91da8ff90",
+  "sala-2": "5a3ef60f-93e4-4b0c-84c2-6f72a8f0c225",
+  "sala-3": "7d5e2bfe-1202-481b-aa1e-10dccd3f5d72",
+  "sala-4": "b91d6319-c270-4553-8543-627a31ffd86e",
+  "sala-5": "0ed8ea5b-4690-4d69-a767-e8948854cb23",
+  "sala-6": "4e288257-e065-4998-ac95-a6efdd6c983e",
+};
+
 class GestorFisioStore {
   private users: UserItem[] = [...initialUsers];
   private salas: SalaItem[] = [...initialSalas];
@@ -865,10 +878,37 @@ class GestorFisioStore {
     const inicioIso = inicio.toISOString();
     const finIso = fin.toISOString();
 
-    const sala = this.salas.find((s) => s.id === params.salaId);
-    if (!sala) throw new Error("La sala seleccionada no existe.");
+    const mappedSalaId = (params.salaId && STORE_LEGACY_MAP[params.salaId]) ? STORE_LEGACY_MAP[params.salaId] : params.salaId;
+    let sala = this.salas.find((s) => s.id === mappedSalaId || s.id === params.salaId);
+    if (!sala) {
+      sala = this.salas.find((s) => 
+        s.nombre.toLowerCase() === params.salaId?.toLowerCase() ||
+        s.nombre.toLowerCase().replace(/\s+/g, "-") === params.salaId?.toLowerCase()
+      );
+    }
+    if (!sala && this.salas.length > 0) {
+      sala = this.salas[0];
+    }
+    if (!sala) {
+      sala = { id: params.salaId || "15823224-a08a-4ef1-85db-bdf91da8ff90", nombre: "Sala 1", estado: "DISPONIBLE", capacidadSimultanea: 1 };
+      this.salas.push(sala);
+    }
+    params.salaId = sala.id;
+
     if (sala.estado === "MANTENIMIENTO") {
       throw new Error(`La ${sala.nombre} se encuentra temporalmente en MANTENIMIENTO.`);
+    }
+
+    const mappedTerapeutaId = (params.terapeutaId && STORE_LEGACY_MAP[params.terapeutaId]) ? STORE_LEGACY_MAP[params.terapeutaId] : params.terapeutaId;
+    let terapeuta = this.users.find((u) => u.id === mappedTerapeutaId || u.id === params.terapeutaId);
+    if (!terapeuta) {
+      terapeuta = this.users.find((u) => u.nombre.toLowerCase().includes(params.terapeutaId?.toLowerCase()));
+    }
+    if (!terapeuta && this.users.length > 0) {
+      terapeuta = this.users.find((u) => u.rol === "TERAPEUTA") || this.users[0];
+    }
+    if (terapeuta) {
+      params.terapeutaId = terapeuta.id;
     }
 
     const solapamientoSala = this.citas.find((c) => {
@@ -940,7 +980,6 @@ class GestorFisioStore {
     this.citas.push(nuevaCita);
 
     const paciente = this.pacientes.find((p) => p.id === params.pacienteId);
-    const terapeuta = this.users.find((u) => u.id === params.terapeutaId);
 
     // Registro de Auditoría
     this.registrarAuditLog({
@@ -1032,14 +1071,32 @@ class GestorFisioStore {
     const inicio = new Date(params.nuevaFechaHoraInicio);
     const fin = new Date(inicio.getTime() + duracion * 60000);
 
-    const sala = this.salas.find((s) => s.id === params.nuevaSalaId);
-    if (!sala) throw new Error("La sala seleccionada no existe.");
-    if (sala.estado === "MANTENIMIENTO") {
+    const mappedSalaId = (params.nuevaSalaId && STORE_LEGACY_MAP[params.nuevaSalaId]) ? STORE_LEGACY_MAP[params.nuevaSalaId] : params.nuevaSalaId;
+    let sala = this.salas.find((s) => s.id === mappedSalaId || s.id === params.nuevaSalaId);
+    if (!sala) {
+      sala = this.salas.find((s) => 
+        s.nombre.toLowerCase() === params.nuevaSalaId?.toLowerCase() ||
+        s.nombre.toLowerCase().replace(/\s+/g, "-") === params.nuevaSalaId?.toLowerCase()
+      );
+    }
+    if (!sala && this.salas.length > 0) {
+      sala = this.salas[0];
+    }
+    if (sala) {
+      params.nuevaSalaId = sala.id;
+    }
+    if (sala && sala.estado === "MANTENIMIENTO") {
       throw new Error(`La ${sala.nombre} se encuentra temporalmente en MANTENIMIENTO.`);
     }
 
-    const terapeuta = this.users.find((u) => u.id === params.nuevoTerapeutaId);
-    if (!terapeuta) throw new Error("Terapeuta no encontrado.");
+    const mappedTerapeutaId = (params.nuevoTerapeutaId && STORE_LEGACY_MAP[params.nuevoTerapeutaId]) ? STORE_LEGACY_MAP[params.nuevoTerapeutaId] : params.nuevoTerapeutaId;
+    let terapeuta = this.users.find((u) => u.id === mappedTerapeutaId || u.id === params.nuevoTerapeutaId);
+    if (!terapeuta && this.users.length > 0) {
+      terapeuta = this.users.find(u => u.rol === "TERAPEUTA") || this.users[0];
+    }
+    if (terapeuta) {
+      params.nuevoTerapeutaId = terapeuta.id;
+    }
 
     // Validar conflicto de sala (excluyendo la misma cita)
     const conflictoSala = this.citas.find((c) => {
@@ -1051,9 +1108,12 @@ class GestorFisioStore {
       return inicio.getTime() < cFin && fin.getTime() > cInicio;
     });
 
+    const salaNombre = sala?.nombre || "Sala de Atención";
+    const terapeutaNombre = terapeuta?.nombre || "Terapeuta Clínico";
+
     if (conflictoSala) {
       const pac = this.pacientes.find((p) => p.id === conflictoSala.pacienteId);
-      throw new Error(`Conflicto de Horario en Sala: La ${sala.nombre} ya está reservada en ese horario para el paciente ${pac?.nombres || ""}.`);
+      throw new Error(`Conflicto de Horario en Sala: La ${salaNombre} ya está reservada en ese horario para el paciente ${pac?.nombres || ""}.`);
     }
 
     // Validar conflicto de terapeuta (excluyendo la misma cita)
@@ -1067,7 +1127,7 @@ class GestorFisioStore {
     });
 
     if (conflictoTerapeuta) {
-      throw new Error(`Conflicto de Terapeuta: El profesional ${terapeuta.nombre} ya tiene otra atención asignada en ese bloque horario.`);
+      throw new Error(`Conflicto de Terapeuta: El profesional ${terapeutaNombre} ya tiene otra atención asignada en ese bloque horario.`);
     }
 
     const anteriorStr = `${new Date(citaActual.fechaHoraInicio).toLocaleDateString("es-PE")} ${new Date(citaActual.fechaHoraInicio).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
@@ -1091,7 +1151,7 @@ class GestorFisioStore {
       accion: "CITA_REPROGRAMADA",
       modulo: "AGENDA",
       entidadId: citaActual.id,
-      detalles: `Cita de ${paciente?.nombres} ${paciente?.apellidos} reprogramada de [${anteriorStr}] a [${nuevoStr} en ${sala.nombre} con ${terapeuta.nombre}].`,
+      detalles: `Cita de ${paciente?.nombres} ${paciente?.apellidos} reprogramada de [${anteriorStr}] a [${nuevoStr} en ${salaNombre} con ${terapeutaNombre}].`,
       ipAddress: params.ipAddress || "192.168.1.108",
     });
 

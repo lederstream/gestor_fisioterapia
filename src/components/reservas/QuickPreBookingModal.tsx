@@ -16,6 +16,7 @@ import {
   Moon,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { getPeruDateString } from "@/lib/date-utils";
 import { solicitarReservaPublica } from "@/server/actions/reservas";
 import { ServicioItem, ConfiguracionClinicaItem, HorariosSemanaConfig } from "@/lib/store";
 
@@ -38,11 +39,7 @@ export function QuickPreBookingModal({
   const [dni, setDni] = useState("");
   const [nombres, setNombres] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
-  const [fecha, setFecha] = useState(() => {
-    const today = new Date();
-    // Default tomorrow or today
-    return today.toISOString().split("T")[0];
-  });
+  const [fecha, setFecha] = useState(() => getPeruDateString());
   const [turno, setTurno] = useState<"MANANA" | "TARDE">("MANANA");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -409,7 +406,7 @@ export function QuickPreBookingModal({
                     <input
                       type="date"
                       required
-                      min={new Date().toISOString().split("T")[0]}
+                      min={getPeruDateString()}
                       value={fecha}
                       onChange={(e) => setFecha(e.target.value)}
                       className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-[#0C3E37]/20 focus:border-[#0C3E37] transition"

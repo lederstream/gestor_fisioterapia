@@ -115,14 +115,14 @@ export function DashboardNavbar({ onToggleMobileMenu, initialConfig }: Dashboard
           </div>
         )}
 
-        {/* Reloj y Fecha Sincronizada con Hora de Perú (America/Lima) */}
-        <div className="hidden md:flex items-center gap-2 text-xs text-slate-700 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200/80 shadow-2xs">
-          <Clock className="w-3.5 h-3.5 text-teal-600 shrink-0" />
-          <span className="capitalize font-medium">{dateStr || "Hoy"}</span>
-          <span className="text-slate-300">•</span>
-          <span className="font-mono font-bold text-slate-900">{timeStr || "--:--:--"}</span>
-          <span className="text-[9px] text-teal-700 font-extrabold bg-teal-100/70 px-1.5 py-0.5 rounded border border-teal-200">
-            PERÚ (UTC-5)
+        {/* Reloj y Fecha Sincronizada con Hora Oficial de Perú (America/Lima) */}
+        <div className="flex items-center gap-1.5 sm:gap-2 text-xs text-slate-700 bg-slate-50 px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200/80 shadow-2xs">
+          <Clock className="w-3.5 h-3.5 text-teal-600 shrink-0 animate-pulse" />
+          <span className="capitalize font-medium hidden sm:inline">{dateStr || "Hoy"}</span>
+          <span className="text-slate-300 hidden sm:inline">•</span>
+          <span className="font-mono font-bold text-slate-900 tracking-tight">{timeStr || "--:--:--"}</span>
+          <span className="text-[9px] text-teal-800 font-extrabold bg-teal-100/80 px-1.5 py-0.5 rounded border border-teal-200/80 tracking-wide">
+            PERÚ
           </span>
         </div>
       </div>
