@@ -13,6 +13,7 @@ import { agendarCitaSchema, type AgendarCitaInput } from "@/lib/validations";
 import { dbStore } from "@/lib/store";
 import { obtenerIpCliente } from "./auditoria";
 import { obtenerSesionServidor } from "@/lib/auth-server";
+import { getPeruDateString } from "@/lib/date-utils";
 
 import { prisma } from "@/lib/prisma";
 
@@ -349,11 +350,10 @@ export async function agendarCita(
  * Obtener citas de la agenda para una fecha dada (con datos de sala, terapeuta y paciente)
  */
 export async function obtenerCitasAgenda(fechaIso?: string) {
-  const targetDate = fechaIso ? new Date(fechaIso) : new Date();
-  const startOfDay = new Date(targetDate);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(targetDate);
-  endOfDay.setHours(23, 59, 59, 999);
+  // Delimitar el día con el huso horario oficial de Perú (America/Lima, UTC-5)
+  const peruDayStr = fechaIso ? getPeruDateString(fechaIso) : getPeruDateString();
+  const startOfDay = new Date(`${peruDayStr}T00:00:00-05:00`);
+  const endOfDay = new Date(`${peruDayStr}T23:59:59.999-05:00`);
 
   if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
     try {
