@@ -12,13 +12,14 @@ function safeRevalidatePath(path: string) {
 import { agendarCitaSchema, type AgendarCitaInput } from "@/lib/validations";
 import { dbStore } from "@/lib/store";
 import { obtenerIpCliente } from "./auditoria";
-import { obtenerSesionServidor } from "@/lib/auth-server";
+import { obtenerSesionServidor, requireSession, requirePermission } from "@/lib/auth-server";
+import { hasPermission } from "@/lib/permissions";
 import { getPeruDateString } from "@/lib/date-utils";
 
 import { prisma } from "@/lib/prisma";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-export function isUuid(id?: string | null): boolean {
+function isUuid(id?: string | null): boolean {
   return typeof id === "string" && UUID_REGEX.test(id);
 }
 
@@ -41,22 +42,31 @@ export async function agendarCita(
   usuarioAuditoria?: { id?: string; nombre: string; rol: any }
 ): Promise<ServerActionResult> {
   try {
+    const sesion = await requireSession();
     const validated = agendarCitaSchema.parse(input);
+    void usuarioAuditoria;
+
+    if (sesion.rol === "PACIENTE") {
+      if (!hasPermission(sesion.rol, "portal:reservas")) {
+        return { success: false, error: "Acceso denegado: Sin permisos para reservar citas." };
+      }
+      if (validated.pacienteId !== sesion.userId) {
+        return { success: false, error: "Acceso denegado: Solo puedes agendar citas para tu propio perfil." };
+      }
+    } else if (!hasPermission(sesion.rol, "agenda:agendar")) {
+      return { success: false, error: `Acceso denegado: El rol [${sesion.rol}] no tiene autorización para agendar citas.` };
+    }
+
     const clientIp = await obtenerIpCliente();
     const duracionMinutos = validated.duracionMinutos || 45;
     const inicio = new Date(validated.fechaHoraInicio);
     const fin = new Date(inicio.getTime() + duracionMinutos * 60000);
 
-    // Obtener sesión activa si no se proporcionó auditoría explícita
-    const sesion = await obtenerSesionServidor();
-    const finalAuditoria = usuarioAuditoria || (sesion ? {
+    const finalAuditoria = {
       id: sesion.userId,
       nombre: sesion.nombre,
       rol: sesion.rol,
-    } : {
-      nombre: "Recepción AJ Fisioterapia",
-      rol: "RECEPCION",
-    });
+    };
 
     // Si existe conexión real configurada a PostgreSQL en la nube (Supabase / Neon), ejecutar de forma directa y optimizada
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
@@ -132,34 +142,15 @@ export async function agendarCita(
         if (isUuid(validated.pacienteId)) {
           paciente = await prisma.paciente.findUnique({ where: { id: validated.pacienteId } });
         }
-        if (!paciente) {
+        if (!paciente && sesion.rol !== "PACIENTE") {
           paciente = await prisma.paciente.findFirst({
             where: {
               OR: [
                 { dni: validated.pacienteId },
                 { email: { equals: validated.pacienteId, mode: "insensitive" } },
-                { nombres: { contains: validated.pacienteId, mode: "insensitive" } },
               ],
             },
           });
-          if (!paciente) {
-            // Buscar en memoria para crear registro en Supabase si es necesario
-            const mockPac = dbStore.getPacientes().find(p => p.id === validated.pacienteId || p.dni === validated.pacienteId);
-            if (mockPac) {
-              paciente = await prisma.paciente.create({
-                data: {
-                  nombres: mockPac.nombres,
-                  apellidos: mockPac.apellidos,
-                  dni: mockPac.dni,
-                  telefono: mockPac.telefono,
-                  email: mockPac.email || null,
-                  fechaNacimiento: new Date(mockPac.fechaNacimiento || "1990-01-01"),
-                },
-              });
-            } else {
-              paciente = await prisma.paciente.findFirst();
-            }
-          }
         }
         if (!paciente) {
           throw new Error("El paciente seleccionado no se encuentra registrado en el sistema.");
@@ -335,6 +326,17 @@ export async function obtenerCitasAgenda(fechaIso?: string) {
   const startOfDay = new Date(`${peruDayStr}T00:00:00-05:00`);
   const endOfDay = new Date(`${peruDayStr}T23:59:59.999-05:00`);
 
+  const sesion = await obtenerSesionServidor();
+  if (!sesion || !hasPermission(sesion.rol, "agenda:ver")) {
+    return {
+      fecha: startOfDay.toISOString(),
+      citas: [],
+      salas: [],
+      terapeutas: [],
+      servicios: [],
+    };
+  }
+
   if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
     try {
       const [citasDb, salasDb, terapeutasDb, serviciosDb, paquetesDb, pacientesDb] = await Promise.all([
@@ -509,9 +511,13 @@ export async function actualizarEstadoCita(
   usuarioInfo?: { id?: string; nombre: string; rol: any }
 ): Promise<ServerActionResult> {
   try {
+    const sesion = await requirePermission("agenda:modificar");
+    void usuarioInfo;
     const clientIp = await obtenerIpCliente();
     const infoConIp = {
-      ...(usuarioInfo || { id: undefined, nombre: "Recepción AJ Fisioterapia", rol: "RECEPCION" }),
+      id: sesion.userId,
+      nombre: sesion.nombre,
+      rol: sesion.rol,
       ipAddress: clientIp,
     };
     const actualizada = dbStore.actualizarEstadoCita(citaId, nuevoEstado, infoConIp);
@@ -526,7 +532,7 @@ export async function actualizarEstadoCita(
               where: { id: citaId },
               data: {
                 estado: nuevoEstado as any,
-                confirmadoPorNombre: nuevoEstado === "CONFIRMADA" ? (usuarioInfo?.nombre || "Recepción") : undefined,
+                confirmadoPorNombre: nuevoEstado === "CONFIRMADA" ? `${sesion.nombre} (${sesion.rol})` : undefined,
               },
             });
             if (nuevoEstado === "ATENDIDA" && citaDb.paqueteId) {
@@ -569,6 +575,7 @@ export async function reprogramarCita(params: {
   usuarioInfo?: { id?: string; nombre: string; rol: any };
 }): Promise<ServerActionResult> {
   try {
+    const sesion = await requirePermission("agenda:modificar");
     const clientIp = await obtenerIpCliente();
     const fechaDate = new Date(params.nuevaFechaHoraInicio);
     const duracion = params.duracionMinutos || 45;
@@ -623,7 +630,7 @@ export async function reprogramarCita(params: {
       nuevaSalaId: params.nuevaSalaId,
       nuevoTerapeutaId: params.nuevoTerapeutaId,
       duracionMinutos: params.duracionMinutos,
-      usuarioAuditoria: params.usuarioInfo || { id: undefined, nombre: "Recepción AJ Fisioterapia", rol: "RECEPCION" },
+      usuarioAuditoria: { id: sesion.userId, nombre: sesion.nombre, rol: sesion.rol },
       ipAddress: clientIp,
     });
 

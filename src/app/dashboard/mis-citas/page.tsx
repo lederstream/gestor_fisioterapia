@@ -35,8 +35,8 @@ export default async function MisCitasPage() {
         });
       }
 
-      if (!paciente) {
-        // Fallback al primer paciente existente en base de datos si es vista previa
+      if (!paciente && sesion && sesion.rol !== "PACIENTE") {
+        // Fallback al primer paciente existente en base de datos solo en vista previa administrativa
         paciente = await prisma.paciente.findFirst({
           include: {
             citas: {
@@ -73,7 +73,7 @@ export default async function MisCitasPage() {
     const todosPacientes = dbStore.getPacientes();
     paciente = todosPacientes.find(
       (p) => p.id === sesion?.userId || (sesion?.email && p.email?.toLowerCase() === sesion.email.toLowerCase())
-    ) || todosPacientes[0] || null;
+    ) || (sesion && sesion.rol !== "PACIENTE" ? todosPacientes[0] : null) || null;
 
     if (paciente) {
       citas = dbStore.getCitas().filter((c) => c.pacienteId === paciente?.id);

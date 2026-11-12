@@ -4,6 +4,7 @@ import { dbStore, AuditLogItem } from "@/lib/store";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { obtenerSesionServidor } from "@/lib/auth-server";
+import { hasPermission } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 
 export interface FiltrosAuditoria {
@@ -33,7 +34,7 @@ export async function obtenerIpCliente(): Promise<string> {
   }
 }
 
-export function esLogDeSuperAdmin(
+function esLogDeSuperAdmin(
   log: { usuarioRol?: string | null; usuarioNombre?: string | null; detalles?: string | null; usuarioId?: string | null },
   superAdminIds: string[] = []
 ): boolean {
@@ -55,7 +56,10 @@ export function esLogDeSuperAdmin(
 
 export async function obtenerLogsAuditoria(filtros?: FiltrosAuditoria): Promise<AuditLogItem[]> {
   const sesion = await obtenerSesionServidor();
-  const esSuperAdmin = sesion?.rol === "SUPERADMIN";
+  if (!sesion || !hasPermission(sesion.rol, "auditoria:ver")) {
+    return [];
+  }
+  const esSuperAdmin = sesion.rol === "SUPERADMIN";
 
   if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
     try {

@@ -5,7 +5,8 @@ import { registrarPagoSchema, type RegistrarPagoInput } from "@/lib/validations"
 import { dbStore, PagoItem, TratamientoPaqueteItem } from "@/lib/store";
 import { ServerActionResult } from "./citas";
 import { obtenerIpCliente } from "./auditoria";
-
+import { obtenerSesionServidor, requirePermission } from "@/lib/auth-server";
+import { hasPermission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -22,9 +23,11 @@ export async function registrarPago(
   usuarioAuditoria?: { id?: string; nombre: string; rol: any }
 ): Promise<ServerActionResult<{ pago: PagoItem; paquete: TratamientoPaqueteItem }>> {
   try {
+    const sesion = await requirePermission("caja:cobrar");
     const validated = registrarPagoSchema.parse(input);
     const clientIp = await obtenerIpCliente();
     const numOp = validated.numeroOperacion?.trim() || null;
+    void usuarioAuditoria; // Identidad y rol se derivan estrictamente de la sesión JWT verificada
 
     // Si hay base de datos real conectada (Supabase / Neon), ejecutar en transacción atómica
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
@@ -74,9 +77,9 @@ export async function registrarPago(
 
           await tx.auditLog.create({
             data: {
-              usuarioId: usuarioAuditoria?.id,
-              usuarioNombre: usuarioAuditoria?.nombre || "Caja AJ Fisioterapia",
-              usuarioRol: usuarioAuditoria?.rol || "RECEPCION",
+              usuarioId: sesion.userId,
+              usuarioNombre: sesion.nombre,
+              usuarioRol: sesion.rol as any,
               accion: "PAGO_REGISTRADO",
               modulo: "CAJA",
               entidadId: nuevoPago.id,
@@ -99,7 +102,7 @@ export async function registrarPago(
           numeroOperacion: validated.numeroOperacion,
           comprobanteUrl: validated.comprobanteUrl,
           estado: validated.estado,
-          usuarioAuditoria,
+          usuarioAuditoria: { id: sesion.userId, nombre: sesion.nombre, rol: sesion.rol },
           ipAddress: clientIp,
         });
 
@@ -122,7 +125,7 @@ export async function registrarPago(
       numeroOperacion: validated.numeroOperacion,
       comprobanteUrl: validated.comprobanteUrl,
       estado: validated.estado,
-      usuarioAuditoria,
+      usuarioAuditoria: { id: sesion.userId, nombre: sesion.nombre, rol: sesion.rol },
       ipAddress: clientIp,
     });
 
@@ -147,6 +150,20 @@ export async function registrarPago(
  * Obtener consolidado y transacciones de caja
  */
 export async function obtenerReporteCaja() {
+  const sesion = await obtenerSesionServidor();
+  if (!sesion || !hasPermission(sesion.rol, "caja:ver")) {
+    return {
+      totalRecaudado: 0,
+      totalEfectivo: 0,
+      totalYape: 0,
+      totalPlin: 0,
+      totalPos: 0,
+      deudaPendiente: 0,
+      transacciones: [],
+      paquetesConSaldo: [],
+    };
+  }
+
   if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
     try {
       const [pagosDb, paquetesDb] = await Promise.all([
@@ -308,13 +325,12 @@ export async function registrarCierreCaja(input: {
   usuarioAuditoria?: { id?: string; nombre: string; rol: any };
 }): Promise<ServerActionResult> {
   try {
+    const sesion = await requirePermission("caja:arqueo");
     const clientIp = await obtenerIpCliente();
-    const { obtenerSesionServidor } = await import("@/lib/auth-server");
-    const sesion = await obtenerSesionServidor();
 
-    const usuarioNombre = input.usuarioAuditoria?.nombre || sesion?.nombre || "Recepción AJ Fisioterapia";
-    const usuarioRol = input.usuarioAuditoria?.rol || sesion?.rol || "RECEPCION";
-    const usuarioId = input.usuarioAuditoria?.id || sesion?.userId;
+    const usuarioNombre = sesion.nombre;
+    const usuarioRol = sesion.rol;
+    const usuarioId = sesion.userId;
 
     const diffTexto = input.diferencia === 0
       ? "Cuadre exacto (S/. 0.00)"

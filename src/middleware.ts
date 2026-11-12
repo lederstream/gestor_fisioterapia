@@ -3,10 +3,12 @@ import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
 const COOKIE_NAME = "gestorfisio_session";
-const DEFAULT_SECRET = "gestorfisio-secure-jwt-secret-key-32-chars-min!";
 
 function getSecretKey(): Uint8Array {
-  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || DEFAULT_SECRET;
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+  if (!secret || secret.length < 16) {
+    throw new Error("AUTH_SECRET no definido");
+  }
   return new TextEncoder().encode(secret);
 }
 

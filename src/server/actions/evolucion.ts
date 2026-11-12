@@ -6,7 +6,8 @@ import { dbStore } from "@/lib/store";
 import { ServerActionResult } from "./citas";
 import { obtenerIpCliente } from "./auditoria";
 import { prisma } from "@/lib/prisma";
-import { obtenerSesionServidor } from "@/lib/auth-server";
+import { requirePermission } from "@/lib/auth-server";
+import { hasPermission } from "@/lib/permissions";
 
 /**
  * Server Action: registrarAsistenciaYEvolucion()
@@ -21,16 +22,16 @@ export async function registrarAsistenciaYEvolucion(
   input: RegistrarAsistenciaYEvolucionInput
 ): Promise<ServerActionResult> {
   try {
+    const sesion = await requirePermission("clinica:evolucion");
     const validated = registrarAsistenciaYEvolucionSchema.parse(input);
     const clientIp = await obtenerIpCliente();
-    const sesion = await obtenerSesionServidor();
 
     // Regla de Seguridad Médica Estricta:
     // Solo un Fisioterapeuta Colegiado o Administrador puede validar la reevaluación diagnóstica
-    if (validated.completarReevaluacion && sesion?.rol === "ASISTENTE") {
+    if (validated.completarReevaluacion && !hasPermission(sesion.rol, "clinica:reevaluacion")) {
       return {
         success: false,
-        error: "Violación de protocolo clínico: Los Asistentes / Técnicos no cuentan con facultad legal para validar la reevaluación médica diagnóstica ni levantar el bloqueo de alta médica.",
+        error: "Violación de protocolo clínico: Tu perfil no cuenta con facultad legal para validar la reevaluación médica diagnóstica ni levantar el bloqueo de alta médica.",
       };
     }
 

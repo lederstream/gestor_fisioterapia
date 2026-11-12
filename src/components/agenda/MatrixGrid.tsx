@@ -55,6 +55,7 @@ export function MatrixGrid({
 }: MatrixGridProps) {
   const { currentUser, hasPermission, currentRole } = useAuth();
   const canSeeFinance = hasPermission("caja:ver");
+  const canModifyAgenda = hasPermission("agenda:modificar");
   const canEditConfig = hasPermission("config:modificar") || currentRole === "ADMIN" || currentRole === "SUPERADMIN";
   const [citas, setCitas] = useState(initialCitas);
   const [selectedDate, setSelectedDate] = useState(() => getPeruDateString());
@@ -1055,7 +1056,8 @@ export function MatrixGrid({
                     </div>
                   )}
 
-                  {/* Botones de Acción */}
+                  {/* Botones de Acción (Solo roles con permiso agenda:modificar) */}
+                  {canModifyAgenda && (
                   <div className="pt-2 border-t border-slate-100 space-y-1.5">
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <button
@@ -1071,13 +1073,12 @@ export function MatrixGrid({
                         <button
                           onClick={async () => {
                             const { actualizarEstadoCita } = await import("@/server/actions/citas");
-                            const usuarioInfo = currentUser ? {
-                              id: currentUser.id,
-                              nombre: `${currentUser.nombre} (${currentUser.rol === "RECEPCION" ? "Recepción" : currentUser.rol})`,
-                              rol: currentUser.rol
-                            } : undefined;
-                            await actualizarEstadoCita(selectedCitaDetail.id, "CONFIRMADA", usuarioInfo);
-                            const respNombre = usuarioInfo?.nombre || "Karin Palacios (Recepción)";
+                            const res = await actualizarEstadoCita(selectedCitaDetail.id, "CONFIRMADA");
+                            if (!res?.success) {
+                              alert(res?.error || "No autorizado para confirmar la cita.");
+                              return;
+                            }
+                            const respNombre = currentUser ? `${currentUser.nombre} (${currentUser.rol})` : "Recepción";
                             setCitas((prev) => prev.map((c) => c.id === selectedCitaDetail.id ? { ...c, estado: "CONFIRMADA", confirmadoPorNombre: respNombre } : c));
                             setSelectedCitaDetail((prev: any) => ({ ...prev, estado: "CONFIRMADA", confirmadoPorNombre: respNombre }));
                           }}
@@ -1092,7 +1093,11 @@ export function MatrixGrid({
                         <button
                           onClick={async () => {
                             const { actualizarEstadoCita } = await import("@/server/actions/citas");
-                            await actualizarEstadoCita(selectedCitaDetail.id, "NO_ASISTIO");
+                            const res = await actualizarEstadoCita(selectedCitaDetail.id, "NO_ASISTIO");
+                            if (!res?.success) {
+                              alert(res?.error || "No autorizado para actualizar la cita.");
+                              return;
+                            }
                             setCitas((prev) => prev.map((c) => c.id === selectedCitaDetail.id ? { ...c, estado: "NO_ASISTIO" } : c));
                             setSelectedCitaDetail((prev: any) => ({ ...prev, estado: "NO_ASISTIO" }));
                           }}
@@ -1108,7 +1113,11 @@ export function MatrixGrid({
                           onClick={async () => {
                             if (confirm("¿Cancelar cita y liberar la sala?")) {
                               const { actualizarEstadoCita } = await import("@/server/actions/citas");
-                              await actualizarEstadoCita(selectedCitaDetail.id, "CANCELADA");
+                              const res = await actualizarEstadoCita(selectedCitaDetail.id, "CANCELADA");
+                              if (!res?.success) {
+                                alert(res?.error || "No autorizado para cancelar la cita.");
+                                return;
+                              }
                               setCitas((prev) => prev.map((c) => c.id === selectedCitaDetail.id ? { ...c, estado: "CANCELADA" } : c));
                               setSelectedCitaDetail((prev: any) => ({ ...prev, estado: "CANCELADA" }));
                             }
@@ -1121,6 +1130,7 @@ export function MatrixGrid({
                       )}
                     </div>
                   </div>
+                  )}
 
                   {/* Acciones Inferiores */}
                   <div className="pt-3 flex items-center justify-between border-t border-slate-100">

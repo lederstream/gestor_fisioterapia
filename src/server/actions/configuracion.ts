@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { dbStore, ConfiguracionClinicaItem } from "@/lib/store";
 import { ServerActionResult } from "./citas";
 import { prisma, isDatabaseAvailable, markDatabaseError } from "@/lib/prisma";
-import { obtenerSesionServidor } from "@/lib/auth-server";
+import { obtenerSesionServidor, requirePermission } from "@/lib/auth-server";
 
 export async function obtenerConfiguracionClinica(): Promise<ConfiguracionClinicaItem> {
   try {
@@ -61,21 +61,33 @@ export async function obtenerConfiguracionClinica(): Promise<ConfiguracionClinic
 export async function obtenerConfiguracionCompleta() {
   const sesion = await obtenerSesionServidor();
   const isSuperadminViewer = sesion?.rol === "SUPERADMIN";
+  const isPacienteViewer = sesion?.rol === "PACIENTE";
 
   const configuracion = await obtenerConfiguracionClinica();
   let salas = dbStore.getSalas();
   let servicios = dbStore.getServicios();
-  let personal = dbStore.getUsers().filter((u) => isSuperadminViewer || u.rol !== "SUPERADMIN");
+  let personal = !sesion
+    ? []
+    : isPacienteViewer
+    ? dbStore.getTerapeutas().map((u) => ({ ...u, email: "" }))
+    : dbStore.getUsers().filter((u) => isSuperadminViewer || u.rol !== "SUPERADMIN");
 
   try {
     if (isDatabaseAvailable() && process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       let [salasDb, serviciosDb, personalDb] = await Promise.all([
         prisma.sala.findMany({ orderBy: { nombre: "asc" } }),
         prisma.servicio.findMany({ orderBy: { orden: "asc" } }),
-        prisma.user.findMany({
-          where: isSuperadminViewer ? {} : { rol: { not: "SUPERADMIN" } },
-          orderBy: { nombre: "asc" },
-        }),
+        !sesion
+          ? Promise.resolve([])
+          : isPacienteViewer
+          ? prisma.user.findMany({
+              where: { rol: "TERAPEUTA", estado: "ACTIVO" },
+              orderBy: { nombre: "asc" },
+            })
+          : prisma.user.findMany({
+              where: isSuperadminViewer ? {} : { rol: { not: "SUPERADMIN" } },
+              orderBy: { nombre: "asc" },
+            }),
       ]);
 
       if (!salasDb || salasDb.length === 0) {
@@ -126,7 +138,7 @@ export async function obtenerConfiguracionCompleta() {
         personal = personalDb.map((u) => ({
           id: u.id,
           nombre: u.nombre,
-          email: u.email,
+          email: isPacienteViewer ? "" : u.email,
           rol: u.rol as any,
           especialidad: u.especialidad || undefined,
           estado: u.estado as any,
@@ -149,11 +161,11 @@ export async function guardarConfiguracionClinica(
   data: Partial<ConfiguracionClinicaItem>
 ): Promise<ServerActionResult<ConfiguracionClinicaItem>> {
   try {
-    const sesion = await obtenerSesionServidor();
+    const sesion = await requirePermission("config:modificar");
     const actualizada = dbStore.actualizarConfiguracion(data, {
-      id: sesion?.userId || undefined,
-      nombre: sesion?.nombre || "Administración Clínica",
-      rol: sesion?.rol || "ADMIN",
+      id: sesion.userId,
+      nombre: sesion.nombre,
+      rol: sesion.rol,
     });
 
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
@@ -240,6 +252,7 @@ export async function cambiarEstadoSala(
   motivo?: string
 ): Promise<ServerActionResult> {
   try {
+    await requirePermission("config:modificar");
     let resultSala: any = null;
 
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
@@ -306,6 +319,7 @@ export async function modificarServicio(
   }
 ): Promise<ServerActionResult> {
   try {
+    await requirePermission("config:modificar");
     let resultData: any = null;
 
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
@@ -372,10 +386,15 @@ export async function cambiarEstadoPersonal(
   especialidad?: string
 ): Promise<ServerActionResult> {
   try {
+    const sesion = await requirePermission("config:modificar");
     let resultUser: any = null;
 
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       try {
+        const target = await prisma.user.findUnique({ where: { id: usuarioId } });
+        if (target?.rol === "SUPERADMIN" && sesion.rol !== "SUPERADMIN") {
+          return { success: false, error: "Acceso denegado: No autorizado para modificar cuentas raíz." };
+        }
         const updatedDb = await prisma.user.update({
           where: { id: usuarioId },
           data: {
@@ -416,6 +435,7 @@ export async function crearNuevaSala(
   equipamiento?: string
 ): Promise<ServerActionResult> {
   try {
+    await requirePermission("config:modificar");
     const cleanNombre = nombre.trim();
     if (!cleanNombre) {
       return { success: false, error: "El nombre de la sala es obligatorio." };
@@ -484,6 +504,7 @@ export async function editarDatosSala(
   equipamiento?: string
 ): Promise<ServerActionResult> {
   try {
+    await requirePermission("config:modificar");
     const cleanNombre = nombre.trim();
     if (!cleanNombre) {
       return { success: false, error: "El nombre de la sala no puede estar vacío." };
@@ -529,6 +550,7 @@ export async function editarDatosSala(
 
 export async function eliminarSala(salaId: string): Promise<ServerActionResult> {
   try {
+    await requirePermission("config:modificar");
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       try {
         const citasCount = await prisma.cita.count({
@@ -593,6 +615,7 @@ export async function crearNuevoServicio(
   }
 ): Promise<ServerActionResult> {
   try {
+    await requirePermission("config:modificar");
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       try {
         const nuevoDb = await prisma.servicio.create({
@@ -666,6 +689,7 @@ export async function crearNuevoServicio(
 
 export async function eliminarServicio(servicioId: string): Promise<ServerActionResult> {
   try {
+    await requirePermission("config:modificar");
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       try {
         const paquetesCount = await prisma.tratamientoPaquete.count({

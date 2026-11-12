@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 import { dbStore, UserItem } from "@/lib/store";
-import { UserRole } from "@/lib/permissions";
+import { UserRole, hasPermission } from "@/lib/permissions";
 import { ServerActionResult } from "./citas";
 import { prisma } from "@/lib/prisma";
 import { obtenerSesionServidor } from "@/lib/auth-server";
@@ -11,7 +11,10 @@ import { obtenerIpCliente } from "./auditoria";
 
 export async function obtenerUsuarios(): Promise<UserItem[]> {
   const sesion = await obtenerSesionServidor();
-  const isSuperadminViewer = sesion?.rol === "SUPERADMIN";
+  if (!sesion || !hasPermission(sesion.rol, "usuarios:gestionar")) {
+    return [];
+  }
+  const isSuperadminViewer = sesion.rol === "SUPERADMIN";
 
   if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
     try {

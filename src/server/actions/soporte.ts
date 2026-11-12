@@ -2,6 +2,7 @@
 
 import { prisma, isDatabaseAvailable } from "@/lib/prisma";
 import { dbStore } from "@/lib/store";
+import { requirePermission } from "@/lib/auth-server";
 import { obtenerLogsAuditoria } from "./auditoria";
 
 export interface SystemDiagnosticsData {
@@ -24,6 +25,7 @@ export interface SystemDiagnosticsData {
 }
 
 export async function obtenerDiagnosticoSistema(): Promise<SystemDiagnosticsData> {
+  await requirePermission("sistema:superadmin");
   const start = Date.now();
   let dbConnected = false;
   let latency = 0;

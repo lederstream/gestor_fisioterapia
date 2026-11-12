@@ -1,13 +1,24 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import bcrypt from "bcryptjs";
 import { crearPacienteSchema, type CrearPacienteInput } from "@/lib/validations";
 import { dbStore, PacienteItem } from "@/lib/store";
 import { ServerActionResult } from "./citas";
 import { prisma } from "@/lib/prisma";
 import { obtenerIpCliente } from "./auditoria";
+import { obtenerSesionServidor, requirePermission } from "@/lib/auth-server";
+import { hasPermission } from "@/lib/permissions";
 
 export async function obtenerFichaPaciente(id: string) {
+  const sesion = await obtenerSesionServidor();
+  if (!sesion) return null;
+  if (sesion.rol === "PACIENTE") {
+    if (sesion.userId !== id) return null;
+  } else if (!hasPermission(sesion.rol, "pacientes:ver")) {
+    return null;
+  }
+
   if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
     try {
       const pac = await prisma.paciente.findUnique({
@@ -124,6 +135,11 @@ export async function obtenerFichaPaciente(id: string) {
 }
 
 export async function listarPacientes() {
+  const sesion = await obtenerSesionServidor();
+  if (!sesion || !hasPermission(sesion.rol, "pacientes:ver")) {
+    return [];
+  }
+
   if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
     try {
       const pacientesDb = await prisma.paciente.findMany({
@@ -189,6 +205,7 @@ export async function listarPacientes() {
 
 export async function crearPaciente(input: CrearPacienteInput): Promise<ServerActionResult> {
   try {
+    const sesion = await requirePermission("pacientes:crear");
     const validated = crearPacienteSchema.parse(input);
     const clientIp = await obtenerIpCliente();
 
@@ -204,6 +221,8 @@ export async function crearPaciente(input: CrearPacienteInput): Promise<ServerAc
         if (existe) {
           return { success: false, error: `Ya existe un paciente registrado con el DNI ${validated.dni}.` };
         }
+
+        const initialPassHash = await bcrypt.hash(validated.dni, 10);
 
         const nuevoDb = await prisma.paciente.create({
           data: {
@@ -222,11 +241,15 @@ export async function crearPaciente(input: CrearPacienteInput): Promise<ServerAc
             contactoEmergenciaParentesco: validated.contactoEmergenciaParentesco || null,
             contactoEmergenciaTelefono: validated.contactoEmergenciaTelefono || null,
             contactoEmergencia: validated.contactoEmergencia || null,
+            passwordHash: initialPassHash,
           },
         });
 
         await prisma.auditLog.create({
           data: {
+            usuarioId: sesion.userId,
+            usuarioNombre: sesion.nombre,
+            usuarioRol: sesion.rol as any,
             accion: "PACIENTE_CREADO",
             modulo: "HISTORIA_CLINICA",
             entidadId: nuevoDb.id,
@@ -279,6 +302,7 @@ export async function asignarPaqueteTratamiento(params: {
   montoTotal: number;
 }): Promise<ServerActionResult> {
   try {
+    await requirePermission("pacientes:paquetes");
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       try {
         const nuevoPaqDb = await prisma.tratamientoPaquete.create({
@@ -339,6 +363,7 @@ export async function actualizarPaciente(
   }
 ): Promise<ServerActionResult> {
   try {
+    await requirePermission("pacientes:crear");
     if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost:51213")) {
       try {
         const actualizadoDb = await prisma.paciente.update({
@@ -388,6 +413,7 @@ export async function importarPacientesMasivo(
   pacientesList: ImportarPacienteItemInput[]
 ): Promise<ServerActionResult<{ importados: number; omitidos: number; pacientes: any[] }>> {
   try {
+    await requirePermission("pacientes:crear");
     if (!pacientesList || pacientesList.length === 0) {
       return { success: false, error: "La lista de pacientes a importar está vacía." };
     }

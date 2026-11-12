@@ -34,7 +34,7 @@ export default async function TratamientoPage() {
         });
       }
 
-      if (!paciente) {
+      if (!paciente && sesion && sesion.rol !== "PACIENTE") {
         paciente = await prisma.paciente.findFirst({
           include: {
             tratamientos: {
@@ -76,7 +76,7 @@ export default async function TratamientoPage() {
     const todosPacientes = dbStore.getPacientes();
     paciente = todosPacientes.find(
       (p) => p.id === sesion?.userId || (sesion?.email && p.email?.toLowerCase() === sesion.email.toLowerCase())
-    ) || todosPacientes[0] || null;
+    ) || (sesion && sesion.rol !== "PACIENTE" ? todosPacientes[0] : null) || null;
 
     if (paciente) {
       paquetes = dbStore.getPaquetes().filter((paq) => paq.pacienteId === paciente?.id);

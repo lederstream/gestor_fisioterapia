@@ -1,12 +1,14 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
-import { UserRole } from "./permissions";
+import { UserRole, Permission, hasPermission } from "./permissions";
 
 const COOKIE_NAME = "gestorfisio_session";
-const DEFAULT_SECRET = "gestorfisio-secure-jwt-secret-key-32-chars-min!";
 
 function getSecretKey(): Uint8Array {
-  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || DEFAULT_SECRET;
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+  if (!secret || secret.length < 16) {
+    throw new Error("Configuración de seguridad incompleta: AUTH_SECRET no está definido.");
+  }
   return new TextEncoder().encode(secret);
 }
 
@@ -87,4 +89,37 @@ export async function obtenerSesionServidor(): Promise<SessionPayload | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * Exige una sesión JWT válida en Server Actions privados.
+ */
+export async function requireSession(): Promise<SessionPayload> {
+  const sesion = await obtenerSesionServidor();
+  if (!sesion || !sesion.userId || !sesion.rol) {
+    throw new Error("Sesión no autenticada o expirada. Inicie sesión para continuar.");
+  }
+  return sesion;
+}
+
+/**
+ * Exige una sesión válida y un permiso RBAC específico en Server Actions.
+ */
+export async function requirePermission(permission: Permission): Promise<SessionPayload> {
+  const sesion = await requireSession();
+  if (!hasPermission(sesion.rol, permission)) {
+    throw new Error(`Acceso denegado: El rol [${sesion.rol}] no tiene autorización para esta acción.`);
+  }
+  return sesion;
+}
+
+/**
+ * Exige una sesión válida y al menos uno de los permisos RBAC indicados.
+ */
+export async function requireAnyPermission(permissions: Permission[]): Promise<SessionPayload> {
+  const sesion = await requireSession();
+  if (!permissions.some((p) => hasPermission(sesion.rol, p))) {
+    throw new Error(`Acceso denegado: El rol [${sesion.rol}] no tiene autorización para esta acción.`);
+  }
+  return sesion;
 }
